@@ -11,14 +11,14 @@ public enum Images {
 	GAMEOVER("images/gameover.gif"),
 	MOON("images/moon.jpg");
 
-	private final String file;
+	private final String filename;
 
 	Images(String file){
-		this.file = file;
+		this.filename = file;
 	}
 
-	String getFile(){
-		return file;
+	String getFilename(){
+		return filename;
 	}
 
 	static int count(){

@@ -1,13 +1,10 @@
 package com.mathias.bellatetris;
 
-import java.applet.Applet;
 import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -15,9 +12,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.mathias.bellatetris.Shape.Direction;
+import com.mathias.util.Util;
+import com.mathias.util.applet.MediaApplet;
 
 
-public class Tetris extends Applet implements KeyListener {
+public class Tetris extends MediaApplet {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -50,18 +49,10 @@ public class Tetris extends Applet implements KeyListener {
 		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(0,-1), new Point(0,0), new Point(0,1), new Point(-1,1)}, Color.orange));
 	}
 
-	// Vars for the offscreen image.
-	private Image offImage;
-	private Graphics2D offGraphics;
 	private long score = 0;
-	private Animation ani;
 	private boolean gameOver = false;
 	private Shape curr = null;
 	private List<Block> grid = new ArrayList<Block>();
-
-	public Tetris() {
-		super();
-	}
 
 	public void init() {
 		Util.addConsoleHandler(Tetris.class.getPackage().getName());
@@ -69,21 +60,12 @@ public class Tetris extends Applet implements KeyListener {
 
 		log.fine("initializing Bella Lumnines...");
 
-		this.setSize(WIDTH, HEIGHT);
-		setBackground(Color.black);
-		addKeyListener(this);
-
-		offImage = createImage(WIDTH, HEIGHT);
-		offGraphics = (Graphics2D)offImage.getGraphics();
-
 		gameOver = false;
 		curr = newStructure();
 		
 		addWalls();
-
-		ani = new Animation();
-		ani.setDaemon(true);
-		ani.start();
+		
+		super.init();
 	}
 	
 	private void addWalls(){
@@ -100,19 +82,7 @@ public class Tetris extends Applet implements KeyListener {
 	}
 	
 	@Override
-	public void paint(Graphics g) {
-		update(g);
-	}
-
-	@Override
-	public void update(Graphics g) {
-		offGraphics.setColor(Color.black);
-		offGraphics.fillRect(0, 0, WIDTH, HEIGHT);
-		paintIt(offGraphics);
-		g.drawImage(offImage, 0, 0, this);
-	}
-	
-	private void paintIt(Graphics2D g){
+	protected void paintAnimation(Graphics2D g){
 		paintBackground(g);
 
 		for (Block s : grid) {
@@ -243,28 +213,19 @@ public class Tetris extends Applet implements KeyListener {
 		return s.clone(s.x, s.y);
 	}
 
-	class Animation extends Thread {
-		@Override
-		public void run() {
-            while (true) {
-        		try {
-	            	if (gameOver) {
-						sleep(Long.MAX_VALUE);
-					} else {
-						sleep(1000);
-					}
-        		} catch (InterruptedException e) {
-        		}
-            	down();
-            	repaint();
-            }
+	@Override
+	protected void animate() {
+    	if (gameOver) {
+			Util.sleep(Long.MAX_VALUE);
+		} else {
+			Util.sleep(1000);
 		}
-	}
-	
-	public void keyReleased(KeyEvent e) {
+    	down();
 	}
 
-	public void keyTyped(KeyEvent e) {
+	@Override
+	public Dimension getDimension() {
+		return new Dimension(WIDTH, HEIGHT);
 	}
 
 }
