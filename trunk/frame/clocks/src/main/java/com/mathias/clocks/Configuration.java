@@ -11,6 +11,8 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
+import com.mathias.clocks.action.ExitAction;
+
 public class Configuration {
 	
 	private static final List<String> TIMEZONES = Arrays.asList(TimeZone.getAvailableIDs());
@@ -21,22 +23,55 @@ public class Configuration {
 	
 	private Configuration() {
 		prop = new Properties();
-		String propfile = "/clocks.properties";
+		if(!loadPropertiesFile("clocks.properties")){
+			if(!loadPropertiesResource("/clocks.properties")){
+				new ExitAction().actionPerformed(null);
+			}
+		}
+	}
+	
+	private boolean loadPropertiesResource(String propfile){
 		URL propurl = Configuration.class.getResource(propfile);
 		try {
 			if(propurl == null){
 				throw new FileNotFoundException("Could not get resource: "+propfile);
 			}
 			prop.load(new FileInputStream(propurl.getFile()));
+			return true;
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException: "+e.getMessage());
 		} catch (IOException e) {
 			System.out.println("IOException: "+e.getMessage());
 		}
+		return false;
+	}
+	
+	private boolean loadPropertiesFile(String propfile){
+		try {
+			prop.load(new FileInputStream(propfile));
+			return true;
+		} catch (FileNotFoundException e) {
+			//System.out.println("FileNotFoundException: "+e.getMessage());
+		} catch (IOException e) {
+			System.out.println("IOException: "+e.getMessage());
+		}
+		return false;
 	}
 	
 	public static String get(String key){
 		return theOne.prop.getProperty(key);
+	}
+
+	public static String get(String key, String def){
+		return theOne.prop.getProperty(key, def);
+	}
+
+	public static boolean getBoolean(String key, boolean def){
+		return Boolean.parseBoolean(theOne.prop.getProperty(key, ""+def));
+	}
+
+	public static int getInt(String key, int def){
+		return Integer.parseInt(theOne.prop.getProperty(key, ""+def));
 	}
 
 	public static List<Clock> getClocks(){
@@ -50,10 +85,18 @@ public class Configuration {
 				}else{
 					String name = st.nextToken().trim();
 					String timeZone = st.nextToken().trim();
-					if(!TIMEZONES.contains(timeZone)){
+					boolean found = false;
+					for (String tz : TIMEZONES) {
+						//System.out.println(tz);
+						if(tz.toUpperCase().indexOf(timeZone.toUpperCase()) != -1){
+							clocks.add(new Clock(name, TimeZone.getTimeZone(tz)));
+							found = true;
+							break;
+						}
+					}
+					if(!found){
 						System.out.println("Could not find time zone: "+timeZone+" for "+name);
-					}else{
-						clocks.add(new Clock(name, TimeZone.getTimeZone(timeZone)));
+						clocks.add(new Clock(name, null));
 					}
 				}
 			}

@@ -1,61 +1,69 @@
 package com.mathias.clocks;
 
 import java.awt.AWTException;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.MediaTracker;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.awt.font.FontRenderContext;
+import java.awt.font.TextLayout;
 import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JFrame;
 
+import com.mathias.clocks.action.ExitAction;
+
 @SuppressWarnings("serial")
-public class Clocks extends JFrame implements MouseMotionListener {
+public class Clocks extends JFrame implements MouseListener {
 
 	private List<Clock> clocks;
 	private Image[] imgs;
 	private Image img;
 	private Graphics2D g;
-	private GregorianCalendar gc;
 	private String location;
 	private TrayIcon trayIcon = null;
+	private PopupMenu popup;
+	private Font font;
+	private int height;
+
+	private final static int WIDTH = 130;
+	private final static int DHEIGHT = 55;
+	private final static Color TEXTCOLOR = new Color(75, 75, 255);
 
 	public Clocks(){
-		setUndecorated(true);
-		setSize(180, 400);
-		setAlwaysOnTop(true);
-		setLocation(false);
+		setUndecorated(Configuration.getBoolean("undecorated", true));
+		setAlwaysOnTop(Configuration.getBoolean("ontop", true));
 		setVisible(true);
 
-		imgs = new Image[11];
+		imgs = new Image[1];
 		imgs[0] = getToolkit().getImage(getClass().getResource("images/0.gif"));
-		imgs[1] = getToolkit().getImage(getClass().getResource("images/1.gif"));
-		imgs[2] = getToolkit().getImage(getClass().getResource("images/2.gif"));
-		imgs[3] = getToolkit().getImage(getClass().getResource("images/3.gif"));
-		imgs[4] = getToolkit().getImage(getClass().getResource("images/4.gif"));
-		imgs[5] = getToolkit().getImage(getClass().getResource("images/5.gif"));
-		imgs[6] = getToolkit().getImage(getClass().getResource("images/6.gif"));
-		imgs[7] = getToolkit().getImage(getClass().getResource("images/7.gif"));
-		imgs[8] = getToolkit().getImage(getClass().getResource("images/8.gif"));
-		imgs[9] = getToolkit().getImage(getClass().getResource("images/9.gif"));
-		imgs[10] = getToolkit().getImage(getClass().getResource("images/k.gif"));		
+//		imgs[1] = getToolkit().getImage(getClass().getResource("images/1.gif"));
+//		imgs[2] = getToolkit().getImage(getClass().getResource("images/2.gif"));
+//		imgs[3] = getToolkit().getImage(getClass().getResource("images/3.gif"));
+//		imgs[4] = getToolkit().getImage(getClass().getResource("images/4.gif"));
+//		imgs[5] = getToolkit().getImage(getClass().getResource("images/5.gif"));
+//		imgs[6] = getToolkit().getImage(getClass().getResource("images/6.gif"));
+//		imgs[7] = getToolkit().getImage(getClass().getResource("images/7.gif"));
+//		imgs[8] = getToolkit().getImage(getClass().getResource("images/8.gif"));
+//		imgs[9] = getToolkit().getImage(getClass().getResource("images/9.gif"));
+//		imgs[10] = getToolkit().getImage(getClass().getResource("images/k.gif"));
+//		imgs[11] = getToolkit().getImage(getClass().getResource("images/corner.gif"));
 
 		MediaTracker mt = new MediaTracker(this);
 		for (int i = 0; i < imgs.length; i++) {
-			mt.addImage(imgs[i], i);			
+			mt.addImage(imgs[i], i);
 		}
 		try {
 			mt.waitForAll();
@@ -63,21 +71,26 @@ public class Clocks extends JFrame implements MouseMotionListener {
 			e.printStackTrace();
 		}
 
-		if(SystemTray.isSupported()){
+		int fontSize = Configuration.getInt("font", 20);
+		String fn = Configuration.get("font", "Arial");
+		Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
+		for (Font f : fonts) {
+			if(fn.equals(f.getName())){
+				font = f.deriveFont(Font.PLAIN, fontSize);
+				break;
+			}
+		}
+		if(font == null){
+			font = fonts[0];
+		}
+
+		popup = createPopupMenu();
+		add(popup);
+
+	    if(SystemTray.isSupported() && Configuration.getBoolean("systray", true)){
 			SystemTray tray = SystemTray.getSystemTray();
 
-		    ActionListener exitListener = new ActionListener() {
-		        public void actionPerformed(ActionEvent e) {
-		            System.exit(0);
-		        }
-		    };
-		            
-		    PopupMenu popup = new PopupMenu();
-		    MenuItem defaultItem = new MenuItem("Exit");
-		    defaultItem.addActionListener(exitListener);
-		    popup.add(defaultItem);
-
-		    trayIcon = new TrayIcon(imgs[0], "Clocks", popup);
+			trayIcon = new TrayIcon(imgs[0], "Clocks", createPopupMenu());
 		    trayIcon.setImageAutoSize(true);
 
 		    try {
@@ -90,126 +103,116 @@ public class Clocks extends JFrame implements MouseMotionListener {
 		clocks = Configuration.getClocks();
 		location = Configuration.get("location");
 
-		img = createImage(getWidth(), getHeight());
+		height = clocks.size()*DHEIGHT+20;
+		img = createImage(WIDTH, height);
 		g = (Graphics2D)img.getGraphics();
-		gc = new GregorianCalendar();
 
-		Animate ani = new Animate();
-		ani.setDaemon(true);
-		ani.start();
-		
-		addMouseMotionListener(this);		
+		setLocation(false);
+		setSize(WIDTH, height);
+
+		addMouseListener(this);
+	}
+	
+	private PopupMenu createPopupMenu(){
+		PopupMenu popup = new PopupMenu();
+		MenuItem exitItem = new MenuItem("Exit");
+	    exitItem.addActionListener(new ExitAction());
+	    popup.add(exitItem);
+	    return popup;
 	}
 
 	@Override
 	protected void processWindowEvent(WindowEvent e) {
 		super.processWindowEvent(e);
 		if (e.getID() == WindowEvent.WINDOW_CLOSING) {
-			System.exit(0);
+			new ExitAction().actionPerformed(null);
 		}
-	}
-
-	private class Animate extends Thread {
-		@Override
-		public void run() {
-			long delay = 500;
-			try{
-				delay = Long.parseLong(Configuration.get("delay"));
-			}catch(NumberFormatException e){
-			}
-			while (true) {
-				paintClocks();
-				if(getMousePosition() == null){
-					setLocation(false);
-				}
-				Clocks.sleep(delay);
-			}
-		}
-	}
-
-	private void paintClocks(){
-		StringBuilder sb = new StringBuilder();
-		sb.append("Clocks\n");
-		Iterator<Clock> it = clocks.iterator();
-		for (int i = 0; it.hasNext(); i++) {
-			Clock c = it.next();
-			paintClock(c, i*70, false);			
-			sb.append(c.name+" "+getTime()+"\n");
-		}
-	    trayIcon.setToolTip(sb.toString());
 	}
 	
-	private String getTime(){
-		int h = gc.get(Calendar.HOUR_OF_DAY);
-		int m = gc.get(Calendar.MINUTE);
-		return String.format("%02d:%02d", h, m);
+	@Override
+	public void paint(Graphics arg0) {
+		super.paint(arg0);
+		paintClocks(arg0);
 	}
 
-	private void paintClock(Clock clock, int y, boolean seconds){
-		gc.setTimeZone(clock.timeZone);
-		gc.setTime(new Date());
-		int x = 0;
-		final int w = 18;
-		final int h = gc.get(Calendar.HOUR_OF_DAY);
-		final int m = gc.get(Calendar.MINUTE);
-		final int s = gc.get(Calendar.SECOND);
-		
-		g.clearRect(0, y, getWidth(), y+60);
-		g.drawImage(imgs[h/10], (x++)*w, y, null);
-		g.drawImage(imgs[h%10], (x++)*w, y, null);
-		g.drawImage(imgs[10], (x++)*w, y, null);
-		g.drawImage(imgs[m/10], (x++)*w, y, null);
-		g.drawImage(imgs[m%10], (x++)*w, y, null);
-		if(seconds){
-			g.drawImage(imgs[10], (x++)*w, y, null);
-			g.drawImage(imgs[s/10], (x++)*w, y, null);
-			g.drawImage(imgs[s%10], (x++)*w, y, null);
+	private void paintClocks(Graphics arg0){
+		g.setColor(TEXTCOLOR);
+		g.fillRoundRect(0, 0, WIDTH, height, 20, 20);
+		g.setColor(Color.white);
+		g.fillRoundRect(10, 10, WIDTH-20, height-20, 20, 20);
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("Clocks");
+		Iterator<Clock> it = clocks.iterator();
+		g.setColor(TEXTCOLOR);
+		FontRenderContext frc = g.getFontRenderContext();
+		boolean seconds = Configuration.getBoolean("seconds", false);
+		for (int i = 0; it.hasNext(); i++) {
+			Clock c = it.next();
+			int y = i*DHEIGHT+30;
+			TextLayout layout;
+			String time = c.getTime(seconds);
+			//draw clock name
+			layout = new TextLayout(c.name, font, frc);
+			layout.draw(g, (float) (WIDTH/2-layout.getBounds().getCenterX()), (float)y);
+			//draw clock time
+			layout = new TextLayout(time, font, frc);
+			layout.draw(g, (float) (WIDTH/2-layout.getBounds().getCenterX()), (float) y+25);
+			//title and tooltip
+			sb.append("\n"+c.name+" "+time);
 		}
-		
-		g.drawString(clock.name, 10, y+60);
-
-		getContentPane().getGraphics().drawImage(img, 0, 0, null);
+		arg0.drawImage(img, 0, 0, null);
+	    trayIcon.setToolTip(sb.toString());
+	    setTitle(sb.toString());
 	}
 
-	private static void sleep(long millis){
-		try {
-			Thread.sleep(millis);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		if(e.getButton() == MouseEvent.BUTTON3){
+		    popup.show(e.getComponent(), e.getX(), e.getY());
 		}
 	}
 
-	public void mouseDragged(MouseEvent ev) {
-	}
-
-	public void mouseMoved(MouseEvent ev) {
+	@Override
+	public void mouseEntered(MouseEvent e) {
 		setLocation(true);
-		paintClocks();
 	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		setLocation(false);
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {}
 
 	private void setLocation(boolean visible){
 		Dimension ss = getToolkit().getScreenSize();
-		if(visible){
+		if(visible || !Configuration.getBoolean("autohide", true)){
 			if("left".equals(location)) {
-				setLocation(0, ss.height/2-getHeight()/2);
+				setLocation(0, ss.height/2-height/2);
 			} else if("right".equals(location)) {
-				setLocation(ss.width-getWidth(), ss.height/2-getHeight()/2);
+				setLocation(ss.width-WIDTH, ss.height/2-height/2);
 			} else if("top".equals(location)) {
-				setLocation(ss.width/2-getWidth()/2, 0);
+				setLocation(ss.width/2-WIDTH/2, 0);
 			} else if("bottom".equals(location)) {
-				setLocation(ss.width/2-getWidth()/2, ss.height-getHeight());
+				setLocation(ss.width/2-WIDTH/2, ss.height-height);
 			}else{
 				setLocation(ss.width, ss.height);
 			}			
 		}else{
+			int hidden = Configuration.getInt("hidden", 5);
 			if("left".equals(location)) {
-				setLocation(5-getWidth(), ss.height/2-getHeight()/2);
+				setLocation(hidden-WIDTH, ss.height/2-height/2);
 			} else if("right".equals(location)) {
-				setLocation(ss.width-5, ss.height/2-getHeight()/2);
+				setLocation(ss.width-hidden, ss.height/2-height/2);
 			} else if("top".equals(location)) {
-				setLocation(ss.width/2-getWidth()/2, 5-getHeight());
+				setLocation(ss.width/2-WIDTH/2, hidden-height);
 			} else if("bottom".equals(location)) {
-				setLocation(ss.width/2-getWidth()/2, ss.height-5);
+				setLocation(ss.width/2-WIDTH/2, ss.height-hidden);
 			}else{
 				setLocation(ss.width, ss.height);
 			}

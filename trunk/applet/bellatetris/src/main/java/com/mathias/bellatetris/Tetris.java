@@ -6,14 +6,15 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.mathias.bellatetris.Shape.Direction;
-import com.mathias.util.Util;
-import com.mathias.util.applet.MediaApplet;
+import com.mathias.drawutils.Util;
+import com.mathias.drawutils.applet.MediaApplet;
 
 
 public class Tetris extends MediaApplet {
@@ -24,30 +25,14 @@ public class Tetris extends MediaApplet {
 
 	public static final int COLS = 10;
 	public static final int ROWS = 20;
-	public static final int SIZE = 10;
+	public static final int SIZE = 30;
 	public static final int CSTART = COLS/2;
 	public static final int RSTART = 1;
 
-	private static final int WIDTH = 500;
-	private static final int HEIGHT = 500;
+	private static final int WIDTH = COLS*SIZE;
+	private static final int HEIGHT = ROWS*SIZE;
 
-	private static final List<Shape> SHAPES = new ArrayList<Shape>();
-	static {
-		//T
-		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(-1,0), new Point(0,0), new Point(1,0), new Point(0,1)}, Color.red));
-		//|
-		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(1,0), new Point(0,0), new Point(-1,0), new Point(-2,0)}, Color.green));
-		//#
-		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(1,0), new Point(0,0), new Point(0,1), new Point(1,1)}, Color.magenta));
-		//s
-		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(0,-1), new Point(0,0), new Point(1,0), new Point(1,1)}, Color.yellow));
-		//z
-		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(0,-1), new Point(0,0), new Point(-1,0), new Point(-1,1)}, Color.blue));
-		//L
-		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(0,-1), new Point(0,0), new Point(0,1), new Point(1,1)}, Color.cyan));
-		//_|
-		SHAPES.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[]{new Point(0,-1), new Point(0,0), new Point(0,1), new Point(-1,1)}, Color.orange));
-	}
+	private final List<Shape> shapes = new ArrayList<Shape>();
 
 	private long score = 0;
 	private boolean gameOver = false;
@@ -55,16 +40,50 @@ public class Tetris extends MediaApplet {
 	private List<Block> grid = new ArrayList<Block>();
 
 	public void init() {
+
 		Util.addConsoleHandler(Tetris.class.getPackage().getName());
 		log.setLevel(Level.FINE);
 
 		log.fine("initializing Bella Lumnines...");
 
+		for (Images image : Images.values()) {
+			addImage(image.ordinal(), image.getFile(), true);
+		}
+
+		// T
+		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
+				new Point(-1, 0), new Point(0, 0), new Point(1, 0),
+				new Point(0, 1) }, getImage(Images.FOOD.ordinal())));
+		// |
+		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
+				new Point(1, 0), new Point(0, 0), new Point(-1, 0),
+				new Point(-2, 0) }, getImage(Images.GREEN.ordinal())));
+		// #
+		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
+				new Point(1, 0), new Point(0, 0), new Point(0, 1),
+				new Point(1, 1) }, getImage(Images.LEAF.ordinal())));
+		// s
+		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
+				new Point(0, -1), new Point(0, 0), new Point(1, 0),
+				new Point(1, 1) }, getImage(Images.PASTELL.ordinal())));
+		// z
+		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
+				new Point(0, -1), new Point(0, 0), new Point(-1, 0),
+				new Point(-1, 1) }, getImage(Images.STONE.ordinal())));
+		// L
+		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
+				new Point(0, -1), new Point(0, 0), new Point(0, 1),
+				new Point(1, 1) }, getImage(Images.TIGER.ordinal())));
+		// _|
+		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
+				new Point(0, -1), new Point(0, 0), new Point(0, 1),
+				new Point(-1, 1) }, getImage(Images.WATER.ordinal())));
+
 		gameOver = false;
 		curr = newStructure();
 		
 		addWalls();
-		
+
 		super.init();
 	}
 	
@@ -157,25 +176,24 @@ public class Tetris extends MediaApplet {
 				}
 				int counter = 0;
 				for(int j = 0; j < ROWS-1; j++){
-					boolean complete = true;
+					boolean completeRow = true;
 					for(int i = 1; i < COLS-1; i++){
 						if(getGrid(i, j) == null){
-							complete = false;
+							completeRow = false;
 							break;
 						}
 					}
-					if(complete){
-						List<Block> remove = new ArrayList<Block>();
-						for (Block b : grid) {
+					if(completeRow){
+						for (Iterator<Block> it = grid.iterator(); it.hasNext();) {
+							Block b = it.next();
 							if(b.x > 0 && b.x < COLS-1){
 								if(b.y == j){
-									remove.add(b);
+									it.remove();
 								}else if(b.y < j){
 									b.y++;
 								}
 							}
 						}
-						grid.removeAll(remove);
 						counter++;
 					}
 				}
@@ -208,8 +226,8 @@ public class Tetris extends MediaApplet {
 	}
 
 	public Shape newStructure(){
-		int i = new Random().nextInt(SHAPES.size());
-		Shape s = SHAPES.get(i);
+		int i = new Random().nextInt(shapes.size());
+		Shape s = shapes.get(i);
 		return s.clone(s.x, s.y);
 	}
 

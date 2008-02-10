@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.mathias.util.applet.MediaApplet;
-import com.mathias.util.Util;
+import com.mathias.drawutils.Util;
+import com.mathias.drawutils.applet.MediaApplet;
 
 @SuppressWarnings("serial")
 public class Lumines extends MediaApplet {
