@@ -28,7 +28,7 @@ public class ConvertIt extends JFrame {
 		enableEvents(AWTEvent.WINDOW_EVENT_MASK);
 
 		initUI();
-		Util.centerFrame(this);
+		JUtil.centerFrame(this);
 		setVisible(true);
 
 		SwingUtilities.invokeLater(new Runnable() {
@@ -55,7 +55,7 @@ public class ConvertIt extends JFrame {
 
 	private void initUI() {
 		setTitle("WEEEE");
-		setIconImage(Util.APPLICATION_ICON.getImage());
+		setIconImage(JUtil.APPLICATION_ICON.getImage());
 		setSize(500, 500);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
@@ -78,7 +78,6 @@ public class ConvertIt extends JFrame {
 //		menu.add(new PreferencesAction(this));
 //		menu.addSeparator();
 		menu.add(new AbstractAction("Exit"){
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				exitAction();
 			}
@@ -103,14 +102,14 @@ public class ConvertIt extends JFrame {
 		toolbar.setFloatable(false);
 //		toolbar.add(createButton(connectAction), Util.getGBC(0, 0, false, null));
 //		toolbar.add(createButton(refreshAction), Util.getGBC(1, 0, false, null));
-		toolbar.add(new JLabel(""), Util.getGBC(2, 0, true, null));
-		toolbar.add(new JLabel("Find:"), Util.getGBC(3, 0, false, null));
-		toolbar.add(searchField, Util.getGBC(4, 0, false, new Insets(1, 2, 1, 2)));
+		toolbar.add(new JLabel(""), JUtil.getGBC(2, 0, true, null));
+		toolbar.add(new JLabel("Find:"), JUtil.getGBC(3, 0, false, null));
+		toolbar.add(searchField, JUtil.getGBC(4, 0, false, new Insets(1, 2, 1, 2)));
 //		toolbar.add(createButton(new FindAction(this, searchField)), Util.getGBC(5, 0, false, null));
 
 		JPanel mainPanel = new JPanel(new BorderLayout());
 		mainPanel.setBorder(new CompoundBorder(new EtchedBorder(), new EmptyBorder(2, 2, 2, 2)));
-		mainPanel.add(new JScrollPane(new CenterPanel()), BorderLayout.CENTER);
+		mainPanel.add(new CenterPanel(), BorderLayout.CENTER);
 
 		setJMenuBar(menubar);
 		getContentPane().add(toolbar, BorderLayout.NORTH);

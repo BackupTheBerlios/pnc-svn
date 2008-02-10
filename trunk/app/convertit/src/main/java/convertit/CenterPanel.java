@@ -8,29 +8,29 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import com.mathias.util.Util;
+
 import convertit.util.Des;
 
 public class CenterPanel extends JPanel {
 
 	public CenterPanel(){
-		final JTextField keyField = new JTextField("Key");
+		final JTextField keyField = new JTextField("Key", 20);
 		add(keyField);
 
-		final JTextField dataField = new JTextField("Data"); 
+		final JTextField dataField = new JTextField("Data", 20); 
 		add(dataField);
 
-		final JTextField outputField = new JTextField("Output"); 
+		final JTextField outputField = new JTextField("Output", 20); 
 		add(outputField);
 
 		add(createButton(new AbstractAction("Sec Attr"){
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				outputField.setText("WEEE");
 			}
 		}));
 
 		add(createButton(new AbstractAction("DES ENC"){
-			@Override
 			public void actionPerformed(ActionEvent e) {
 				String key = keyField.getText();
 				String data = dataField.getText();
@@ -39,9 +39,23 @@ public class CenterPanel extends JPanel {
 		}));
 
 		add(createButton(new AbstractAction("DES DEC"){
-			@Override
 			public void actionPerformed(ActionEvent e) {
 
+			}
+		}));
+
+		add(createButton(new AbstractAction("Hex2Text"){
+			public void actionPerformed(ActionEvent e) {
+				String data = dataField.getText();
+				outputField.setText(data);
+				outputField.setText(new String(Util.toBytes(data)));
+			}
+		}));
+
+		add(createButton(new AbstractAction("Text2Hex"){
+			public void actionPerformed(ActionEvent e) {
+				String data = dataField.getText();
+				outputField.setText(Util.toHex(data.getBytes()));
 			}
 		}));
 	}

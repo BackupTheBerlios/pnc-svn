@@ -4,13 +4,11 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.awt.Toolkit;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
-public class Util {
+public class JUtil {
 
 	public static final ImageIcon APPLICATION_ICON = loadIcon("application.gif");
 
@@ -29,63 +27,6 @@ public class Util {
 	public static final ImageIcon ACTIVE_FOLDER_ICON = loadIcon("activefolder.gif");
 
 	public static final ImageIcon LOGO_ICON = loadIcon("stlogo.gif");
-
-	public static boolean isEmpty(String s) {
-		return (s == null || s.length() == 0);
-	}
-
-	public static boolean isNotEmpty(String s) {
-		return !isEmpty(s);
-	}
-
-	public static boolean isBlank(String s) {
-		return (s == null || s.trim().length() == 0);
-	}
-
-	public static String join(String[] sa, char delimiter) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < sa.length; i++) {
-			if (i != 0) {
-				sb.append(delimiter);
-			}
-			if (sa[i] != null) {
-				sb.append(sa[i]);
-			}
-		}
-		return sb.toString();
-	}
-
-	public static String join(List<String> sa, char delimiter) {
-		return join(sa.toArray(new String[sa.size()]), delimiter);
-	}
-
-	public static String[] split(String s, char delimiter) {
-		List<String> list = splitToList(s, delimiter);
-		return list.toArray(new String[list.size()]);
-	}
-
-	public static List<String> splitToList(String s, char delimiter) {
-		ArrayList<String> tokens = new ArrayList<String>();
-
-		if (isEmpty(s)) {
-			return tokens;
-		}
-
-		int start = 0;
-		int end = s.indexOf(delimiter);
-
-		while (true) {
-			if (end == -1) {
-				tokens.add(s.substring(start));
-				break;
-			}
-			tokens.add(s.substring(start, end));
-			start = end + 1;
-			end = s.indexOf(delimiter, start);
-		}
-
-		return tokens;
-	}
 
 	public static void centerFrame(JFrame frame) {
 		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -120,7 +61,7 @@ public class Util {
 	}
 
 	private static ImageIcon loadIcon(String name) {
-		return new ImageIcon(Util.class.getResource("icons/" + name));
+		return new ImageIcon(JUtil.class.getResource("icons/" + name));
 	}
 
 }
