@@ -18,18 +18,29 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
 import com.mathias.clocks.action.ExitAction;
 
 @SuppressWarnings("serial")
 public class Clocks extends JFrame implements MouseListener {
+	
+//	private final static Logger log = Logger.getLogger(Clocks.class.getName());
 
 	private List<Clock> clocks;
-	private Image[] imgs;
+	private Map<Integer, Image> imgs;
 	private Image img;
 	private Graphics2D g;
 	private String location;
@@ -41,29 +52,37 @@ public class Clocks extends JFrame implements MouseListener {
 	private final static int WIDTH = 130;
 	private final static int DHEIGHT = 55;
 	private final static Color TEXTCOLOR = new Color(75, 75, 255);
+	
+//	private final static int IMG_0 = 0;
+	private final static int IMG_ICO = 11;
 
 	public Clocks(){
+
+//		GenericLogManager.init();
+//		log.info("TESTING");
+//		log.finest("TESTING2");
+
 		setUndecorated(Configuration.getBoolean("undecorated", true));
 		setAlwaysOnTop(Configuration.getBoolean("ontop", true));
 		setVisible(true);
 
-		imgs = new Image[1];
-		imgs[0] = getToolkit().getImage(getClass().getResource("images/0.gif"));
-//		imgs[1] = getToolkit().getImage(getClass().getResource("images/1.gif"));
-//		imgs[2] = getToolkit().getImage(getClass().getResource("images/2.gif"));
-//		imgs[3] = getToolkit().getImage(getClass().getResource("images/3.gif"));
-//		imgs[4] = getToolkit().getImage(getClass().getResource("images/4.gif"));
-//		imgs[5] = getToolkit().getImage(getClass().getResource("images/5.gif"));
-//		imgs[6] = getToolkit().getImage(getClass().getResource("images/6.gif"));
-//		imgs[7] = getToolkit().getImage(getClass().getResource("images/7.gif"));
-//		imgs[8] = getToolkit().getImage(getClass().getResource("images/8.gif"));
-//		imgs[9] = getToolkit().getImage(getClass().getResource("images/9.gif"));
-//		imgs[10] = getToolkit().getImage(getClass().getResource("images/k.gif"));
-//		imgs[11] = getToolkit().getImage(getClass().getResource("images/corner.gif"));
+		imgs = new HashMap<Integer, Image>();
+//		imgs.put(IMG_0, getToolkit().getImage(getClass().getResource("images/0.gif")));
+//		imgs.put(1, getToolkit().getImage(getClass().getResource("images/1.gif")));
+//		imgs.put(2, getToolkit().getImage(getClass().getResource("images/2.gif")));
+//		imgs.put(3, getToolkit().getImage(getClass().getResource("images/3.gif")));
+//		imgs.put(4, getToolkit().getImage(getClass().getResource("images/4.gif")));
+//		imgs.put(5, getToolkit().getImage(getClass().getResource("images/5.gif")));
+//		imgs.put(6, getToolkit().getImage(getClass().getResource("images/6.gif")));
+//		imgs.put(7, getToolkit().getImage(getClass().getResource("images/7.gif")));
+//		imgs.put(8, getToolkit().getImage(getClass().getResource("images/8.gif")));
+//		imgs.put(9, getToolkit().getImage(getClass().getResource("images/9.gif")));
+//		imgs.put(10, getToolkit().getImage(getClass().getResource("images/k.gif")));
+		imgs.put(IMG_ICO, getToolkit().getImage(getClass().getResource("images/clocks_icon.gif")));
 
 		MediaTracker mt = new MediaTracker(this);
-		for (int i = 0; i < imgs.length; i++) {
-			mt.addImage(imgs[i], i);
+		for (Entry<Integer, Image> e : imgs.entrySet()) {
+			mt.addImage(e.getValue(), e.getKey());
 		}
 		try {
 			mt.waitForAll();
@@ -90,7 +109,7 @@ public class Clocks extends JFrame implements MouseListener {
 	    if(SystemTray.isSupported() && Configuration.getBoolean("systray", true)){
 			SystemTray tray = SystemTray.getSystemTray();
 
-			trayIcon = new TrayIcon(imgs[0], "Clocks", createPopupMenu());
+			trayIcon = new TrayIcon(imgs.get(IMG_ICO), "Clocks", createPopupMenu());
 		    trayIcon.setImageAutoSize(true);
 
 		    try {
@@ -132,10 +151,10 @@ public class Clocks extends JFrame implements MouseListener {
 	@Override
 	public void paint(Graphics arg0) {
 		super.paint(arg0);
-		paintClocks(arg0);
+		paintClocks();
 	}
 
-	private void paintClocks(Graphics arg0){
+	private void paintClocks(){
 		g.setColor(TEXTCOLOR);
 		g.fillRoundRect(0, 0, WIDTH, height, 20, 20);
 		g.setColor(Color.white);
@@ -161,7 +180,7 @@ public class Clocks extends JFrame implements MouseListener {
 			//title and tooltip
 			sb.append("\n"+c.name+" "+time);
 		}
-		arg0.drawImage(img, 0, 0, null);
+		getContentPane().getGraphics().drawImage(img, 0, 0, null);
 	    trayIcon.setToolTip(sb.toString());
 	    setTitle(sb.toString());
 	}

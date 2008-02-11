@@ -15,6 +15,20 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <repositories>
+      <repository>
+          <id>akathist-repository</id>
+          <name>Akathist Repository</name>
+          <url>http://www.9stmaryrd.com/maven</url>
+      </repository>
+  </repositories>
+  <pluginRepositories>
+      <pluginRepository>
+          <id>akathist-repository</id>
+          <name>Akathist Repository</name>
+          <url>http://www.9stmaryrd.com/maven</url>
+      </pluginRepository>
+  </pluginRepositories>
   <build>
       <plugins>
       <plugin>
@@ -36,6 +50,45 @@
           </archive>
         </configuration>
       </plugin>
+      <plugin>
+          <groupId>com.akathist.maven.plugins.launch4j</groupId>
+          <artifactId>launch4j-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>l4j-clui</id>
+              <phase>package</phase>
+              <goals><goal>launch4j</goal></goals>
+              <configuration>
+	            <headerType>gui</headerType>
+                <outfile>target/clocks.exe</outfile>
+                <jar>target/clocks-1.0-SNAPSHOT.jar</jar>
+                <errTitle>Clocks</errTitle>
+                <!--
+                <classPath>
+                  <mainClass>com.mathias.clocks.Clocks</mainClass>
+                  <addDependencies>false</addDependencies>
+                  <preCp>anything</preCp>
+                </classPath>
+                -->
+                <jre>
+                  <minVersion>1.6.0</minVersion>
+                </jre>
+                <versionInfo>
+                  <fileVersion>1.2.3.4</fileVersion>
+                  <txtFileVersion>txt file version?</txtFileVersion>
+                  <fileDescription>a description</fileDescription>
+                  <copyright>my copyright</copyright>
+                  <productVersion>4.3.2.1</productVersion>
+                  <txtProductVersion>txt product version</txtProductVersion>
+                  <productName>Clocks</productName>
+                  <internalName>Clocks</internalName>
+                  <originalFilename>original.exe</originalFilename>
+                </versionInfo>
+                <icon>src/test/config/clocks_icon.ico</icon>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
     </plugins>
 	<resources>
 		<resource>
