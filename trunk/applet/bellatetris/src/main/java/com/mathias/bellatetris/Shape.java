@@ -49,10 +49,14 @@ public class Shape {
 		this.y = y;
 	}
 
-	public void paint(Graphics2D g){
+	public void paint(Graphics2D g, int nx, int ny){
 		for (Block p : blocks) {
-			p.paint(g, x, y);
+			p.paint(g, nx, ny);
 		}
+	}
+
+	public void paint(Graphics2D g){
+		paint(g, x, y);
 	}
 
 	protected void transpose(Direction dir){
@@ -73,7 +77,7 @@ public class Shape {
 		return Collections.unmodifiableList(blocks);
 	}
 
-	public Shape clone(int x, int y){
+	public Shape clone(){
 		Block[] p = new Block[blocks.size()];
 		for (int i = 0; i < blocks.size(); i++) {
 			p[i] = blocks.get(i).clone();

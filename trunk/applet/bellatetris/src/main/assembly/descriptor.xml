@@ -1,0 +1,35 @@
+<assembly>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <baseDirectory>bellatetris</baseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>src/main/config/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+      <fileMode>0544</fileMode>
+    </fileSet>
+    <fileSet>
+      <directory>src/main/resources</directory>
+      <outputDirectory>config</outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>target</directory>
+      <outputDirectory>library</outputDirectory>
+      <includes>
+        <include>*.jar</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/library</outputDirectory>
+    </dependencySet>
+  </dependencySets>
+</assembly>

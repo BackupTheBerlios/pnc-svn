@@ -2,9 +2,11 @@ package com.mathias.bellatetris;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -29,26 +31,32 @@ public class Tetris extends MediaApplet {
 	public static final int CSTART = COLS/2;
 	public static final int RSTART = 1;
 
-	private static final int WIDTH = COLS*SIZE;
+	private static final int WIDTH = COLS*SIZE+300;
 	private static final int HEIGHT = ROWS*SIZE;
 
 	private final List<Shape> shapes = new ArrayList<Shape>();
 
 	private long score = 0;
-	private boolean gameOver = false;
+	// TODO private boolean gameOver = false;
+	private boolean gameOver = true;
 	private Shape curr = null;
+	private Shape next = null;
 	private List<Block> grid = new ArrayList<Block>();
+	private Font font;
+	private List<String> highScore = null;
 
 	public void init() {
 
 		Util.addConsoleHandler(Tetris.class.getPackage().getName());
 		log.setLevel(Level.FINE);
 
-		log.fine("initializing Bella Lumnines...");
+		log.fine("initializing Bella Tetris...");
 
 		for (Images image : Images.values()) {
 			addImage(image.ordinal(), image.getFile(), true);
 		}
+		
+		font = Util.getFallbackFont("arial", 30);
 
 		// T
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
@@ -102,27 +110,34 @@ public class Tetris extends MediaApplet {
 	
 	@Override
 	protected void paintAnimation(Graphics2D g){
-		paintBackground(g);
-
-		for (Block s : grid) {
-			s.paint(g, 0, 0);
-		}
-
-		curr.paint(g);
-
-		if(gameOver){
-			g.setColor(Color.yellow);
-			g.drawString("GAME OVER", WIDTH/2, HEIGHT/2);
-		}
-	}
-
-	public void paintBackground(Graphics2D g){
+		//background
 		g.setColor(Color.red);
 		g.drawLine(0, 0, 0, ROWS*SIZE);
 		g.drawLine(0, ROWS*SIZE, COLS*SIZE, ROWS*SIZE);
 		g.drawLine(COLS*SIZE, ROWS*SIZE, COLS*SIZE, 0);
-		
-		g.drawString("Score: "+score, 200, 50);
+
+		//score
+		Util.drawString(g, Color.red, font, "Score: "+score, SIZE*COLS+100, 50);
+
+		//next
+		next.paint(g, 15, 3);		
+
+		//blocks
+		for (Block s : grid) {
+			s.paint(g, 0, 0);
+		}
+
+		//current block
+		curr.paint(g);
+
+		// game over
+		if(gameOver){
+			Util.drawString(g, Color.yellow, font, "GAME OVER", WIDTH/2+20, HEIGHT/2-160);
+			
+			for (int i = 0; highScore != null && i < highScore.size(); i++) {
+				Util.drawString(g, Color.white, font, highScore.get(i), WIDTH/2+20, HEIGHT/2-100+(40*(i+1)));
+			}
+		}
 	}
 
 	public void keyPressed(KeyEvent e) {
@@ -201,6 +216,15 @@ public class Tetris extends MediaApplet {
 				curr = newStructure();
 				if(curr.inside(grid)){
 					gameOver = true;
+					StoreHighscore hs = new StoreHighscore("blue.abc.se", 7200);
+					try {
+						hs.sendHighScore("test", score);
+						highScore = hs.fetchHighScore();
+					} catch (IOException e) {
+						highScore = new ArrayList<String>();
+						highScore.add("No connection!");
+						System.err.println(e.getMessage());
+					}
 				}
 			}
 		}
@@ -225,10 +249,17 @@ public class Tetris extends MediaApplet {
 		}
 	}
 
-	public Shape newStructure(){
-		int i = new Random().nextInt(shapes.size());
-		Shape s = shapes.get(i);
-		return s.clone(s.x, s.y);
+	private Shape newStructure(){
+		Shape t = next;
+		if(t == null){
+			t = shapes.get(getRand()).clone();
+		}
+		next = shapes.get(getRand()).clone();
+		return t; 
+	}
+	
+	private int getRand(){
+		return new Random().nextInt(shapes.size());
 	}
 
 	@Override
