@@ -13,13 +13,8 @@ import java.awt.event.KeyListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Logger;
-
-import com.mathias.drawutils.Util;
 
 public abstract class MediaApplet extends Applet implements KeyListener {
-
-	private static final Logger log = Logger.getLogger(MediaApplet.class.getName());
 
 	private MediaTracker mediaTracker;
 
@@ -34,8 +29,6 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 
 	@Override
 	public void init() {
-		Util.addConsoleHandler(MediaApplet.class.getPackage().getName());
-
 		setSize(getDimension());
 		setBackground(Color.black);
 
@@ -84,21 +77,21 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 	class Animation extends Thread {
 		@Override
 		public void run() {
-			log.fine("Starting Animation!");
+			System.out.println("Starting Animation!");
 			try {
 				if(mediaTracker != null) {
 					mediaTracker.waitForAll();
 					if(MediaTracker.COMPLETE != mediaTracker.statusAll(true)){
-						log.severe("Could not load all images!"+getImageProblem());
+						System.err.println("Could not load all images!"+getImageProblem());
 					}else{
-						log.fine("All images loaded!");
+						System.out.println("All images loaded!");
 						initialized = true;
 					}
 				}else{
 					initialized = true;
 				}
 			} catch (InterruptedException e) {
-				log.warning("waitForAll exception: "+e);
+				System.err.println("waitForAll exception: "+e);
 			}
             while (true) {
         		animate();
@@ -123,12 +116,12 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 			try {
 				mediaTracker.waitForID(id);
 			} catch (InterruptedException e) {
-				log.warning("waitForID exception: "+e);
+				System.err.println("waitForID exception: "+e);
 			}
 			if(MediaTracker.COMPLETE != mediaTracker.statusID(id, true)){
-				log.severe("Could not load loading image!");
+				System.err.println("Could not load loading image!");
 			}else{
-				log.fine("Loaded loading image!");
+				System.out.println("Loaded loading image!");
 			}
 		}
 	}

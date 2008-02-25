@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import com.mathias.bellatetris.Shape.Direction;
 import com.mathias.drawutils.Util;
@@ -22,8 +20,6 @@ import com.mathias.drawutils.applet.MediaApplet;
 public class Tetris extends MediaApplet {
 
 	private static final long serialVersionUID = 1L;
-	
-	private static final Logger log = Logger.getLogger(Tetris.class.getName());
 
 	public static final int COLS = 10;
 	public static final int ROWS = 20;
@@ -44,19 +40,30 @@ public class Tetris extends MediaApplet {
 	private List<Block> grid = new ArrayList<Block>();
 	private Font font;
 	private List<String> highScore = null;
+	
+	private String hsHost;
+	private int hsPort = 7200;
 
 	public void init() {
-
-		Util.addConsoleHandler(Tetris.class.getPackage().getName());
-		log.setLevel(Level.FINE);
-
-		log.fine("initializing Bella Tetris...");
 
 		for (Images image : Images.values()) {
 			addImage(image.ordinal(), image.getFile(), true);
 		}
 		
 		font = Util.getFallbackFont("arial", 30);
+
+		hsHost = getParameter("host");
+		if(Util.isEmpty(hsHost)){
+			hsHost = "localhost";
+		}
+		String port = getParameter("port");
+		if(!Util.isEmpty(port)){
+			try{
+				hsPort = Integer.parseInt(port);
+			}catch(NumberFormatException e){
+				System.err.println(e.getMessage());
+			}
+		}
 
 		// T
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
@@ -117,7 +124,7 @@ public class Tetris extends MediaApplet {
 		g.drawLine(COLS*SIZE, ROWS*SIZE, COLS*SIZE, 0);
 
 		//score
-		Util.drawString(g, Color.red, font, "Score: "+score, SIZE*COLS+100, 50);
+		Util.drawString(g, Color.red, font, "Score: "+score, SIZE*COLS+20, 50);
 
 		//next
 		next.paint(g, 15, 3);		
@@ -132,10 +139,10 @@ public class Tetris extends MediaApplet {
 
 		// game over
 		if(gameOver){
-			Util.drawString(g, Color.yellow, font, "GAME OVER", WIDTH/2+20, HEIGHT/2-160);
+			Util.drawString(g, Color.yellow, font, "GAME OVER", SIZE*COLS+20, HEIGHT/2-115);
 			
 			for (int i = 0; highScore != null && i < highScore.size(); i++) {
-				Util.drawString(g, Color.white, font, highScore.get(i), WIDTH/2+20, HEIGHT/2-100+(40*(i+1)));
+				Util.drawString(g, Color.white, font, highScore.get(i), SIZE*COLS+20, HEIGHT/2-100+(40*(i+1)));
 			}
 		}
 	}
@@ -216,9 +223,9 @@ public class Tetris extends MediaApplet {
 				curr = newStructure();
 				if(curr.inside(grid)){
 					gameOver = true;
-					StoreHighscore hs = new StoreHighscore("blue.abc.se", 7200);
+					StoreHighscore hs = new StoreHighscore(hsHost, hsPort);
 					try {
-						hs.sendHighScore("test", score);
+						hs.sendHighScore("bella", score);
 						highScore = hs.fetchHighScore();
 					} catch (IOException e) {
 						highScore = new ArrayList<String>();
