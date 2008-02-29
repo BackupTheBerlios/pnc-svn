@@ -18,21 +18,17 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
 import com.mathias.clocks.action.ExitAction;
+import com.mathias.clocks.action.SettingsAction;
 
 @SuppressWarnings("serial")
 public class Clocks extends JFrame implements MouseListener {
@@ -120,7 +116,7 @@ public class Clocks extends JFrame implements MouseListener {
 		}
 		
 		clocks = Configuration.getClocks();
-		location = Configuration.get("location");
+		location = Configuration.get("location", "left");
 
 		height = clocks.size()*DHEIGHT+20;
 		img = createImage(WIDTH, height);
@@ -134,6 +130,10 @@ public class Clocks extends JFrame implements MouseListener {
 	
 	private PopupMenu createPopupMenu(){
 		PopupMenu popup = new PopupMenu();
+		MenuItem settingsItem = new MenuItem("Settings...");
+		settingsItem.addActionListener(new SettingsAction());
+		popup.add(settingsItem);
+		popup.addSeparator();
 		MenuItem exitItem = new MenuItem("Exit");
 	    exitItem.addActionListener(new ExitAction());
 	    popup.add(exitItem);
@@ -172,16 +172,18 @@ public class Clocks extends JFrame implements MouseListener {
 			TextLayout layout;
 			String time = c.getTime(seconds);
 			//draw clock name
-			layout = new TextLayout(c.name, font, frc);
+			layout = new TextLayout(c.getName(), font, frc);
 			layout.draw(g, (float) (WIDTH/2-layout.getBounds().getCenterX()), (float)y);
 			//draw clock time
 			layout = new TextLayout(time, font, frc);
 			layout.draw(g, (float) (WIDTH/2-layout.getBounds().getCenterX()), (float) y+25);
 			//title and tooltip
-			sb.append("\n"+c.name+" "+time);
+			sb.append("\n"+c.getName()+" "+time);
 		}
 		getContentPane().getGraphics().drawImage(img, 0, 0, null);
-	    trayIcon.setToolTip(sb.toString());
+		if(trayIcon != null){
+		    trayIcon.setToolTip(sb.toString());
+		}
 	    setTitle(sb.toString());
 	}
 
@@ -221,17 +223,17 @@ public class Clocks extends JFrame implements MouseListener {
 				setLocation(ss.width/2-WIDTH/2, ss.height-height);
 			}else{
 				setLocation(ss.width, ss.height);
-			}			
+			}
 		}else{
-			int hidden = Configuration.getInt("hidden", 5);
+			int overlap = Configuration.getInt("overlap", 1);
 			if("left".equals(location)) {
-				setLocation(hidden-WIDTH, ss.height/2-height/2);
+				setLocation(overlap-WIDTH, ss.height/2-height/2);
 			} else if("right".equals(location)) {
-				setLocation(ss.width-hidden, ss.height/2-height/2);
+				setLocation(ss.width-overlap, ss.height/2-height/2);
 			} else if("top".equals(location)) {
-				setLocation(ss.width/2-WIDTH/2, hidden-height);
+				setLocation(ss.width/2-WIDTH/2, overlap-height);
 			} else if("bottom".equals(location)) {
-				setLocation(ss.width/2-WIDTH/2, ss.height-hidden);
+				setLocation(ss.width/2-WIDTH/2, ss.height-overlap);
 			}else{
 				setLocation(ss.width, ss.height);
 			}

@@ -2,6 +2,7 @@ package com.mathias.clocks;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -11,11 +12,9 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
-import com.mathias.clocks.action.ExitAction;
-
 public class Configuration {
 	
-	private static final List<String> TIMEZONES = Arrays.asList(TimeZone.getAvailableIDs());
+	public static final List<String> TIMEZONES = Arrays.asList(TimeZone.getAvailableIDs());
 
 	private static Configuration theOne = new Configuration();
 	
@@ -25,7 +24,7 @@ public class Configuration {
 		prop = new Properties();
 		if(!loadPropertiesFile("clocks.properties")){
 			if(!loadPropertiesResource("/clocks.properties")){
-				new ExitAction().actionPerformed(null);
+				//new ExitAction().actionPerformed(null);
 			}
 		}
 	}
@@ -60,6 +59,10 @@ public class Configuration {
 	
 	public static String get(String key){
 		return theOne.prop.getProperty(key);
+	}
+
+	public static Object set(String key, String value){
+		return theOne.prop.setProperty(key, value);
 	}
 
 	public static String get(String key, String def){
@@ -102,6 +105,41 @@ public class Configuration {
 			}
 		}
 		return clocks;
+	}
+
+	public static void store(){
+		if(!theOne.storePropertiesFile("clocks.properties")){
+			if(!theOne.storePropertiesResource("/clocks.properties")){
+			}
+		}
+	}
+
+	private boolean storePropertiesResource(String propfile){
+		URL propurl = Configuration.class.getResource(propfile);
+		try {
+			if(propurl == null){
+				throw new FileNotFoundException("Could not get resource: "+propfile);
+			}
+			prop.store(new FileOutputStream(propurl.getFile()), null);
+			return true;
+		} catch (FileNotFoundException e) {
+			System.out.println("FileNotFoundException: "+e.getMessage());
+		} catch (IOException e) {
+			System.out.println("IOException: "+e.getMessage());
+		}
+		return false;
+	}
+
+	private boolean storePropertiesFile(String file){
+		try {
+			theOne.prop.store(new FileOutputStream(file), null);
+			return true;
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 
 }

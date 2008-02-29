@@ -10,6 +10,7 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
+import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -290,6 +291,14 @@ public abstract class Util {
 		} else {
 			return ((char)(value + '0'));
 		}
+	}
+
+	public static String dirName(String path){
+		int i = path.lastIndexOf(File.separatorChar);
+		if(i != -1){
+			return path.substring(0, i);
+		}
+		return path;
 	}
 
 }

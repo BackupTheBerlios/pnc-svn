@@ -6,7 +6,7 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 public class Clock {
-	public String name;
+	private String name;
 	private GregorianCalendar gc;
 	private TimeZone timeZone;
 
@@ -30,6 +30,14 @@ public class Clock {
 		}else{
 			return String.format("%02d:%02d", h, m);
 		}
+	}
+
+	public String getName(){
+		return name;
+	}
+	
+	public TimeZone getTimeZone(){
+		return timeZone;
 	}
 
 }

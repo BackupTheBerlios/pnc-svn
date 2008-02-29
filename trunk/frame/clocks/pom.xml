@@ -14,6 +14,11 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.mathias</groupId>
+      <artifactId>draw-utils</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
   </dependencies>
   <repositories>
       <repository>
@@ -63,13 +68,11 @@
                 <outfile>target/clocks.exe</outfile>
                 <jar>target/clocks-1.0-SNAPSHOT.jar</jar>
                 <errTitle>Clocks</errTitle>
-                <!--
                 <classPath>
                   <mainClass>com.mathias.clocks.Clocks</mainClass>
-                  <addDependencies>false</addDependencies>
+                  <addDependencies>true</addDependencies>
                   <preCp>anything</preCp>
                 </classPath>
-                -->
                 <jre>
                   <minVersion>1.6.0</minVersion>
                 </jre>
