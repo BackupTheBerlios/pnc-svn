@@ -9,8 +9,9 @@ import javax.swing.TransferHandler;
 
 import com.mathias.drawutils.FileListTransferable;
 
+@SuppressWarnings("serial")
 public class FileItemTransferHandler extends TransferHandler {
-	
+
 	public FileItemTransferHandler(){
 		super();
 	}
@@ -31,7 +32,7 @@ public class FileItemTransferHandler extends TransferHandler {
 			for (int i = 0; i < selection.length; i++) {
 				selection[i] = table.convertRowIndexToModel(selection[i]);
 			}
-			List<String> files = model.getFilePaths(selection);
+			List<String> files = model.getFilenames(selection);
 			return new FileListTransferable(files);
 		}
 	}

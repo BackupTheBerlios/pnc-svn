@@ -20,6 +20,7 @@ public class FileItemTableModelListener implements TableModelListener {
 				+ evt.getSource() + " type: " + evt.getType());
 		if (evt.getType() == TableModelEvent.UPDATE) {
 			//TODO
+			evt.getSource();
 		}
 	}
 

@@ -1,0 +1,7 @@
+TODO
+----
+Filter on add, file name mask.
+Filter on all added files, whole absolute file name, other?
+Crop selected files.
+Open selected files with standard file viewer.
+Selected counter in statusbar

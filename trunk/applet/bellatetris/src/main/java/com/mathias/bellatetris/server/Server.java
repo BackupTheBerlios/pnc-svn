@@ -27,12 +27,15 @@ public class Server {
 	private List<HighscoreItem> highscore;
 
 	private HighscoreItemDao hsDao;
+	
+	private String allow;
 
 	public Server(){
 		hsDao = new HighscoreItemDao();
 		
 		highscore = hsDao.getHighscores();
 
+		allow = System.getProperty("allow").trim();
 		int port = Integer.parseInt(System.getProperty("port", ""+PORT).trim());
 		try {
 			ServerSocket serverSocket = new ServerSocket(port);
@@ -54,6 +57,11 @@ public class Server {
 		@Override
 		public void run() {
 			try {
+				String clientip = socket.getInetAddress().getHostAddress();
+				if(allow != null && clientip.indexOf(allow) == -1){
+					System.err.println("Illegal access from: "+clientip);
+					return;
+				}
 				PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 				BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				

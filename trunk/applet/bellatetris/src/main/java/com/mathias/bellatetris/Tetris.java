@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -68,31 +69,31 @@ public class Tetris extends MediaApplet {
 		// T
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
 				new Point(-1, 0), new Point(0, 0), new Point(1, 0),
-				new Point(0, 1) }, getImage(Images.FOOD.ordinal())));
+				new Point(0, 1) }, getImage(Images.B.ordinal())));
 		// |
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
 				new Point(1, 0), new Point(0, 0), new Point(-1, 0),
-				new Point(-2, 0) }, getImage(Images.GREEN.ordinal())));
+				new Point(-2, 0) }, getImage(Images.E.ordinal())));
 		// #
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
 				new Point(1, 0), new Point(0, 0), new Point(0, 1),
-				new Point(1, 1) }, getImage(Images.LEAF.ordinal())));
+				new Point(1, 1) }, getImage(Images.L.ordinal())));
 		// s
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
 				new Point(0, -1), new Point(0, 0), new Point(1, 0),
-				new Point(1, 1) }, getImage(Images.PASTELL.ordinal())));
+				new Point(1, 1) }, getImage(Images.L2.ordinal())));
 		// z
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
 				new Point(0, -1), new Point(0, 0), new Point(-1, 0),
-				new Point(-1, 1) }, getImage(Images.STONE.ordinal())));
+				new Point(-1, 1) }, getImage(Images.A.ordinal())));
 		// L
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
 				new Point(0, -1), new Point(0, 0), new Point(0, 1),
-				new Point(1, 1) }, getImage(Images.TIGER.ordinal())));
+				new Point(1, 1) }, getImage(Images.B.ordinal())));
 		// _|
 		shapes.add(new Shape(CSTART, RSTART, SIZE, SIZE, new Point[] {
 				new Point(0, -1), new Point(0, 0), new Point(0, 1),
-				new Point(-1, 1) }, getImage(Images.WATER.ordinal())));
+				new Point(-1, 1) }, getImage(Images.E.ordinal())));
 
 		gameOver = false;
 		curr = newStructure();
@@ -103,20 +104,22 @@ public class Tetris extends MediaApplet {
 	}
 	
 	private void addWalls(){
+		Image wall = getImage(Images.WALL.ordinal());
 		for(int i = 0; i < ROWS; i++){
 			//first col
-			grid.add(new Block(0, i, SIZE, SIZE, Color.gray));
+			grid.add(new Block(0, i, SIZE, SIZE, wall));
 			//last col
-			grid.add(new Block(COLS-1, i, SIZE, SIZE, Color.gray));
+			grid.add(new Block(COLS-1, i, SIZE, SIZE, wall));
 		}
 		for(int i = 0; i < COLS; i++){
 			//bottom row
-			grid.add(new Block(i, ROWS-1, SIZE, SIZE, Color.gray));
+			grid.add(new Block(i, ROWS-1, SIZE, SIZE, wall));
 		}
 	}
 	
 	@Override
 	protected void paintAnimation(Graphics2D g){
+		g.drawImage(getImage(Images.BELLATETRIS.ordinal()), 0, 0, null);
 		//background
 		g.setColor(Color.red);
 		g.drawLine(0, 0, 0, ROWS*SIZE);
@@ -127,7 +130,7 @@ public class Tetris extends MediaApplet {
 		Util.drawString(g, Color.red, font, "Score: "+score, SIZE*COLS+20, 50);
 
 		//next
-		next.paint(g, 15, 3);		
+		next.paint(g, 15, 3);
 
 		//blocks
 		for (Block s : grid) {

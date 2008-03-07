@@ -2,14 +2,16 @@ package com.mathias.filesorter.action;
 
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.FileFilter;
 
 import javax.swing.AbstractAction;
 import javax.swing.JFileChooser;
 
 import com.mathias.filesorter.table.FileItemTableModel;
 
+@SuppressWarnings("serial")
 public class AddDirectoryAction extends AbstractAction {
-	
+
 	private FileItemTableModel model;
 
 	public AddDirectoryAction(FileItemTableModel model) {
@@ -30,15 +32,25 @@ public class AddDirectoryAction extends AbstractAction {
 	}
 	
 	private void recurseDirectory(File directory){
-		File[] files = directory.listFiles();
+		File[] files = directory.listFiles(new DirFileFilter());
 		for (File file : files) {
-			if(file.isFile()){
-				model.addFile(file);
-			}else if(file.isDirectory()){
-				recurseDirectory(file);
-			}else{
-				System.out.println("Not dir or reg file: "+file.getName());
-			}
+			recurseDirectory(file);
+		}
+		files = directory.listFiles(new FileFileFilter());
+		model.addFile(files);
+	}
+	
+	class FileFileFilter implements FileFilter {
+		@Override
+		public boolean accept(File file) {
+			return file.isFile();
+		}
+	}
+
+	class DirFileFilter implements FileFilter {
+		@Override
+		public boolean accept(File file) {
+			return file.isDirectory();
 		}
 	}
 

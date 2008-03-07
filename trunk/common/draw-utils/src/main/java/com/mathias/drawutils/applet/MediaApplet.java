@@ -120,8 +120,6 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 			}
 			if(MediaTracker.COMPLETE != mediaTracker.statusID(id, true)){
 				System.err.println("Could not load loading image!");
-			}else{
-				System.out.println("Loaded loading image!");
 			}
 		}
 	}

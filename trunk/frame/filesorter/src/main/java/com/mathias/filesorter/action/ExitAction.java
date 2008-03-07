@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 
+@SuppressWarnings("serial")
 public class ExitAction extends AbstractAction {
 	
 	public ExitAction(){
