@@ -5,9 +5,11 @@ import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.WindowEvent;
+import java.util.Comparator;
 
 import javax.swing.Action;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -19,13 +21,13 @@ import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.UIManager;
 import javax.swing.border.EtchedBorder;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.table.TableRowSorter;
 
 import com.mathias.drawutils.Util;
 import com.mathias.filesorter.action.AddDirectoryAction;
 import com.mathias.filesorter.action.ExitAction;
+import com.mathias.filesorter.action.FilterAction;
+import com.mathias.filesorter.table.FileItem;
 import com.mathias.filesorter.table.FileItemTableModel;
 import com.mathias.filesorter.table.FileItemTableModelListener;
 import com.mathias.filesorter.table.FileItemTransferHandler;
@@ -49,10 +51,12 @@ public class FileSorter extends JFrame {
 		table.setPreferredScrollableViewportSize(new Dimension(600, 600));
 		model.addTableModelListener(new FileItemTableModelListener(table));
 
-		table.setRowSorter(new TableRowSorter<FileItemTableModel>(model));
+		TableRowSorter<FileItemTableModel> sorter = new TableRowSorter<FileItemTableModel>(model);
+		sorter.setComparator(FileItem.SIZE, new FileItem.SizeComparator());
+		table.setRowSorter(sorter);
 		table.setTransferHandler(new FileItemTransferHandler());
 		table.setDragEnabled(true);
-		
+
 		AddDirectoryAction addDir = new AddDirectoryAction(model);
 		
 		JMenuBar menubar = new JMenuBar();
@@ -65,17 +69,17 @@ public class FileSorter extends JFrame {
 
 		JToolBar toolbar = new JToolBar();
 		final JTextField filter = new JTextField(20);
-		filter.addCaretListener(new CaretListener(){
-			@Override
-			public void caretUpdate(CaretEvent arg0) {
-				model.filter(filter.getText(), false);
-			}
-		});
+		final JCheckBox ci = new JCheckBox("Case insensitive", true);
+		FilterAction filterAction = new FilterAction(sorter, filter, ci);
+		ci.addActionListener(filterAction);
+		filter.addCaretListener(filterAction);
+
 		toolbar.setLayout(new GridBagLayout());
 		toolbar.setFloatable(false);
 		toolbar.add(createButton(addDir), Util.getGBC(0, 0, false, null));
 		toolbar.add(new JLabel("Filter:"), Util.getGBC(1, 0, false, null));
 		toolbar.add(filter, Util.getGBC(2, 0, false, new Insets(1, 2, 1, 2)));
+		toolbar.add(ci, Util.getGBC(3, 0, false, null));
 
 		JPanel mainPanel = new JPanel(new BorderLayout());
 		mainPanel.setBorder(new EtchedBorder());

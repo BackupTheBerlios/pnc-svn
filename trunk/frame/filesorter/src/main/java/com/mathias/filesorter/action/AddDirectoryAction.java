@@ -3,6 +3,8 @@ package com.mathias.filesorter.action;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileFilter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JFileChooser;
@@ -13,6 +15,8 @@ import com.mathias.filesorter.table.FileItemTableModel;
 public class AddDirectoryAction extends AbstractAction {
 
 	private FileItemTableModel model;
+	
+	private List<File> dirs = new ArrayList<File>();
 
 	public AddDirectoryAction(FileItemTableModel model) {
 		super("Add dir...");
@@ -27,7 +31,15 @@ public class AddDirectoryAction extends AbstractAction {
 		int ret = fc.showOpenDialog(null);
 		File selDir = fc.getSelectedFile();
 		if(JFileChooser.APPROVE_OPTION == ret && selDir != null){
+			dirs.add(selDir);
 			recurseDirectory(selDir);
+		}
+	}
+	
+	public void refresh(){
+		model.clear();
+		for (File dir : dirs) {
+			recurseDirectory(dir);
 		}
 	}
 	

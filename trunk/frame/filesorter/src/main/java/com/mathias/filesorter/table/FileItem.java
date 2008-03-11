@@ -2,6 +2,7 @@ package com.mathias.filesorter.table;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,6 +66,20 @@ public class FileItem {
 		if(KEYS.get(key).editable){
 			map.put(key, value);
 		}
+	}
+
+	public static class SizeComparator implements Comparator<String> {
+
+		@Override
+		public int compare(String o1, String o2) {
+			if(o1.length() > o2.length()){
+				return 1;
+			}else if(o1.length() < o2.length()){
+				return -1;
+			}
+			return o1.compareTo(o2);
+		}
+		
 	}
 
 }
