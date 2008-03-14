@@ -18,7 +18,6 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -29,6 +28,7 @@ import javax.swing.JFrame;
 
 import com.mathias.clocks.action.ExitAction;
 import com.mathias.clocks.action.SettingsAction;
+import com.mathias.clocks.action.TimerAction;
 
 @SuppressWarnings("serial")
 public class Clocks extends JFrame implements MouseListener {
@@ -130,6 +130,10 @@ public class Clocks extends JFrame implements MouseListener {
 	
 	private PopupMenu createPopupMenu(){
 		PopupMenu popup = new PopupMenu();
+		MenuItem timerItem = new MenuItem("Timer...");
+		timerItem.addActionListener(new TimerAction());
+		popup.add(timerItem);
+		popup.addSeparator();
 		MenuItem settingsItem = new MenuItem("Settings...");
 		settingsItem.addActionListener(new SettingsAction());
 		popup.add(settingsItem);
