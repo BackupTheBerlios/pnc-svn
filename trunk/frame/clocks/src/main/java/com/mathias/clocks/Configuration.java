@@ -77,6 +77,10 @@ public class Configuration {
 		return Integer.parseInt(theOne.prop.getProperty(key, ""+def));
 	}
 
+	public static Object remove(String key){
+		return theOne.prop.remove(key);
+	}
+
 	public static List<Clock> getClocks(){
 		List<Clock> clocks = new ArrayList<Clock>();
 		for (int i = 0; i < 10; i++) {
@@ -90,16 +94,15 @@ public class Configuration {
 					String timeZone = st.nextToken().trim();
 					boolean found = false;
 					for (String tz : TIMEZONES) {
-						//System.out.println(tz);
 						if(tz.toUpperCase().indexOf(timeZone.toUpperCase()) != -1){
-							clocks.add(new Clock(name, TimeZone.getTimeZone(tz)));
+							clocks.add(new Clock((i+1), name, TimeZone.getTimeZone(tz)));
 							found = true;
 							break;
 						}
 					}
 					if(!found){
 						System.out.println("Could not find time zone: "+timeZone+" for "+name);
-						clocks.add(new Clock(name, null));
+						clocks.add(new Clock((i+1), name, null));
 					}
 				}
 			}

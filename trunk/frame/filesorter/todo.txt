@@ -5,3 +5,6 @@ Filter on all added files, whole absolute file name, other?
 Crop selected files.
 Open selected files with standard file viewer.
 Selected counter in statusbar
+status bar show size of selected files
+Copy to popup
+Move to popup

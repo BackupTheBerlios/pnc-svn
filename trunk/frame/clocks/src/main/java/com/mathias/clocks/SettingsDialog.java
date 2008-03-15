@@ -32,27 +32,28 @@ location=left
 #hidden=false
 #ontop=true
 #seconds=true
-#undecorated=true
 #font=Arial
 #fontsize
 #systray=false
 	 */
 
-	private JComboBox nClocks = new JComboBox();
-	private List<NameCombo> clockFields = new ArrayList<NameCombo>();
+	private List<ClockComponent> clockFields = new ArrayList<ClockComponent>();
 	private JComboBox location = new JComboBox();
 	private JCheckBox autohide = new JCheckBox();
 	private JComboBox overlap = new JComboBox();
 	private JCheckBox hidden = new JCheckBox();
 	private JCheckBox ontop = new JCheckBox();
 	private JCheckBox seconds = new JCheckBox();
-	private JCheckBox undecorated = new JCheckBox();
 	private JComboBox font = new JComboBox();
 	private JComboBox fontsize = new JComboBox();
 	private JCheckBox systray = new JCheckBox();
+	
+	private Clocks clocks;
 
-	public SettingsDialog() {
+	public SettingsDialog(Clocks clocks) {
 		super("Settings", false);
+		
+		this.clocks = clocks;
 
 		initUI();
 	}
@@ -60,15 +61,13 @@ location=left
 	@Override
 	protected void setupForm() {
 		List<Clock> clocks = Configuration.getClocks();
-		int count = 0;
 		for (Clock clock : clocks) {
-//			if(c != null){
-				NameCombo nameCombo = new NameCombo(count++, clock, null);
-				clockFields.add(nameCombo);
-				addItem(nameCombo);
-//			}
+			ClockComponent nameCombo = new ClockComponent(clock.getIndex(),
+					clock.getName(), clock.getTimeZone().getID());
+			clockFields.add(nameCombo);
+			addItem(nameCombo);
 		}
-		NameCombo nameCombo = new NameCombo(count, null, null);
+		ClockComponent nameCombo = new ClockComponent(clocks.size()+1, "", "");
 		clockFields.add(nameCombo);
 		addItem(nameCombo);
 
@@ -92,17 +91,16 @@ location=left
 		addItem("On top", ontop);
 		seconds.setSelected(Configuration.getBoolean("seconds", false));
 		addItem("Seconds", seconds);
-		undecorated.setSelected(Configuration.getBoolean("undecorated", false));
-		addItem("Undecorated", undecorated);
 		Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
 		for (Font f : fonts) {
 			font.addItem(f.getName());
 		}
+		font.setSelectedItem(Configuration.get("font"));
 		addItem("Font", font);
 		for (int i = 10; i <= 60; i+=10) {
 			fontsize.addItem(i);
 		}
-		fontsize.setSelectedItem(Configuration.getInt("fontsize", 40));
+		fontsize.setSelectedItem(Configuration.getInt("fontsize", 20));
 		addItem("Font size", fontsize);
 		systray.setSelected(Configuration.getBoolean("systray", false));
 		addItem("Systray", systray);
@@ -110,10 +108,11 @@ location=left
 
 	@Override
 	protected boolean validateDialog() {
-		int count = 0;
-		for (NameCombo nc : clockFields) {
-			if(!Util.isEmpty(nc.name.getText()) && !Util.isEmpty(nc.timeZone.getName())){
-				Configuration.set("clock"+(count++), nc.name.getText()+", "+nc.timeZone.getName());
+		for (ClockComponent nc : clockFields) {
+			if(nc.isComplete()){
+				Configuration.set(nc.getKey(), nc.getValue());
+			}else{
+				Configuration.remove(nc.getKey());
 			}
 		}
 		Configuration.set("location", ""+location.getSelectedItem());
@@ -122,31 +121,44 @@ location=left
 		Configuration.set("hidden", ""+hidden.isSelected());
 		Configuration.set("ontop", ""+ontop.isSelected());
 		Configuration.set("seconds", ""+seconds.isSelected());
-		Configuration.set("undecorated", ""+undecorated.isSelected());
+		Configuration.set("font", ""+font.getSelectedItem());
 		Configuration.set("fontsize", ""+fontsize.getSelectedItem());
 		Configuration.set("systray", ""+systray.isSelected());
 		Configuration.store();
+		clocks.init();
 		return true;
 	}
 
-	class NameCombo extends JPanel {
-		int index;
-		JTextField name = new JTextField(20);
-		JComboBox timeZone = new JComboBox();
+	private class ClockComponent extends JPanel {
+		private int index;
+		private JTextField name = new JTextField(20);
+		private JComboBox timeZone = new JComboBox();
 		
-		private NameCombo(int index, Clock clock, JPanel panel){
+		private ClockComponent(int index, String clockName, String timeZoneName){
 			setLayout(new GridLayout(3, 1));
 
+			this.index = index;
+			name.setText(clockName);
 			for (String tz : Configuration.TIMEZONES) {
 				timeZone.addItem(tz);
 			}
-			if(clock != null){
-				name.setText(clock.getName());
-				timeZone.setSelectedItem(clock.getTimeZone().getDisplayName());
-			}
+			timeZone.setSelectedItem(timeZoneName);
+
 			add(new JLabel("Clock"+index));
 			add(name);
 			add(timeZone);
+		}
+		
+		private boolean isComplete(){
+			return !Util.isEmpty(name.getText()) && !Util.isEmpty(timeZone.getSelectedItem());
+		}
+		
+		private String getKey(){
+			return "clock"+index;
+		}
+		
+		private String getValue(){
+			return name.getText()+", "+timeZone.getSelectedItem();
 		}
 	}
 

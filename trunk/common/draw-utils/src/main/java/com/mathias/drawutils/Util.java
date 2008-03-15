@@ -23,8 +23,8 @@ import javax.swing.JFrame;
 
 public abstract class Util {
 
-	public static boolean isEmpty(String s) {
-		return (s == null || s.length() == 0);
+	public static boolean isEmpty(Object s) {
+		return (s == null || s.toString().length() == 0);
 	}
 
 	public static boolean isNotEmpty(String s) {

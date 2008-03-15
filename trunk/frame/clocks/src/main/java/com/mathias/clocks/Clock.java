@@ -6,11 +6,13 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 public class Clock {
+	private int index;
 	private String name;
 	private GregorianCalendar gc;
 	private TimeZone timeZone;
 
-	public Clock(String name, TimeZone timeZone) {
+	public Clock(int index, String name, TimeZone timeZone) {
+		this.index = index;
 		this.name = name;
 		this.timeZone = timeZone;
 		gc = new GregorianCalendar();
@@ -38,6 +40,10 @@ public class Clock {
 	
 	public TimeZone getTimeZone(){
 		return timeZone;
+	}
+
+	public int getIndex(){
+		return index;
 	}
 
 }

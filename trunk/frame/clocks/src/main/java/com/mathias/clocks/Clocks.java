@@ -24,14 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.swing.JFrame;
+import javax.swing.JWindow;
 
 import com.mathias.clocks.action.ExitAction;
 import com.mathias.clocks.action.SettingsAction;
 import com.mathias.clocks.action.TimerAction;
+import com.mathias.drawutils.GenericDialog;
 
 @SuppressWarnings("serial")
-public class Clocks extends JFrame implements MouseListener {
+public class Clocks extends JWindow implements MouseListener {
 	
 //	private final static Logger log = Logger.getLogger(Clocks.class.getName());
 
@@ -53,15 +54,6 @@ public class Clocks extends JFrame implements MouseListener {
 	private final static int IMG_ICO = 11;
 
 	public Clocks(){
-
-//		GenericLogManager.init();
-//		log.info("TESTING");
-//		log.finest("TESTING2");
-
-		setUndecorated(Configuration.getBoolean("undecorated", true));
-		setAlwaysOnTop(Configuration.getBoolean("ontop", true));
-		setVisible(true);
-
 		imgs = new HashMap<Integer, Image>();
 //		imgs.put(IMG_0, getToolkit().getImage(getClass().getResource("images/0.gif")));
 //		imgs.put(1, getToolkit().getImage(getClass().getResource("images/1.gif")));
@@ -86,7 +78,20 @@ public class Clocks extends JFrame implements MouseListener {
 			e.printStackTrace();
 		}
 
-		int fontSize = Configuration.getInt("font", 20);
+		setVisible(true);
+
+		init();
+
+		popup = createPopupMenu();
+		add(popup);
+
+		addMouseListener(this);
+	}
+	
+	public void init(){
+		setAlwaysOnTop(Configuration.getBoolean("ontop", true));
+
+		int fontSize = Configuration.getInt("fontsize", 20);
 		String fn = Configuration.get("font", "Arial");
 		Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
 		for (Font f : fonts) {
@@ -96,23 +101,27 @@ public class Clocks extends JFrame implements MouseListener {
 			}
 		}
 		if(font == null){
+			GenericDialog.showErrorDialog("Clocks", "Could not find font: "+fn);
 			font = fonts[0];
 		}
 
-		popup = createPopupMenu();
-		add(popup);
-
 	    if(SystemTray.isSupported() && Configuration.getBoolean("systray", true)){
 			SystemTray tray = SystemTray.getSystemTray();
+			
+			if(tray.getTrayIcons().length == 0){
+				trayIcon = new TrayIcon(imgs.get(IMG_ICO), "Clocks", createPopupMenu());
+			    trayIcon.setImageAutoSize(true);
 
-			trayIcon = new TrayIcon(imgs.get(IMG_ICO), "Clocks", createPopupMenu());
-		    trayIcon.setImageAutoSize(true);
-
-		    try {
-		        tray.add(trayIcon);
-		    } catch (AWTException e) {
-		        System.err.println("TrayIcon could not be added.");
-		    }
+			    try {
+			        tray.add(trayIcon);
+			    } catch (AWTException e) {
+			        System.err.println("TrayIcon could not be added.");
+			    }
+			}
+		}else{
+			for (TrayIcon icon : SystemTray.getSystemTray().getTrayIcons()) {
+				SystemTray.getSystemTray().remove(icon);
+			}
 		}
 		
 		clocks = Configuration.getClocks();
@@ -124,8 +133,6 @@ public class Clocks extends JFrame implements MouseListener {
 
 		setLocation(false);
 		setSize(WIDTH, height);
-
-		addMouseListener(this);
 	}
 	
 	private PopupMenu createPopupMenu(){
@@ -135,7 +142,7 @@ public class Clocks extends JFrame implements MouseListener {
 		popup.add(timerItem);
 		popup.addSeparator();
 		MenuItem settingsItem = new MenuItem("Settings...");
-		settingsItem.addActionListener(new SettingsAction());
+		settingsItem.addActionListener(new SettingsAction(this));
 		popup.add(settingsItem);
 		popup.addSeparator();
 		MenuItem exitItem = new MenuItem("Exit");
@@ -188,7 +195,6 @@ public class Clocks extends JFrame implements MouseListener {
 		if(trayIcon != null){
 		    trayIcon.setToolTip(sb.toString());
 		}
-	    setTitle(sb.toString());
 	}
 
 	@Override
@@ -217,6 +223,7 @@ public class Clocks extends JFrame implements MouseListener {
 	private void setLocation(boolean visible){
 		Dimension ss = getToolkit().getScreenSize();
 		if(visible || !Configuration.getBoolean("autohide", true)){
+			//Show clocks
 			if("left".equals(location)) {
 				setLocation(0, ss.height/2-height/2);
 			} else if("right".equals(location)) {
@@ -228,7 +235,11 @@ public class Clocks extends JFrame implements MouseListener {
 			}else{
 				setLocation(ss.width, ss.height);
 			}
+			if(Configuration.getBoolean("hidden", false)){
+				setVisible(true);
+			}
 		}else{
+			//Auto hide clocks
 			int overlap = Configuration.getInt("overlap", 1);
 			if("left".equals(location)) {
 				setLocation(overlap-WIDTH, ss.height/2-height/2);
@@ -240,6 +251,9 @@ public class Clocks extends JFrame implements MouseListener {
 				setLocation(ss.width/2-WIDTH/2, ss.height-overlap);
 			}else{
 				setLocation(ss.width, ss.height);
+			}
+			if(Configuration.getBoolean("hidden", false)){
+				setVisible(false);
 			}
 		}
 	}

@@ -1,7 +1,7 @@
 <launch4jConfig>
-  <dontWrapJar>false</dontWrapJar>
+  <dontWrapJar>true</dontWrapJar>
   <headerType>gui</headerType>
-  <jar>D:\mathias\workspaces\pri\pnc\frame\clocks\target\clocks-1.0-SNAPSHOT.jar</jar>
+  <jar>clocks-1.0-SNAPSHOT.jar</jar>
   <outfile>D:\mathias\workspaces\pri\pnc\frame\clocks\target\clocks.exe</outfile>
   <errTitle></errTitle>
   <cmdLine></cmdLine>
@@ -12,6 +12,10 @@
   <customProcName>false</customProcName>
   <stayAlive>false</stayAlive>
   <icon>D:\mathias\workspaces\pri\pnc\frame\clocks\src\test\config\clocks_icon.ico</icon>
+  <classPath>
+    <mainClass>com.mathias.clocks.Clocks</mainClass>
+    <cp>draw-utils-1.0-SNAPSHOT.jar</cp>
+  </classPath>
   <jre>
     <path></path>
     <minVersion>1.6.0</minVersion>
