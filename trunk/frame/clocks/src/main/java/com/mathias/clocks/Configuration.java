@@ -94,13 +94,19 @@ public class Configuration {
 					String timeZone = st.nextToken().trim();
 					boolean found = false;
 					for (String tz : TIMEZONES) {
-						if(tz.toUpperCase().indexOf(timeZone.toUpperCase()) != -1){
+						if(tz.toUpperCase().equals(timeZone.toUpperCase())){
 							clocks.add(new Clock((i+1), name, TimeZone.getTimeZone(tz)));
 							found = true;
 							break;
 						}
 					}
 					if(!found){
+						for (String tz : TIMEZONES) {
+							if(tz.toUpperCase().indexOf(timeZone.toUpperCase()) != -1){
+								clocks.add(new Clock((i+1), name, TimeZone.getTimeZone(tz)));
+								break;
+							}
+						}
 						System.out.println("Could not find time zone: "+timeZone+" for "+name);
 						clocks.add(new Clock((i+1), name, null));
 					}

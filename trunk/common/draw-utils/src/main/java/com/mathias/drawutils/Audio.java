@@ -2,7 +2,9 @@ package com.mathias.drawutils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URL;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -14,11 +16,38 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 public class Audio {
 
-	public static void play(String file){
+	public static void play(InputStream stream){
+		try {
+	        play(AudioSystem.getAudioInputStream(stream));
+		} catch (UnsupportedAudioFileException e) {
+	    	System.out.println(e.getMessage());
+		} catch (IOException e) {
+	    	System.out.println(e.getMessage());
+		}
+	}
+
+	public static void play(URL url){
+		try {
+	        play(AudioSystem.getAudioInputStream(url));
+		} catch (UnsupportedAudioFileException e) {
+	    	System.out.println(e.getMessage());
+		} catch (IOException e) {
+	    	System.out.println(e.getMessage());
+		}
+	}
+
+	public static void play(File file){
+		try {
+	        play(AudioSystem.getAudioInputStream(file));
+		} catch (UnsupportedAudioFileException e) {
+	    	System.out.println(e.getMessage());
+		} catch (IOException e) {
+	    	System.out.println(e.getMessage());
+		}
+	}
+
+	public static void play(AudioInputStream stream){
 	    try {
-	        // From file
-	        AudioInputStream stream = AudioSystem.getAudioInputStream(new File(file));
-	    
 	        // At present, ALAW and ULAW encodings must be converted
 	        // to PCM_SIGNED before it can be played
 	        AudioFormat format = stream.getFormat();
@@ -50,8 +79,7 @@ public class Audio {
 	    	System.out.println(e.getMessage());
 	    } catch (LineUnavailableException e) {
 	    	System.out.println(e.getMessage());
-	    } catch (UnsupportedAudioFileException e) {
-	    	System.out.println(e.getMessage());
 	    }		
 	}
+
 }

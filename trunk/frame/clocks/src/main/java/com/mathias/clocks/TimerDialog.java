@@ -45,8 +45,7 @@ public class TimerDialog extends FormDialog {
 				doSleep(1000);
 				counter--;
 				if(counter <= 0){
-					Audio.play("warp.au");
-					System.out.println("Alarm!");
+					Audio.play(TimerDialog.class.getResource("resources/warp.au"));
 					break;
 				}
 			}
