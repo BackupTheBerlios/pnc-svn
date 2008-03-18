@@ -1,5 +1,8 @@
 package com.mathias.clocks;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import javax.swing.JTextField;
 
 import com.mathias.drawutils.Audio;
@@ -23,40 +26,19 @@ public class TimerDialog extends FormDialog {
 
 	@Override
 	protected boolean validateDialog() {
-		int counter;
+		long counter;
 		try{
 			counter = Integer.parseInt(timer.getText());
 		}catch(NumberFormatException e){
 			return false;
 		}
-		new Timer(counter).start();
-		return true;
-	}
-
-	class Timer extends Thread {
-		private int counter;
-		
-		Timer(int counter){
-			this.counter = counter;
-		}
-		@Override
-		public void run() {
-			while(true){
-				doSleep(1000);
-				counter--;
-				if(counter <= 0){
-					Audio.play(TimerDialog.class.getResource("resources/warp.au"));
-					break;
-				}
+		new Timer().schedule(new TimerTask(){
+			@Override
+			public void run() {
+				Audio.play(TimerDialog.class.getResource("resources/alarm.au"));
 			}
-		}
-	}
-
-	private static void doSleep(long millis){
-		try {
-			Thread.sleep(millis);
-		} catch (InterruptedException e) {
-		}
+		}, counter*1000);
+		return true;
 	}
 
 }
