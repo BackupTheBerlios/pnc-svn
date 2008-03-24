@@ -18,13 +18,24 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.SimpleTimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Map.Entry;
+import java.util.logging.SimpleFormatter;
 
+import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
+import javax.swing.text.DateFormatter;
 
 import com.mathias.clocks.action.ExitAction;
 import com.mathias.clocks.action.SettingsAction;
@@ -42,9 +53,9 @@ public class Clocks extends JWindow implements MouseListener {
 	private Graphics2D g;
 	private String location;
 	private TrayIcon trayIcon = null;
-	private PopupMenu popup;
 	private Font font;
 	private int height;
+	private TimerAction ta = null;
 
 	private final static int WIDTH = 130;
 	private final static int DHEIGHT = 55;
@@ -82,10 +93,14 @@ public class Clocks extends JWindow implements MouseListener {
 
 		init();
 
-		popup = createPopupMenu();
-		add(popup);
-
 		addMouseListener(this);
+		
+		new Timer().schedule(new TimerTask(){
+			@Override
+			public void run() {
+				paintClocks();
+			}
+		}, 1000, 1000);
 	}
 	
 	public void init(){
@@ -127,7 +142,7 @@ public class Clocks extends JWindow implements MouseListener {
 		clocks = Configuration.getClocks();
 		location = Configuration.get("location", "left");
 
-		height = clocks.size()*DHEIGHT+20;
+		height = clocks.size()*DHEIGHT+40;
 		img = createImage(WIDTH, height);
 		g = (Graphics2D)img.getGraphics();
 
@@ -138,7 +153,8 @@ public class Clocks extends JWindow implements MouseListener {
 	private PopupMenu createPopupMenu(){
 		PopupMenu popup = new PopupMenu();
 		MenuItem timerItem = new MenuItem("Timer...");
-		timerItem.addActionListener(new TimerAction());
+		ta = new TimerAction();
+		timerItem.addActionListener(ta);
 		popup.add(timerItem);
 		popup.addSeparator();
 		MenuItem settingsItem = new MenuItem("Settings...");
@@ -191,16 +207,36 @@ public class Clocks extends JWindow implements MouseListener {
 			//title and tooltip
 			sb.append("\n"+c.getName()+" "+time);
 		}
+
+		if(ta != null && ta.td != null){
+			long time = ta.td.getTimerTime();
+			long millis = time - System.currentTimeMillis();
+			if(millis > 999){
+				new TextLayout(getTime(millis), font.deriveFont(Font.PLAIN, 10), frc).draw(g, (float) 15, height-20);
+			}
+		}
+
 		getContentPane().getGraphics().drawImage(img, 0, 0, null);
 		if(trayIcon != null){
 		    trayIcon.setToolTip(sb.toString());
 		}
 	}
+	
+	private String getTime(long millis){
+		GregorianCalendar gc = new GregorianCalendar();
+		gc.setTime(new Date(millis));
+		int h = gc.get(Calendar.HOUR_OF_DAY)-19;
+		int m = gc.get(Calendar.MINUTE);
+		int s = gc.get(Calendar.SECOND);
+		return String.format("%02d:%02d:%02d", h, m, s);
+	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
 		if(e.getButton() == MouseEvent.BUTTON3){
-		    popup.show(e.getComponent(), e.getX(), e.getY());
+			PopupMenu pm = createPopupMenu();
+			add(pm);
+			pm.show(e.getComponent(), e.getX(), e.getY());
 		}
 	}
 

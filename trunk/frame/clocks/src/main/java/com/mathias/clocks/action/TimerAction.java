@@ -7,10 +7,12 @@ import com.mathias.clocks.TimerDialog;
 
 @SuppressWarnings("serial")
 public class TimerAction implements ActionListener {
+	
+	public TimerDialog td = null;
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
-		new TimerDialog();
+		td = new TimerDialog();
 	}
 
 }
