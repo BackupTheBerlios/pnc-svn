@@ -41,7 +41,7 @@ public class TimerDialog extends FormDialog {
 	}
 	
 	public long getTimerTime(){
-		return (task != null ? task.scheduledExecutionTime() : null);
+		return (task != null ? task.scheduledExecutionTime() : 0);
 	}
 
 	private long getTime(String timeStr){
