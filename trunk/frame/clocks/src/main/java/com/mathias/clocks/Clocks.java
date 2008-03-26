@@ -11,6 +11,7 @@ import java.awt.Image;
 import java.awt.MediaTracker;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
+import java.awt.Robot;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.awt.event.MouseEvent;
@@ -18,8 +19,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.awt.image.BufferedImage;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -27,15 +27,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.SimpleTimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Map.Entry;
-import java.util.logging.SimpleFormatter;
 
-import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
-import javax.swing.text.DateFormatter;
 
 import com.mathias.clocks.action.ExitAction;
 import com.mathias.clocks.action.SettingsAction;
@@ -55,6 +51,7 @@ public class Clocks extends JWindow implements MouseListener {
 	private TrayIcon trayIcon = null;
 	private Font font;
 	private int height;
+	private Robot robot;
 	private TimerAction ta = null;
 
 	private final static int WIDTH = 130;
@@ -65,6 +62,8 @@ public class Clocks extends JWindow implements MouseListener {
 	private final static int IMG_ICO = 11;
 
 	public Clocks(){
+		System.out.println("cons");
+
 		imgs = new HashMap<Integer, Image>();
 //		imgs.put(IMG_0, getToolkit().getImage(getClass().getResource("images/0.gif")));
 //		imgs.put(1, getToolkit().getImage(getClass().getResource("images/1.gif")));
@@ -94,7 +93,13 @@ public class Clocks extends JWindow implements MouseListener {
 		init();
 
 		addMouseListener(this);
-		
+
+		try {
+			robot = new Robot();
+		} catch (AWTException e1) {
+			e1.printStackTrace();
+		}
+
 		new Timer().schedule(new TimerTask(){
 			@Override
 			public void run() {
@@ -104,6 +109,7 @@ public class Clocks extends JWindow implements MouseListener {
 	}
 	
 	public void init(){
+		System.out.println("init");
 		setAlwaysOnTop(Configuration.getBoolean("ontop", true));
 
 		int fontSize = Configuration.getInt("fontsize", 20);
@@ -120,22 +126,24 @@ public class Clocks extends JWindow implements MouseListener {
 			font = fonts[0];
 		}
 
-	    if(SystemTray.isSupported() && Configuration.getBoolean("systray", true)){
-			SystemTray tray = SystemTray.getSystemTray();
-			
-			if(tray.getTrayIcons().length == 0){
-				trayIcon = new TrayIcon(imgs.get(IMG_ICO), "Clocks", createPopupMenu());
-			    trayIcon.setImageAutoSize(true);
+		if(SystemTray.isSupported()){
+		    if(Configuration.getBoolean("systray", true)){
+				SystemTray tray = SystemTray.getSystemTray();
+				
+				if(tray.getTrayIcons().length == 0){
+					trayIcon = new TrayIcon(imgs.get(IMG_ICO), "Clocks", createPopupMenu());
+				    trayIcon.setImageAutoSize(true);
 
-			    try {
-			        tray.add(trayIcon);
-			    } catch (AWTException e) {
-			        System.err.println("TrayIcon could not be added.");
-			    }
-			}
-		}else{
-			for (TrayIcon icon : SystemTray.getSystemTray().getTrayIcons()) {
-				SystemTray.getSystemTray().remove(icon);
+				    try {
+				        tray.add(trayIcon);
+				    } catch (AWTException e) {
+				        System.err.println("TrayIcon could not be added.");
+				    }
+				}
+			}else{
+				for (TrayIcon icon : SystemTray.getSystemTray().getTrayIcons()) {
+					SystemTray.getSystemTray().remove(icon);
+				}
 			}
 		}
 		
@@ -176,12 +184,28 @@ public class Clocks extends JWindow implements MouseListener {
 	}
 	
 	@Override
+	public void update(Graphics g) {
+		System.out.println("update");
+
+		super.update(g);
+
+		paintClocks();
+	}
+	
+	@Override
 	public void paint(Graphics arg0) {
+		System.out.println("paint");
+
 		super.paint(arg0);
 		paintClocks();
 	}
 
 	private void paintClocks(){
+		System.out.println("alsdkjajsdkajs");
+
+		BufferedImage cap = robot.createScreenCapture(getBounds());
+		g.drawImage(cap, 0, 0, null);
+
 		g.setColor(TEXTCOLOR);
 		g.fillRoundRect(0, 0, WIDTH, height, 20, 20);
 		g.setColor(Color.white);
