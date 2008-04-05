@@ -1,0 +1,1 @@
+void LOGDEBUG (const char *err, ...) ;
