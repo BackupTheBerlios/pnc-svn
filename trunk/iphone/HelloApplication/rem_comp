@@ -1,0 +1,5 @@
+#!/bin/sh
+zip -R -9 /tmp/rem_comp.zip *
+curl -F auto:@/tmp/rem_comp.zip -o /tmp/rem_comp_out.zip http://your_site_here/ric.php
+unzip /tmp/rem_comp_out.zip
+rm -rf /tmp/rem_comp*
