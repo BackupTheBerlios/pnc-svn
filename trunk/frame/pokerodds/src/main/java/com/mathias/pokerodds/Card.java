@@ -62,4 +62,20 @@ public class Card {
 		return new ArrayList<Card>(protoDeck); // Return copy of prototype deck
 	}
 
+	public static List<Card> deal(List<Card> deck, int n) {
+		int deckSize = deck.size();
+		List<Card> handView = deck.subList(deckSize - n, deckSize);
+		ArrayList<Card> hand = new ArrayList<Card>(handView);
+		handView.clear();
+		return hand;
+	}
+	
+	public int getId(){
+		return Integer.parseInt(getIdAsString());
+	}
+	
+	public String getIdAsString(){
+		return String.format("%01d%02d", suit.ordinal(), rank.ordinal());
+	}
+
 }

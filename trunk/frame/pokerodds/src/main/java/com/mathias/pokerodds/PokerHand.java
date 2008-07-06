@@ -8,8 +8,8 @@ import java.util.List;
 import com.mathias.pokerodds.Card.Rank;
 import com.mathias.pokerodds.Card.Suit;
 
-public class PokerHand {
-	
+public class PokerHand implements Comparable<PokerHand> {
+
 	public enum PokerHands {
 		StraightFlush(16),
 		FourOfAKind(8),
@@ -36,6 +36,13 @@ public class PokerHand {
 
 	public PokerHand(List<Card> hand){
 		this.hand = hand;
+	}
+
+	public PokerHand(List<Card> ... hand){
+		this.hand = new ArrayList<Card>();
+		for (List<Card> h : hand) {
+			this.hand.addAll(h);
+		}
 	}
 
 	public List<Card> getHand() {
@@ -89,7 +96,7 @@ public class PokerHand {
 	 * @return
 	 */
 	private boolean isFourOfAKind(){
-		return getMaxRank().size() == 4;
+		return getMaxRank(hand).size() == 4;
 	}
 	
 	/**
@@ -97,7 +104,7 @@ public class PokerHand {
 	 * @return
 	 */
 	private boolean isFullHouse(){
-		List<Card> maxRank = getMaxRank();
+		List<Card> maxRank = getMaxRank(hand);
 		if(maxRank.size() != 3){
 			return false;
 		}
@@ -111,7 +118,7 @@ public class PokerHand {
 	 * @return
 	 */
 	private boolean isFlush(){
-		return getMaxSuit().size() >= 5;
+		return getMaxSuit(hand).size() >= 5;
 	}
 
 	/**
@@ -119,20 +126,7 @@ public class PokerHand {
 	 * @return
 	 */
 	private boolean isStraight(){
-		Collections.sort(hand, Card.byRank);
-		int count = 0;
-		Rank last = null;
-		for (Card card : hand) {
-			if(last != null){
-				if(last.ordinal()+1 == card.rank().ordinal()){
-					count++;
-				}else{
-					count = 0;
-				}
-			}
-			last = card.rank();
-		}
-		return count >= 4;
+		return getMaxStraight(hand).size() >= 5;
 	}
 
 	/**
@@ -140,7 +134,7 @@ public class PokerHand {
 	 * @return
 	 */
 	private boolean isThreeOfAKind(){
-		return getMaxRank().size() == 3;
+		return getMaxRank(hand).size() == 3;
 	}
 
 	/**
@@ -148,7 +142,7 @@ public class PokerHand {
 	 * @return
 	 */
 	private boolean isTwoPair(){
-		List<Card> maxRank = getMaxRank();
+		List<Card> maxRank = getMaxRank(hand);
 		if(maxRank.size() != 2){
 			return false;
 		}
@@ -162,17 +156,17 @@ public class PokerHand {
 	 * @return
 	 */
 	private boolean isPair(){
-		return getMaxRank().size() == 2;
+		return getMaxRank(hand).size() == 2;
 	}
 
 	/**
 	 * Get number of cards of most common suit
 	 * @return
 	 */
-	private List<Card> getMaxSuit(){
+	private static List<Card> getMaxSuit(List<Card> hand){
 		List<Card> ret = new ArrayList<Card>();
 		for(Suit suit : Suit.values()){
-			List<Card> count = getMax(suit);
+			List<Card> count = getMax(suit, hand);
 			if(count.size() > ret.size()){
 				ret = count;
 			}
@@ -184,11 +178,12 @@ public class PokerHand {
 	 * Get number of cards of most common rank
 	 * @return
 	 */
-	private List<Card> getMaxRank(){
+	private static List<Card> getMaxRank(List<Card> hand){
+		Collections.sort(hand, Card.byRank);
 		List<Card> ret = new ArrayList<Card>();
 		for(Rank rank : Rank.values()){
-			List<Card> count = getMax(rank);
-			if(count.size() > ret.size()){
+			List<Card> count = getMax(rank, hand);
+			if(count.size() >= ret.size()){
 				ret = count;
 			}
 		}
@@ -196,10 +191,41 @@ public class PokerHand {
 	}
 
 	/**
+	 * Get most straigt cards
+	 * @return
+	 */
+	private static List<Card> getMaxStraight(List<Card> hand){
+		Collections.sort(hand, Card.byRank);
+		List<Card> ret = new ArrayList<Card>();
+		List<Card> cur = new ArrayList<Card>();
+		Rank last = null;
+		for (Card card : hand) {
+			if(last == null){
+				cur.add(card);
+			}else{
+				if(last.ordinal()+1 == card.rank().ordinal()){
+					cur.add(card);
+				}else{
+					if(cur.size() >= ret.size()){
+						ret = cur;
+					}
+					cur = new ArrayList<Card>();
+					cur.add(card);
+				}
+			}
+			last = card.rank();
+		}
+		if(cur.size() >= ret.size()){
+			ret = cur;
+		}
+		return new ArrayList<Card>(ret);
+	}
+
+	/**
 	 * Get number of cards of rank
 	 * @return
 	 */
-	private List<Card> getMax(Rank rank){
+	private static List<Card> getMax(Rank rank, List<Card> hand){
 		List<Card> cards = new ArrayList<Card>();
 		for (Card card : hand) {
 			if(card.rank() == rank){
@@ -213,7 +239,7 @@ public class PokerHand {
 	 * Get number of cards of suit
 	 * @return
 	 */
-	private List<Card> getMax(Suit suit){
+	private static List<Card> getMax(Suit suit, List<Card> hand){
 		List<Card> cards = new ArrayList<Card>();
 		for (Card card : hand) {
 			if(card.suit() == suit){
@@ -227,7 +253,7 @@ public class PokerHand {
 	 * Get highest rank
 	 * @return
 	 */
-	private Rank getHighRank(){
+	private static Rank getHighRank(List<Card> hand){
 		Rank ret = null;
 		for (Card card : hand) {
 			if(ret == null || card.rank().ordinal() > ret.ordinal()){
@@ -241,7 +267,7 @@ public class PokerHand {
 	 * Get lowest rank
 	 * @return
 	 */
-	private Rank getLowRank(){
+	private static Rank getLowRank(List<Card> hand){
 		Rank ret = null;
 		for (Card card : hand) {
 			if(ret == null || card.rank().ordinal() < ret.ordinal()){
@@ -258,6 +284,60 @@ public class PokerHand {
 			sb.append(card+"\n");
 		}
 		return sb.toString();
+	}
+
+	@Override
+	public int compareTo(PokerHand other) {
+		PokerHands v1 = getValue();
+		PokerHands v2 = other.getValue();
+		if(v1.value == v2.value){
+			if(v1 == PokerHands.StraightFlush || v1  == PokerHands.StraightFlush){
+				return getHighRank(getMaxStraight(getMaxSuit(hand))).compareTo(
+								getHighRank(getMaxStraight(getMaxSuit(other.hand))));
+			}else if(v1 == PokerHands.FourOfAKind){
+				return getHighRank(getMaxRank(hand)).compareTo(
+						getHighRank(getMaxRank(other.hand)));
+			}else if(v1 == PokerHands.FullHouse){
+				List<Card> maxRank = getMaxRank(hand);
+				List<Card> otherMaxRank = getMaxRank(other.hand);
+				int cmp = getHighRank(maxRank).compareTo(
+						getHighRank(otherMaxRank));
+				if(cmp != 0){
+					return cmp;
+				}
+				List<Card> copy = new ArrayList<Card>(hand);
+				copy.removeAll(maxRank);
+				List<Card> otherCopy = new ArrayList<Card>(other.hand);
+				otherCopy.removeAll(otherMaxRank);
+				return getHighRank(getMaxRank(copy)).compareTo(
+						getHighRank(getMaxRank(otherCopy)));
+			}else if(v1 == PokerHands.Flush){
+				return getHighRank(getMaxSuit(hand)).compareTo(
+						getHighRank(getMaxSuit(other.hand)));
+			}else if(v1 == PokerHands.Straight){
+				return getHighRank(getMaxStraight(hand)).compareTo(
+						getHighRank(getMaxStraight(other.hand)));
+			}else{
+				List<Card> copy = new ArrayList<Card>(hand);
+				List<Card> otherCopy = new ArrayList<Card>(other.hand);
+				do{
+					List<Card> maxRank = getMaxRank(copy);
+					List<Card> otherMaxRank = getMaxRank(otherCopy);
+					int cmp = getHighRank(maxRank).compareTo(
+							getHighRank(otherMaxRank));
+					if(cmp != 0){
+						return cmp;
+					}
+					copy = new ArrayList<Card>(copy);
+					copy.removeAll(maxRank);
+					otherCopy = new ArrayList<Card>(otherCopy);
+					otherCopy.removeAll(otherMaxRank);
+				}while(copy.size() > 0);
+				return 0;
+			}
+		}else{
+			return new Integer(getValue().value).compareTo(other.getValue().value);
+		}
 	}
 
 }

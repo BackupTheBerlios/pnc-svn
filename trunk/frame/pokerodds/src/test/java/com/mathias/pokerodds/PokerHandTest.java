@@ -31,7 +31,7 @@ public class PokerHandTest extends TestCase {
 		Card c4 = getCard(Rank.JACK, Suit.HEARTS);
 		Card c5 = getCard(Rank.KING, Suit.HEARTS);
 		PokerHand ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertEquals(PokerHand.PokerHands.StraightFlush, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.StraightFlush, ph.getValue());
 	}
 
 	/**
@@ -45,7 +45,7 @@ public class PokerHandTest extends TestCase {
 		Card c4 = getCard(Rank.SEVEN, Suit.CLUBS);
 		Card c5 = getCard(Rank.SEVEN, Suit.SPADES);
 		PokerHand ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertEquals(PokerHand.PokerHands.FourOfAKind, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.FourOfAKind, ph.getValue());
 	}
 
 	/**
@@ -61,7 +61,7 @@ public class PokerHandTest extends TestCase {
 		Card c6 = getCard(Rank.JACK, Suit.CLUBS);
 		Card c7 = getCard(Rank.TEN, Suit.CLUBS);
 		PokerHand ph = new PokerHand(c1, c2, c3, c4, c5, c6, c7);
-		assertEquals(PokerHand.PokerHands.Flush, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.Flush, ph.getValue());
 
 		c1 = getCard(Rank.ACE, Suit.CLUBS);
 		c2 = getCard(Rank.NINE, Suit.CLUBS);
@@ -69,7 +69,7 @@ public class PokerHandTest extends TestCase {
 		c4 = getCard(Rank.JACK, Suit.CLUBS);
 		c5 = getCard(Rank.TEN, Suit.CLUBS);
 		ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertEquals(PokerHand.PokerHands.Flush, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.Flush, ph.getValue());
 
 		c1 = getCard(Rank.ACE, Suit.CLUBS);
 		c2 = getCard(Rank.NINE, Suit.HEARTS);
@@ -79,7 +79,7 @@ public class PokerHandTest extends TestCase {
 		c6 = getCard(Rank.JACK, Suit.CLUBS);
 		c7 = getCard(Rank.TEN, Suit.SPADES);
 		ph = new PokerHand(c1, c2, c3, c4, c5, c6, c7);
-		assertNotSame(PokerHand.PokerHands.Flush, ph.getValue());
+		assertNotSame(""+ph.getHand(), PokerHand.PokerHands.Flush, ph.getValue());
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class PokerHandTest extends TestCase {
 		Card c6 = getCard(Rank.SEVEN, Suit.DIAMONDS);
 		Card c7 = getCard(Rank.DEUCE, Suit.CLUBS);
 		PokerHand ph = new PokerHand(c1, c2, c3, c4, c5, c6, c7);
-		assertEquals(PokerHand.PokerHands.Straight, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.Straight, ph.getValue());
 
 		c1 = getCard(Rank.NINE, Suit.CLUBS);
 		c2 = getCard(Rank.TEN, Suit.HEARTS);
@@ -103,7 +103,7 @@ public class PokerHandTest extends TestCase {
 		c4 = getCard(Rank.JACK, Suit.DIAMONDS);
 		c5 = getCard(Rank.KING, Suit.CLUBS);
 		ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertEquals(PokerHand.PokerHands.Straight, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.Straight, ph.getValue());
 
 		c1 = getCard(Rank.NINE, Suit.CLUBS);
 		c2 = getCard(Rank.TEN, Suit.HEARTS);
@@ -111,7 +111,17 @@ public class PokerHandTest extends TestCase {
 		c4 = getCard(Rank.JACK, Suit.DIAMONDS);
 		c5 = getCard(Rank.FIVE, Suit.CLUBS);
 		ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertNotSame(PokerHand.PokerHands.Straight, ph.getValue());
+		assertNotSame(""+ph.getHand(), PokerHand.PokerHands.Straight, ph.getValue());
+
+		c1 = getCard(Rank.FOUR, Suit.CLUBS);
+		c2 = getCard(Rank.EIGHT, Suit.CLUBS);
+		c3 = getCard(Rank.SIX, Suit.CLUBS);
+		c4 = getCard(Rank.TEN, Suit.HEARTS);
+		c5 = getCard(Rank.FIVE, Suit.SPADES);
+		c6 = getCard(Rank.SEVEN, Suit.DIAMONDS);
+		c7 = getCard(Rank.JACK, Suit.SPADES);
+		ph = new PokerHand(c1, c2, c3, c4, c5, c6, c7);
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.Straight, ph.getValue());
 	}
 
 	/**
@@ -125,7 +135,7 @@ public class PokerHandTest extends TestCase {
 		Card c4 = getCard(Rank.JACK, Suit.CLUBS);
 		Card c5 = getCard(Rank.TEN, Suit.CLUBS);
 		PokerHand ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertEquals(PokerHand.PokerHands.ThreeOfAKind, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.ThreeOfAKind, ph.getValue());
 	}
 
 	/**
@@ -139,7 +149,7 @@ public class PokerHandTest extends TestCase {
 		Card c4 = getCard(Rank.QUEEN, Suit.DIAMONDS);
 		Card c5 = getCard(Rank.TEN, Suit.SPADES);
 		PokerHand ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertEquals(PokerHand.PokerHands.TwoPair, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.TwoPair, ph.getValue());
 	}
 
 	/**
@@ -153,7 +163,7 @@ public class PokerHandTest extends TestCase {
 		Card c4 = getCard(Rank.JACK, Suit.CLUBS);
 		Card c5 = getCard(Rank.TEN, Suit.CLUBS);
 		PokerHand ph = new PokerHand(c1, c2, c3, c4, c5);
-		assertEquals(PokerHand.PokerHands.Pair, ph.getValue());
+		assertEquals(""+ph.getHand(), PokerHand.PokerHands.Pair, ph.getValue());
 	}
 
 }
