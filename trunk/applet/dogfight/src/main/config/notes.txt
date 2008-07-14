@@ -9,3 +9,4 @@ sign up for game, when two people in queue join in game
 
 rating
 score
+upload own plane and avatar

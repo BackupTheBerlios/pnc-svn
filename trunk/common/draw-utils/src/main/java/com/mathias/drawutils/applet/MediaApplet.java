@@ -10,8 +10,12 @@ import java.awt.Image;
 import java.awt.MediaTracker;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.AffineTransform;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Map.Entry;
 
 public abstract class MediaApplet extends Applet implements KeyListener {
@@ -35,13 +39,43 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 		offImage = createImage(getWidth(), getHeight());
 		offGraphics = (Graphics2D)offImage.getGraphics();
 
-		Animation ani = new Animation();
-		ani.setDaemon(true);
-
 		addKeyListener(this);
-		ani.start();
+
+		new Thread(){
+			public void run() {
+				try {
+					if(mediaTracker != null) {
+						mediaTracker.waitForAll();
+						if(MediaTracker.COMPLETE != mediaTracker.statusAll(true)){
+							LOG("Could not load all images!"+getImageProblem());
+						}else{
+//							LOG("All images loaded!");
+							initialized = true;
+						}
+					}else{
+						initialized = true;
+					}
+				} catch (InterruptedException e) {
+					LOG("waitForAll exception: "+e);
+				}
+			}
+		}.start();
+//		Animation ani = new Animation();
+//		ani.setDaemon(true);
+//		ani.start();
+
+		new Timer(true).schedule(new TimerTask(){
+			@Override
+			public void run() {
+        		repaint();
+        		animate();
+			}
+		}, 0, delay());
+
 	}
-	
+
+	public abstract long delay();
+
 	public abstract Dimension getDimension();
 
 	public abstract void keyPressed(KeyEvent e);
@@ -59,8 +93,8 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 
 	@Override
 	public void update(Graphics g) {
-		offGraphics.setColor(Color.black);
-		offGraphics.fillRect(0, 0, getWidth(), getHeight());
+//		offGraphics.setColor(Color.black);
+//		offGraphics.fillRect(0, 0, getWidth(), getHeight());
 		if(initialized){
 			paintAnimation(offGraphics);
 		}else{
@@ -73,32 +107,6 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 	protected abstract void paintAnimation(Graphics2D g);
 
 	protected abstract void animate();
-
-	class Animation extends Thread {
-		@Override
-		public void run() {
-			System.out.println("Starting Animation!");
-			try {
-				if(mediaTracker != null) {
-					mediaTracker.waitForAll();
-					if(MediaTracker.COMPLETE != mediaTracker.statusAll(true)){
-						System.err.println("Could not load all images!"+getImageProblem());
-					}else{
-						System.out.println("All images loaded!");
-						initialized = true;
-					}
-				}else{
-					initialized = true;
-				}
-			} catch (InterruptedException e) {
-				System.err.println("waitForAll exception: "+e);
-			}
-            while (true) {
-        		animate();
-        		repaint();
-            }
-		}
-	}
 
 	protected void addImage(int id, String filename, boolean wait){
 		if(mediaTracker == null){
@@ -116,10 +124,10 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 			try {
 				mediaTracker.waitForID(id);
 			} catch (InterruptedException e) {
-				System.err.println("waitForID exception: "+e);
+				LOG("waitForID exception: "+e);
 			}
 			if(MediaTracker.COMPLETE != mediaTracker.statusID(id, true)){
-				System.err.println("Could not load loading image!");
+				LOG("Could not load loading image!");
 			}
 		}
 	}
@@ -162,5 +170,63 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 	protected boolean isInitialized(){
 		return initialized;
 	}
-	
+
+	public static void sleep(long millis){
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+		}
+	}
+
+	public static void LOG(String msg){
+		System.out.println(msg);
+	}
+
+	public class RotateImage {
+		
+		private double aadd = 0.1;
+
+		private Map<Double, Image> images = new HashMap<Double, Image>();
+
+		public RotateImage(Image image){
+			int width = image.getWidth(null);
+			int height = image.getHeight(null);
+
+			for (double i = -6.28; i < 6.28; i += aadd) {
+				AffineTransform af = new AffineTransform();
+				af.rotate(i, width/2, height/2);
+
+				Image img = createImage(width, height);
+				((Graphics2D)img.getGraphics()).drawImage(image, af, null);
+				images.put(i, img);
+			}
+		}
+
+		public Collection<Image> getImages(){
+			 return images.values();
+		}
+
+		public Image getImage(double angle){
+			if(angle < -6.28){
+				angle = angle % -6.28;
+			}
+			if(angle > 6.28){
+				angle = angle % 6.28;
+			}
+
+			for (double i = -6.28; i < 6.28; i += aadd) {
+				if(angle >= i && angle <= i+aadd){
+					Image image = images.get(i);
+					if(image == null){
+						LOG("image null: "+i);
+					}
+					return image;
+				}
+			}
+			LOG("using default image");
+			return images.get(-6.28);
+		}
+
+	}
+
 }

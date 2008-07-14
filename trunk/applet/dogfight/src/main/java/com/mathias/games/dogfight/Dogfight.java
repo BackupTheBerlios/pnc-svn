@@ -1,79 +1,88 @@
 package com.mathias.games.dogfight;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.event.KeyEvent;
-import java.awt.geom.AffineTransform;
 import java.io.IOException;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
+import com.mathias.drawutils.MathUtil;
 import com.mathias.drawutils.applet.MediaApplet;
-import com.mathias.games.dogfight.client.Client;
-import com.mathias.games.dogfight.client.ClientImpl;
-import com.mathias.games.dogfight.server.Server;
+import com.mathias.games.dogfight.client.UdpClient;
+import com.mathias.games.dogfight.common.Constants;
+import com.mathias.games.dogfight.common.Util;
+import com.mathias.games.dogfight.common.WorldEngine;
 
 @SuppressWarnings("serial")
 public class Dogfight extends MediaApplet {
+	
+	private enum Images{
+		Background,
+		RedPlane,
+		BluePlane,
+		Explosion;
+	}
 
-	private Player player = new Player("player1", 0, 10, 10);
-	private int speed = 10;
 	private static final double angleadd = 0.1;
 	
-	private Client client;
-	private List<Player> opponents = null;
+	private Plane player = new Plane("player2", 0, 10, 10, 5, Images.BluePlane.ordinal());
+	
+	private WorldEngine engine = new WorldEngine();
 
-	int px;
-	int py;
+	private Map<Integer, RotateImage> planes = new HashMap<Integer, RotateImage>();
+	
+	private UdpClient client;
 
 	@Override
 	public void init() {
-		client = new ClientImpl();
-		try {
-			client.connect("localhost", Server.PORT);
-		} catch (IOException e) {
-			throw new RuntimeException("Could not connect! "+e.getMessage());
-		}
-		
-		addImage(0, "images/plane.gif", true);
-		addImage(1, "images/clouds.jpg", true);
 
-		Image p = getImage(0);
-		px = p.getWidth(this)/2;
-		py = p.getHeight(this)/2;
+		addImage(Images.Background.ordinal(), "images/clouds.jpg", true);
+		addImage(Images.RedPlane.ordinal(), "images/plane.gif", true);
+		addImage(Images.BluePlane.ordinal(), "images/plane_blue.gif", true);
+		addImage(Images.Explosion.ordinal(), "images/explosion.jpg", true);
+
+		planes.put(Images.BluePlane.ordinal(), new RotateImage(getImage(Images.BluePlane.ordinal())));
+		planes.put(Images.RedPlane.ordinal(), new RotateImage(getImage(Images.RedPlane.ordinal())));
+
+		player.w = getImage(player.planeindex).getWidth(this);
+		player.h = getImage(player.planeindex).getHeight(this);
+
+		engine.players.put(player.key, player);
+
+		// networking
+		client = new UdpClient(engine.players);
+
+		new Timer(true).schedule(new TimerTask(){
+			@Override
+			public void run() {
+				Util.LOG(""+player);
+				updatePlayer();
+			}
+		}, 0, 1000);
 
 		super.init();
 	}
 	
+	private void updatePlayer(){
+		try {
+			client.update(player);
+		} catch (IOException e) {
+			LOG(e.getMessage());
+		}
+	}
+	
 	@Override
 	protected void animate() {
-
-		player.x += Math.cos(player.angle)*speed;
-		player.y += Math.sin(player.angle)*speed;
-		
-		if(player.x > getWidth()){
-			player.x = 0;
-		}
-		if(player.x < 0){
-			player.x = getWidth();
-		}
-		if(player.y > getHeight()){
-			player.y = 0;
-		}
-		if(player.y < 0){
-			player.y = getHeight();
-		}
-		
-		try {
-			opponents = client.update(player);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	@Override
 	public Dimension getDimension() {
-		return new Dimension(500, 500);
+		return new Dimension(Constants.WIDTH, Constants.HEIGHT);
 	}
 
 	@Override
@@ -84,32 +93,55 @@ public class Dogfight extends MediaApplet {
 			player.angle+=angleadd;
 		}else if(KeyEvent.VK_UP == e.getKeyCode()){
 		}else if(KeyEvent.VK_DOWN == e.getKeyCode()){
+		}else if(KeyEvent.VK_SPACE == e.getKeyCode()){
+			fire();
 		}
 		e.consume();
+
+		updatePlayer();
+	}
+	
+	private void fire(){
+		Bullet bullet = new Bullet(player.angle, player.x
+				+ (int) MathUtil.cos(player.angle) * 40, player.y
+				+ (int) MathUtil.sin(player.angle) * 40, 10);
+		try {
+			client.update(bullet);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		engine.players.put(bullet.key, bullet);
 	}
 
 	@Override
 	protected void paintAnimation(Graphics2D g) {
-		g.drawImage(getImage(1), 0, 0, null);
+		g.drawImage(getImage(Images.Background.ordinal()), 0, 0, null);
 
-		AffineTransform af = new AffineTransform();
-		af.setToTranslation(player.x, player.y);
-		af.rotate(player.angle, px, py);
-		g.drawImage(getImage(0), af, null);
-
-		if(opponents != null){
-			System.out.println("opponents: "+opponents.size());
-			for (Player ply : opponents) {
-				af.setToTranslation(ply.x, ply.y);
-				af.rotate(ply.angle, px, py);
-				g.drawImage(getImage(0), af, null);
+		synchronized (engine.players) {
+			for (Iterator<AbstractItem> iterator = engine.players.values().iterator(); iterator.hasNext();) {
+				AbstractItem ply = (AbstractItem) iterator.next();
+				if(ply instanceof Plane){
+					g.drawImage(planes.get(((Plane)ply).planeindex).getImage(ply.angle), ply.x,
+							ply.y, null);
+				}else if(ply instanceof Bullet){
+					g.drawString("x", ply.x, ply.y);
+				}else if(ply instanceof Explosion){
+					g.drawImage(getImage(Images.Explosion.ordinal()), ply.x, ply.y,
+							null);
+				}else{
+					LOG("ERROR not a valid object: "+ply);
+				}
+				if(ply instanceof SolidItem){
+					g.setColor(Color.black);
+					g.drawPolygon(ply.getPolygon());
+				}
 			}
 		}
 	}
 
 	@Override
 	public long delay() {
-		return 200;
+		return 50;
 	}
 
 }
