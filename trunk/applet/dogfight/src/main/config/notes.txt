@@ -2,11 +2,25 @@ dogfight networking
 
 UC:
 
-register or login
-sign up for game, when two people in queue join in game
+register or login, sign up for game, when two people in queue join in game
 
 
 
 rating
 score
 upload own plane and avatar
+
+
+
+Networking games
+-------------
+Session
+Simulation
+Virtual world
+Authority
+Status update (Unreliable)
+State change (Reliable atomic)
+Broadcast
+Transaction
+Stream
+

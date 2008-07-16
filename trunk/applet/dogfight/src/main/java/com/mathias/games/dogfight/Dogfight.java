@@ -12,10 +12,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import com.mathias.drawutils.MathUtil;
+import com.mathias.drawutils.Util;
 import com.mathias.drawutils.applet.MediaApplet;
 import com.mathias.games.dogfight.client.UdpClient;
 import com.mathias.games.dogfight.common.Constants;
-import com.mathias.games.dogfight.common.Util;
 import com.mathias.games.dogfight.common.WorldEngine;
 
 @SuppressWarnings("serial")
@@ -37,9 +37,20 @@ public class Dogfight extends MediaApplet {
 	private Map<Integer, RotateImage> planes = new HashMap<Integer, RotateImage>();
 	
 	private UdpClient client;
+	
+	private boolean connected = false;
 
 	@Override
 	public void init() {
+		
+		LoginDialog dlg = new LoginDialog();
+		if (dlg.isCancelled()) {
+			connected = false;
+		} else {
+			if (Util.isEmpty(dlg.getCredentials())) {
+				connected = false;
+			}
+		}
 
 		addImage(Images.Background.ordinal(), "images/clouds.jpg", true);
 		addImage(Images.RedPlane.ordinal(), "images/plane.gif", true);
@@ -60,12 +71,13 @@ public class Dogfight extends MediaApplet {
 		new Timer(true).schedule(new TimerTask(){
 			@Override
 			public void run() {
-				Util.LOG(""+player);
 				updatePlayer();
 			}
 		}, 0, 1000);
 
 		super.init();
+		
+		Util.LOG("DogFight intialized!");
 	}
 	
 	private void updatePlayer(){

@@ -12,10 +12,9 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.mathias.drawutils.Util;
 import com.mathias.games.dogfight.AbstractItem;
-import com.mathias.games.dogfight.AbstractItemFactory;
 import com.mathias.games.dogfight.common.Constants;
-import com.mathias.games.dogfight.common.Util;
 
 public class NetworkThread extends TimerTask {
 
@@ -43,20 +42,19 @@ public class NetworkThread extends TimerTask {
 			while(true){
 				byte[] buf = new byte[Constants.MAX_PACKET_SIZE];
 				DatagramPacket packet = new DatagramPacket(buf, buf.length);
-				packet.setLength(buf.length);
 				socket.receive(packet);
 				
 				SocketAddress addr = packet.getSocketAddress();
 				if(!connections.contains(addr)){
 					connections.add(addr);
 				}
-				
-				String res = new String(packet.getData(), 0, packet.getLength());
+
 //				Util.LOG("incoming to server: "+res);
-				if(res != null){
-					AbstractItem item = AbstractItemFactory.deserialize(res);
+				Object obj = Util.deserialize(packet.getData());
+				if(obj instanceof AbstractItem){
+					AbstractItem item = (AbstractItem)obj;
 					if(item == null){
-						Util.LOG("ERROR for "+res);
+						Util.LOG("ERROR for "+new String(packet.getData()));
 						break;
 					}
 					item.dirty = true;
@@ -66,27 +64,39 @@ public class NetworkThread extends TimerTask {
 					}else{
 						objects.put(item.key, item);
 					}
-				}
-				StringBuffer sb = new StringBuffer();
-				for (AbstractItem p : objects.values()) {
-					if(p.dirty){
-						sb.append(p.serialize()+"\n");
-						p.dirty = false;
+					List<AbstractItem> items = new ArrayList<AbstractItem>();
+					for (AbstractItem p : objects.values()) {
+						if(p.dirty){
+							p.dirty = false;
+							items.add(p);
+						}
 					}
-				}
-				buf = sb.toString().getBytes();
-				for (SocketAddress addr2 : connections) {
-//					Util.LOG("kasjd: "+sb.toString()+" "+addr2);
-					packet = new DatagramPacket(buf, buf.length, addr2);
-					packet.setLength(buf.length);
-					socket.send(packet);
+					sendRawAll(Util.serialize(items));
+				}else{
+					Util.LOG("Unknown object: "+obj);
 				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ArrayIndexOutOfBoundsException e) {
 			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
 		}
+	}
+
+	private void sendRawAll(byte[] buf) throws IOException{
+		DatagramPacket packet = new DatagramPacket(buf, buf.length);
+		for (SocketAddress address : connections) {
+			packet.setSocketAddress(address);
+			socket.send(packet);
+		}
+	}
+
+	private void sendRaw(SocketAddress address, byte[] buf) throws IOException{
+		DatagramPacket packet = new DatagramPacket(buf, buf.length);
+		packet.setSocketAddress(address);
+		socket.send(packet);
 	}
 
 }

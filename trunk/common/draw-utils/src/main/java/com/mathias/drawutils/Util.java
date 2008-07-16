@@ -10,7 +10,13 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -299,6 +305,38 @@ public abstract class Util {
 			return path.substring(0, i);
 		}
 		return path;
+	}
+
+	public static void LOG(String msg){
+		System.out.println(msg);
+	}
+
+	public static byte[] concat(byte[] org, byte[] cat){
+		byte[] data = new byte[org.length+cat.length];
+		for (int i = 0; i < org.length; i++) {
+			data[i] = org[i];
+		}
+		for (int i = 0; i < cat.length; i++) {
+			data[org.length+i] = cat[i];
+		}
+		return data;
+	}
+
+	public static byte[] serialize(Object object) throws IOException{
+        // Serialize to a byte array
+        ByteArrayOutputStream bos = new ByteArrayOutputStream() ;
+        ObjectOutput out = new ObjectOutputStream(bos) ;
+        out.writeObject(object);
+        out.close();
+        return bos.toByteArray();
+	}
+
+	public static Object deserialize(byte[] bytes) throws IOException, ClassNotFoundException{
+		// Deserialize from a byte array
+        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes));
+        Object obj = in.readObject();
+        in.close();
+		return obj;
 	}
 
 }

@@ -1,11 +1,12 @@
 package com.mathias.games.dogfight;
 
 import java.awt.Polygon;
-import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.Iterator;
 
-public abstract class AbstractItem {
+import com.mathias.games.dogfight.common.NetworkItem;
+
+public abstract class AbstractItem implements NetworkItem {
 
 	public enum Action {
 		INITIAL, 
@@ -13,7 +14,6 @@ public abstract class AbstractItem {
 	}
 
 	public boolean dirty = false;
-	public char type;
 	public String key;
 	public double angle;
 	public int x;
@@ -47,27 +47,6 @@ public abstract class AbstractItem {
 		dest.h = src.h;
 		dest.action = src.action;
 		dest.dirty = src.dirty;
-	}
-
-	public String serialize() {
-		DecimalFormat fmt = new DecimalFormat("####.00");
-		return type + "," + key + "," + fmt.format(angle).replace(',', '.')
-				+ "," + x + "," + y + "," + w + "," + h + "," + speed;
-	}
-
-	public AbstractItem deserialize(String[] split) {
-		if (split.length < 8) {
-			return null;
-		}
-		key = split[1];
-		angle = Double.parseDouble(split[2]);
-		x = Integer.parseInt(split[3]);
-		y = Integer.parseInt(split[4]);
-		w = Integer.parseInt(split[5]);
-		h = Integer.parseInt(split[6]);
-		speed = Integer.parseInt(split[7]);
-
-		return this;
 	}
 
 	public Polygon getPolygon(){

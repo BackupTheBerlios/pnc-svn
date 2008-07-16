@@ -2,7 +2,7 @@ package com.mathias.games.dogfight;
 
 import java.awt.Polygon;
 
-import com.mathias.games.dogfight.common.Util;
+import com.mathias.drawutils.Util;
 
 public class IntersectsTester {
 
