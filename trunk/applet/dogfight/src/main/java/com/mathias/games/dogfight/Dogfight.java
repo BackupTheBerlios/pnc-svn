@@ -11,8 +11,11 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mathias.drawutils.GenericDialog;
 import com.mathias.drawutils.MathUtil;
-import com.mathias.drawutils.Util;
 import com.mathias.drawutils.applet.MediaApplet;
 import com.mathias.games.dogfight.client.UdpClient;
 import com.mathias.games.dogfight.common.Constants;
@@ -20,6 +23,8 @@ import com.mathias.games.dogfight.common.WorldEngine;
 
 @SuppressWarnings("serial")
 public class Dogfight extends MediaApplet {
+	
+	private static final Logger log = LoggerFactory.getLogger(Dogfight.class);
 	
 	private enum Images{
 		Background,
@@ -30,7 +35,7 @@ public class Dogfight extends MediaApplet {
 
 	private static final double angleadd = 0.1;
 	
-	private Plane player = new Plane("player2", 0, 10, 10, 5, Images.BluePlane.ordinal());
+	private Plane player;
 	
 	private WorldEngine engine = new WorldEngine();
 
@@ -43,15 +48,6 @@ public class Dogfight extends MediaApplet {
 	@Override
 	public void init() {
 		
-		LoginDialog dlg = new LoginDialog();
-		if (dlg.isCancelled()) {
-			connected = false;
-		} else {
-			if (Util.isEmpty(dlg.getCredentials())) {
-				connected = false;
-			}
-		}
-
 		addImage(Images.Background.ordinal(), "images/clouds.jpg", true);
 		addImage(Images.RedPlane.ordinal(), "images/plane.gif", true);
 		addImage(Images.BluePlane.ordinal(), "images/plane_blue.gif", true);
@@ -60,6 +56,7 @@ public class Dogfight extends MediaApplet {
 		planes.put(Images.BluePlane.ordinal(), new RotateImage(getImage(Images.BluePlane.ordinal())));
 		planes.put(Images.RedPlane.ordinal(), new RotateImage(getImage(Images.RedPlane.ordinal())));
 
+		player = new Plane("player2", 0, 10, 10, 5, Images.BluePlane.ordinal());
 		player.w = getImage(player.planeindex).getWidth(this);
 		player.h = getImage(player.planeindex).getHeight(this);
 
@@ -67,6 +64,17 @@ public class Dogfight extends MediaApplet {
 
 		// networking
 		client = new UdpClient(engine.players);
+
+		LoginDialog dlg = new LoginDialog();
+		if (!dlg.isCancelled()) {
+			try {
+				client.login(dlg.getUsername(), dlg.getPassword());
+				player.key = dlg.getUsername();
+				connected = true;
+			} catch (IOException e) {
+				GenericDialog.showErrorDialog("Login", "Could connect to server: "+e.getMessage());
+			}
+		}
 
 		new Timer(true).schedule(new TimerTask(){
 			@Override
@@ -76,13 +84,15 @@ public class Dogfight extends MediaApplet {
 		}, 0, 1000);
 
 		super.init();
-		
-		Util.LOG("DogFight intialized!");
+
+		log.debug("DogFight intialized!");
 	}
 	
 	private void updatePlayer(){
 		try {
-			client.update(player);
+			if(connected){
+				client.update(player);
+			}
 		} catch (IOException e) {
 			LOG(e.getMessage());
 		}

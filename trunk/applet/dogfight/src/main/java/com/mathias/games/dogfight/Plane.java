@@ -2,6 +2,8 @@ package com.mathias.games.dogfight;
 
 public class Plane extends AbstractItem implements SolidItem {
 
+	private static final long serialVersionUID = 636309050285741622L;
+
 	public int planeindex = 0;
 
 	public Plane(){

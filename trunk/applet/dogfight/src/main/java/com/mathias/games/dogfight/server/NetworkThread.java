@@ -7,22 +7,33 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mathias.drawutils.Util;
 import com.mathias.games.dogfight.AbstractItem;
 import com.mathias.games.dogfight.common.Constants;
+import com.mathias.games.dogfight.common.command.AbstractCommand;
+import com.mathias.games.dogfight.common.command.LoginCommand;
+import com.mathias.games.dogfight.common.command.UpdateCommand;
+import com.mathias.games.dogfight.server.dao.UserDao;
 
 public class NetworkThread extends TimerTask {
 
+	private static final Logger log = LoggerFactory.getLogger(NetworkThread.class);
+	
 	private DatagramSocket socket;
 	
 	public Map<String, AbstractItem> objects = new HashMap<String, AbstractItem>();
 	
-	private List<SocketAddress> connections = new ArrayList<SocketAddress>();
+	private Set<SocketAddress> connections = new HashSet<SocketAddress>();
 	
 	public NetworkThread(Map<String, AbstractItem> objects){
 		this.objects = objects;
@@ -45,35 +56,15 @@ public class NetworkThread extends TimerTask {
 				socket.receive(packet);
 				
 				SocketAddress addr = packet.getSocketAddress();
-				if(!connections.contains(addr)){
-					connections.add(addr);
-				}
 
 //				Util.LOG("incoming to server: "+res);
 				Object obj = Util.deserialize(packet.getData());
-				if(obj instanceof AbstractItem){
-					AbstractItem item = (AbstractItem)obj;
-					if(item == null){
-						Util.LOG("ERROR for "+new String(packet.getData()));
-						break;
-					}
-					item.dirty = true;
-					AbstractItem dest = objects.get(item.key);
-					if(dest != null){
-						AbstractItem.update(item, dest);
-					}else{
-						objects.put(item.key, item);
-					}
-					List<AbstractItem> items = new ArrayList<AbstractItem>();
-					for (AbstractItem p : objects.values()) {
-						if(p.dirty){
-							p.dirty = false;
-							items.add(p);
-						}
-					}
-					sendRawAll(Util.serialize(items));
+				if(obj == null){
+					log.error("ERROR for "+obj);
+				}else if(obj instanceof AbstractCommand){
+					receiveCommand((AbstractCommand)obj, addr);
 				}else{
-					Util.LOG("Unknown object: "+obj);
+					log.error("Unknown object: "+obj);
 				}
 			}
 		} catch (IOException e) {
@@ -85,18 +76,53 @@ public class NetworkThread extends TimerTask {
 		}
 	}
 
-	private void sendRawAll(byte[] buf) throws IOException{
-		DatagramPacket packet = new DatagramPacket(buf, buf.length);
-		for (SocketAddress address : connections) {
-			packet.setSocketAddress(address);
-			socket.send(packet);
+	private void sendAllCommand(AbstractCommand cmd, SocketAddress exclude) throws IOException{
+		for (SocketAddress addr : connections) {
+			if(exclude != null && !exclude.equals(addr)){
+				sendCommand(cmd, addr);
+			}
 		}
 	}
 
-	private void sendRaw(SocketAddress address, byte[] buf) throws IOException{
+	private void sendCommand(AbstractCommand cmd, SocketAddress addr) throws IOException {
+		byte[] buf = Util.serialize(cmd);
 		DatagramPacket packet = new DatagramPacket(buf, buf.length);
-		packet.setSocketAddress(address);
+		packet.setSocketAddress(addr);
 		socket.send(packet);
+	}
+
+	private void receiveCommand(AbstractCommand cmd, SocketAddress addr) throws IOException{
+		if(cmd instanceof LoginCommand){
+			LoginCommand lgn = (LoginCommand) cmd;
+//			lgn.authenticated = UserDao.authenticated(lgn.getUsername(), lgn.getPassword());
+			lgn.authenticated = !UserDao.exists(lgn.getUsername());
+			if(lgn.authenticated){
+				connections.add(addr);
+			}
+			sendCommand(lgn, addr);
+		}else if(cmd instanceof UpdateCommand){
+			UpdateCommand upd = (UpdateCommand) cmd;
+			for (AbstractItem item : upd.items) {
+				item.dirty = true;
+				AbstractItem dest = objects.get(item.key);
+				if(dest != null){
+					AbstractItem.update(item, dest);
+				}else{
+					objects.put(item.key, item);
+				}
+			}
+			List<AbstractItem> items = new ArrayList<AbstractItem>();
+			for (AbstractItem p : objects.values()) {
+				if(p.dirty){
+					p.dirty = false;
+					items.add(p);
+				}
+			}
+			upd = new UpdateCommand(items.toArray(new AbstractItem[0]));
+			sendAllCommand(upd, addr);
+		}else{
+			log.warn("Unknown command");
+		}
 	}
 
 }

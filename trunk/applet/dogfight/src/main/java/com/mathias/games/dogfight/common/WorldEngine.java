@@ -28,7 +28,10 @@ public class WorldEngine extends TimerTask {
 		// new location
 		synchronized (players) {
 			for (Iterator<AbstractItem> it = players.values().iterator(); it.hasNext();) {
-				AbstractItem item = (AbstractItem) it.next();
+				AbstractItem item = it.next();
+				if(item.action != Action.ONGOING){
+					continue;
+				}
 				item.x += MathUtil.cos(item.angle) * item.speed;
 				item.y += MathUtil.sin(item.angle) * item.speed;
 	

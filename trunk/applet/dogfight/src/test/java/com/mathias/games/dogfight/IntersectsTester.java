@@ -2,8 +2,6 @@ package com.mathias.games.dogfight;
 
 import java.awt.Polygon;
 
-import com.mathias.drawutils.Util;
-
 public class IntersectsTester {
 
 	/**
@@ -20,9 +18,9 @@ public class IntersectsTester {
 		p.addPoint(x+w, y+h);
 		p.addPoint(x, y+h);
 		if(p.intersects(x+9, y+9, 1, 1)){
-			Util.LOG("INTERSECTS");
+			System.out.println("INTERSECTS");
 		}else{
-			Util.LOG("does NOT intersect");
+			System.out.println("does NOT intersect");
 		}
 	}
 

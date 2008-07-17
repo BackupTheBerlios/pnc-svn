@@ -9,7 +9,8 @@ import com.mathias.games.dogfight.common.NetworkItem;
 public abstract class AbstractItem implements NetworkItem {
 
 	public enum Action {
-		INITIAL, 
+		INITIALIZED,
+		ONGOING,
 		REMOVED;
 	}
 
@@ -21,7 +22,7 @@ public abstract class AbstractItem implements NetworkItem {
 	public int h;
 	public int w;
 	public int speed;
-	public Action action = Action.INITIAL;
+	public Action action = Action.INITIALIZED;
 
 	public AbstractItem() {
 	}

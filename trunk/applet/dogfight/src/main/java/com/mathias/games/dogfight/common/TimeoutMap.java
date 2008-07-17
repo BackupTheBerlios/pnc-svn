@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.mathias.drawutils.Util;
-
 public class TimeoutMap<K, V> {
 
 	private HashMap<K, TimeoutEntry> mMap;
@@ -79,7 +77,7 @@ public class TimeoutMap<K, V> {
 					}
 				}
 			} catch (Throwable e) {
-				Util.LOG("Trapped exception in run()" + e);
+				System.out.println("Trapped exception in run()" + e);
 			}
 		}
 

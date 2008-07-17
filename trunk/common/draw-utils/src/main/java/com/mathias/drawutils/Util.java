@@ -307,10 +307,6 @@ public abstract class Util {
 		return path;
 	}
 
-	public static void LOG(String msg){
-		System.out.println(msg);
-	}
-
 	public static byte[] concat(byte[] org, byte[] cat){
 		byte[] data = new byte[org.length+cat.length];
 		for (int i = 0; i < org.length; i++) {

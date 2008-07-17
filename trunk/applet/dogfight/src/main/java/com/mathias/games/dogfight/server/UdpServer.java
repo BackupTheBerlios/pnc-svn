@@ -5,7 +5,7 @@ import com.mathias.games.dogfight.common.WorldEngine;
 public class UdpServer {
 
 	private WorldEngine logic;
-
+	
 	public UdpServer() {
 		logic = new WorldEngine();
 
