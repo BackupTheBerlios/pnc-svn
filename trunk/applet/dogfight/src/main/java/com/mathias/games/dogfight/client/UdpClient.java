@@ -6,7 +6,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +17,7 @@ import com.mathias.games.dogfight.AbstractItem.Action;
 import com.mathias.games.dogfight.common.Constants;
 import com.mathias.games.dogfight.common.TimeoutMap;
 import com.mathias.games.dogfight.common.TimeoutMapListener;
+import com.mathias.games.dogfight.common.WorldEngine;
 import com.mathias.games.dogfight.common.command.AbstractCommand;
 import com.mathias.games.dogfight.common.command.LoginCommand;
 import com.mathias.games.dogfight.common.command.MessageCommand;
@@ -32,13 +32,13 @@ public class UdpClient extends Thread implements TimeoutMapListener<Integer, Abs
 
 	private InetAddress address;
 
-	private Map<String, AbstractItem> objects;
+	private WorldEngine objects;
 
 	private TimeoutMap<Integer, AbstractCommand> notifications;
 	
 	private boolean initialized = false;
 	
-	public UdpClient(Map<String, AbstractItem> objects) {
+	public UdpClient(WorldEngine objects) {
 		this.objects = objects;
 
 		notifications = new TimeoutMap<Integer, AbstractCommand>(500, this);
@@ -62,6 +62,7 @@ public class UdpClient extends Thread implements TimeoutMapListener<Integer, Abs
 	}
 	
 	private void sendCommand(AbstractCommand cmd) throws IOException{
+		log.debug("Send command: "+cmd);
 		if(cmd instanceof StateCommand){
 			notifications.put(cmd.sequence, cmd);
 		}
@@ -74,6 +75,7 @@ public class UdpClient extends Thread implements TimeoutMapListener<Integer, Abs
 	}
 
 	private void receiveCommand(AbstractCommand cmd) {
+		log.debug("Receive command: "+cmd);
 		if(cmd instanceof StateCommand){
 			notifications.remove(cmd.sequence);
 		}
@@ -83,21 +85,18 @@ public class UdpClient extends Thread implements TimeoutMapListener<Integer, Abs
 				GenericDialog.showErrorDialog("Login",
 						"Could not login with user " + lgn.getUsername());
 			}else{
-//				engine.players.put(player.key, player);
+				log.debug("lgn.getUsername(): "+lgn.getUsername());
+				objects.updateAction(lgn.getUsername(), Action.ONGOING);
 			}
 		}else if(cmd instanceof UpdateCommand){
 			UpdateCommand upd = (UpdateCommand) cmd;
+			log.debug("UpdateCommand: "+upd);
 			for (AbstractItem item : upd.items) {
 				if(item != null){
 					if(item.action == Action.REMOVED){
 						objects.remove(item.key);
 					}else{
-						AbstractItem dest = objects.get(item.key);
-						if(dest != null){
-							AbstractItem.update(item, dest);
-						}else{
-							objects.put(item.key, item);
-						}
+						objects.update(item);
 					}
 				}
 			}

@@ -52,18 +52,20 @@ public abstract class AbstractItem implements NetworkItem {
 
 	public Polygon getPolygon(){
 		Polygon p = new Polygon();
-		p.addPoint(x, y);
-		p.addPoint(x+w, y);
-		p.addPoint(x+w, y+h);
-		p.addPoint(x, y+h);
+		p.addPoint(x-(w/2), y-(h/2));
+		p.addPoint(x+(w/2), y-(h/2));
+		p.addPoint(x+(w/2), y+(h/2));
+		p.addPoint(x-(w/2), y+(h/2));
 		return p;
 	}
 
-	public AbstractItem intersects(Collection<AbstractItem> items){
-		if(this instanceof SolidItem){
+	public AbstractItem intersects(Collection<AbstractItem> items) {
+		if(action == Action.REMOVED){
+			return null;
+		}else if(this instanceof SolidItem){
 			for(Iterator<AbstractItem> it = items.iterator(); it.hasNext(); ){
 				AbstractItem item = it.next();
-				if(this != item && item instanceof SolidItem){
+				if(item.action != Action.REMOVED && this != item && item instanceof SolidItem){
 					if(getPolygon().intersects(item.x, item.y, item.w, item.h)){
 						return item;
 					}

@@ -1,8 +1,12 @@
 dogfight networking
 
-UC:
+Normal UC:
+Login to server
+Wait for game to start
 
+Sign up UC:
 register or login, sign up for game, when two people in queue join in game
+
 
 
 

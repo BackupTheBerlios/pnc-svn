@@ -5,12 +5,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -20,10 +16,10 @@ import org.slf4j.LoggerFactory;
 import com.mathias.drawutils.Util;
 import com.mathias.games.dogfight.AbstractItem;
 import com.mathias.games.dogfight.common.Constants;
+import com.mathias.games.dogfight.common.WorldEngine;
 import com.mathias.games.dogfight.common.command.AbstractCommand;
 import com.mathias.games.dogfight.common.command.LoginCommand;
 import com.mathias.games.dogfight.common.command.UpdateCommand;
-import com.mathias.games.dogfight.server.dao.UserDao;
 
 public class NetworkThread extends TimerTask {
 
@@ -31,12 +27,12 @@ public class NetworkThread extends TimerTask {
 	
 	private DatagramSocket socket;
 	
-	public Map<String, AbstractItem> objects = new HashMap<String, AbstractItem>();
+	public WorldEngine engine;
+
+	private Map<String, SocketAddress> connections = new HashMap<String, SocketAddress>();
 	
-	private Set<SocketAddress> connections = new HashSet<SocketAddress>();
-	
-	public NetworkThread(Map<String, AbstractItem> objects){
-		this.objects = objects;
+	public NetworkThread(WorldEngine objects){
+		this.engine = objects;
 
 		try {
 			socket = new DatagramSocket(Constants.PORT);
@@ -77,14 +73,15 @@ public class NetworkThread extends TimerTask {
 	}
 
 	private void sendAllCommand(AbstractCommand cmd, SocketAddress exclude) throws IOException{
-		for (SocketAddress addr : connections) {
-			if(exclude != null && !exclude.equals(addr)){
+		for (SocketAddress addr : connections.values()) {
+			if(exclude == null || !exclude.equals(addr)){
 				sendCommand(cmd, addr);
 			}
 		}
 	}
 
 	private void sendCommand(AbstractCommand cmd, SocketAddress addr) throws IOException {
+		log.debug("Sending command: "+cmd);
 		byte[] buf = Util.serialize(cmd);
 		DatagramPacket packet = new DatagramPacket(buf, buf.length);
 		packet.setSocketAddress(addr);
@@ -92,34 +89,31 @@ public class NetworkThread extends TimerTask {
 	}
 
 	private void receiveCommand(AbstractCommand cmd, SocketAddress addr) throws IOException{
+		log.debug("Received command: "+cmd+" from "+addr);
 		if(cmd instanceof LoginCommand){
 			LoginCommand lgn = (LoginCommand) cmd;
+			lgn.authenticated = connections.get(lgn.getUsername()) == null;// && UserDao.exists(lgn.getUsername());
 //			lgn.authenticated = UserDao.authenticated(lgn.getUsername(), lgn.getPassword());
-			lgn.authenticated = !UserDao.exists(lgn.getUsername());
 			if(lgn.authenticated){
-				connections.add(addr);
+				connections.put(lgn.getUsername(), addr);
 			}
 			sendCommand(lgn, addr);
 		}else if(cmd instanceof UpdateCommand){
 			UpdateCommand upd = (UpdateCommand) cmd;
+			log.debug("Update command received. Items: "+upd.items.length);
 			for (AbstractItem item : upd.items) {
 				item.dirty = true;
-				AbstractItem dest = objects.get(item.key);
-				if(dest != null){
-					AbstractItem.update(item, dest);
-				}else{
-					objects.put(item.key, item);
-				}
+				engine.update(item);
 			}
-			List<AbstractItem> items = new ArrayList<AbstractItem>();
-			for (AbstractItem p : objects.values()) {
-				if(p.dirty){
-					p.dirty = false;
-					items.add(p);
-				}
-			}
-			upd = new UpdateCommand(items.toArray(new AbstractItem[0]));
-			sendAllCommand(upd, addr);
+//			List<AbstractItem> items = new ArrayList<AbstractItem>();
+//			for (AbstractItem p : objects.getItems()) {
+//				if(p.dirty){
+//					p.dirty = false;
+//					items.add(p);
+//				}
+//			}
+			upd = new UpdateCommand(engine.getItems().toArray(new AbstractItem[0]));//items.toArray(new AbstractItem[0]));
+			sendAllCommand(upd, null /*addr*/);
 		}else{
 			log.warn("Unknown command");
 		}

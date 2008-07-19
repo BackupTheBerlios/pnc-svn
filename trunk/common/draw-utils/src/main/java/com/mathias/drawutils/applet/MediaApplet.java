@@ -10,8 +10,6 @@ import java.awt.Image;
 import java.awt.MediaTracker;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.geom.AffineTransform;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -108,6 +106,10 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 
 	protected abstract void animate();
 
+	protected void addImage(Enum<?> e, String filename, boolean wait){
+		addImage(e.ordinal(), filename, wait);
+	}
+
 	protected void addImage(int id, String filename, boolean wait){
 		if(mediaTracker == null){
 			mediaTracker = new MediaTracker(this);
@@ -134,6 +136,10 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 	
 	protected Image getImage(int id){
 		return images.get(id);
+	}
+
+	protected Image getImage(Enum<?> e){
+		return images.get(e.ordinal());
 	}
 
 	protected void addAudio(int id, String filename){
@@ -180,53 +186,6 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 
 	public static void LOG(String msg){
 		System.out.println(msg);
-	}
-
-	public class RotateImage {
-		
-		private double aadd = 0.1;
-
-		private Map<Double, Image> images = new HashMap<Double, Image>();
-
-		public RotateImage(Image image){
-			int width = image.getWidth(null);
-			int height = image.getHeight(null);
-
-			for (double i = -6.28; i < 6.28; i += aadd) {
-				AffineTransform af = new AffineTransform();
-				af.rotate(i, width/2, height/2);
-
-				Image img = createImage(width, height);
-				((Graphics2D)img.getGraphics()).drawImage(image, af, null);
-				images.put(i, img);
-			}
-		}
-
-		public Collection<Image> getImages(){
-			 return images.values();
-		}
-
-		public Image getImage(double angle){
-			if(angle < -6.28){
-				angle = angle % -6.28;
-			}
-			if(angle > 6.28){
-				angle = angle % 6.28;
-			}
-
-			for (double i = -6.28; i < 6.28; i += aadd) {
-				if(angle >= i && angle <= i+aadd){
-					Image image = images.get(i);
-					if(image == null){
-						LOG("image null: "+i);
-					}
-					return image;
-				}
-			}
-			LOG("using default image");
-			return images.get(-6.28);
-		}
-
 	}
 
 }

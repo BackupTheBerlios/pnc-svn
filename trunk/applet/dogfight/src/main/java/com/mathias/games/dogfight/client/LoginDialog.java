@@ -1,4 +1,4 @@
-package com.mathias.games.dogfight;
+package com.mathias.games.dogfight.client;
 
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;

@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.mathias.drawutils.MathUtil;
 import com.mathias.games.dogfight.AbstractItem;
 import com.mathias.games.dogfight.Explosion;
@@ -17,7 +20,9 @@ import com.mathias.games.dogfight.AbstractItem.Action;
 
 public class WorldEngine extends TimerTask {
 
-	public Map<String, AbstractItem> players = new HashMap<String, AbstractItem>();
+	private static final Logger log = LoggerFactory.getLogger(WorldEngine.class);
+	
+	private Map<String, AbstractItem> items = new HashMap<String, AbstractItem>();
 
 	public WorldEngine() {
 		new Timer(false).schedule(this, 0, Constants.DELAY);
@@ -26,8 +31,8 @@ public class WorldEngine extends TimerTask {
 	@Override
 	public void run() {
 		// new location
-		synchronized (players) {
-			for (Iterator<AbstractItem> it = players.values().iterator(); it.hasNext();) {
+		synchronized (items) {
+			for (Iterator<AbstractItem> it = items.values().iterator(); it.hasNext();) {
 				AbstractItem item = it.next();
 				if(item.action != Action.ONGOING){
 					continue;
@@ -57,27 +62,57 @@ public class WorldEngine extends TimerTask {
 		}
 
 		// collision check
-		synchronized (players) {
-			List<String> rem = new ArrayList<String>();
+		synchronized (items) {
 			Map<String, Explosion> exp = new HashMap<String, Explosion>();
-			for(Iterator<AbstractItem> it = players.values().iterator(); it.hasNext(); ){
+			for(Iterator<AbstractItem> it = items.values().iterator(); it.hasNext(); ){
 				AbstractItem ply = it.next();
 				if(ply instanceof SolidItem){
-					AbstractItem sitem = ply.intersects(players.values());
+					AbstractItem sitem = ply.intersects(items.values());
 					if(sitem != null){
 						Explosion explosion = new Explosion(ply.x, ply.y, 20);
 						exp.put(explosion.key, explosion);
 						ply.action = Action.REMOVED;
-//						it.remove();
-						rem.add(sitem.key);
-					}else if(rem.contains(ply.key)){
-						ply.action = Action.REMOVED;
-//						it.remove();
+						sitem.action = Action.REMOVED;
 					}
 				}
 			}
-			players.putAll(exp);
+			items.putAll(exp);
 		}
+	}
+
+	public void add(AbstractItem item){
+		synchronized (items) {
+			items.put(item.key, item);
+		}
+	}
+
+	public void remove(String item){
+		synchronized (items) {
+			items.remove(item);
+		}
+	}
+
+	public void updateAction(String item, Action action){
+		synchronized (items) {
+			items.get(item).action = action;
+		}
+	}
+
+	public void update(AbstractItem item){
+		synchronized (items) {
+			AbstractItem dest = items.get(item.key);
+			if(dest != null){
+				if(dest.action != Action.REMOVED){
+					AbstractItem.update(item, dest);
+				}
+			}else{
+				items.put(item.key, item);
+			}
+		}
+	}
+
+	public List<AbstractItem> getItems(){
+		return new ArrayList<AbstractItem>(items.values());
 	}
 
 }
