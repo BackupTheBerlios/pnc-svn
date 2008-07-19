@@ -1,4 +1,4 @@
-package com.mathias.games.dogfight;
+package com.mathias.games.dogfight.common.items;
 
 public class Plane extends AbstractItem implements SolidItem {
 

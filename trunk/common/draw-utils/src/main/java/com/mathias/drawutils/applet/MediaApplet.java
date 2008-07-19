@@ -8,15 +8,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.MediaTracker;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Map.Entry;
 
-public abstract class MediaApplet extends Applet implements KeyListener {
+public abstract class MediaApplet extends Applet {
 
 	private MediaTracker mediaTracker;
 
@@ -36,8 +34,6 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 
 		offImage = createImage(getWidth(), getHeight());
 		offGraphics = (Graphics2D)offImage.getGraphics();
-
-		addKeyListener(this);
 
 		new Thread(){
 			public void run() {
@@ -75,14 +71,6 @@ public abstract class MediaApplet extends Applet implements KeyListener {
 	public abstract long delay();
 
 	public abstract Dimension getDimension();
-
-	public abstract void keyPressed(KeyEvent e);
-
-	public void keyReleased(KeyEvent e) {
-	}
-
-	public void keyTyped(KeyEvent e) {
-	}
 
 	@Override
 	public void paint(Graphics g) {

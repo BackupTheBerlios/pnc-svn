@@ -1,4 +1,4 @@
-package com.mathias.games.dogfight;
+package com.mathias.games.dogfight.common.items;
 
 public class Explosion extends AbstractItem implements TtlItem {
 
@@ -17,8 +17,14 @@ public class Explosion extends AbstractItem implements TtlItem {
 		this.action = Action.ONGOING;
 	}
 
+	@Override
 	public boolean decreaseTtl() {
 		return counter-- <= 0;
+	}
+
+	@Override
+	public int getTtl() {
+		return counter;
 	}
 
 }

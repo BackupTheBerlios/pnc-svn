@@ -14,12 +14,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mathias.drawutils.Util;
-import com.mathias.games.dogfight.AbstractItem;
 import com.mathias.games.dogfight.common.Constants;
 import com.mathias.games.dogfight.common.WorldEngine;
 import com.mathias.games.dogfight.common.command.AbstractCommand;
 import com.mathias.games.dogfight.common.command.LoginCommand;
+import com.mathias.games.dogfight.common.command.LogoutCommand;
 import com.mathias.games.dogfight.common.command.UpdateCommand;
+import com.mathias.games.dogfight.common.items.AbstractItem;
+import com.mathias.games.dogfight.server.dao.UserDao;
 
 public class NetworkThread extends TimerTask {
 
@@ -92,12 +94,20 @@ public class NetworkThread extends TimerTask {
 		log.debug("Received command: "+cmd+" from "+addr);
 		if(cmd instanceof LoginCommand){
 			LoginCommand lgn = (LoginCommand) cmd;
-			lgn.authenticated = connections.get(lgn.getUsername()) == null;// && UserDao.exists(lgn.getUsername());
+			lgn.authenticated = connections.get(lgn.getUsername()) == null
+					&& UserDao.authenticated(lgn.getUsername(), lgn
+							.getPassword());
 //			lgn.authenticated = UserDao.authenticated(lgn.getUsername(), lgn.getPassword());
 			if(lgn.authenticated){
 				connections.put(lgn.getUsername(), addr);
 			}
 			sendCommand(lgn, addr);
+		}else if(cmd instanceof LogoutCommand){
+			LogoutCommand lgo = (LogoutCommand) cmd;
+			//TODO check password
+			engine.remove(lgo.getUsername());
+			sendAllCommand(lgo, null);
+			connections.remove(lgo.getUsername());
 		}else if(cmd instanceof UpdateCommand){
 			UpdateCommand upd = (UpdateCommand) cmd;
 			log.debug("Update command received. Items: "+upd.items.length);

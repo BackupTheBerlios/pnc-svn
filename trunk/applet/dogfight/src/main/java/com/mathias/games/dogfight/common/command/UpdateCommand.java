@@ -1,6 +1,6 @@
 package com.mathias.games.dogfight.common.command;
 
-import com.mathias.games.dogfight.AbstractItem;
+import com.mathias.games.dogfight.common.items.AbstractItem;
 
 public class UpdateCommand extends AbstractCommand {
 

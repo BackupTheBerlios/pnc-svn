@@ -1,4 +1,4 @@
-package com.mathias.games.dogfight;
+package com.mathias.games.dogfight.common.items;
 
 import java.awt.Polygon;
 import java.util.Collection;

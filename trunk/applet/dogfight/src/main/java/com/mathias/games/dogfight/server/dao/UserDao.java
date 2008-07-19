@@ -8,12 +8,15 @@ public class UserDao {
 	private static Map<String, String> users = new HashMap<String, String>();
 	
 	static{
-		users.put("player1", "player1");
-		users.put("player2", "player2");
-		users.put("player3", "player3");
-		users.put("player4", "player4");
-		users.put("player5", "player5");
-		users.put("player6", "player6");
+		users.put("p1", "p1");
+		users.put("p2", "p2");
+		users.put("p3", "p3");
+		users.put("p4", "p4");
+		users.put("p5", "p5");
+		users.put("p6", "p6");
+		users.put("p7", "p7");
+		users.put("p8", "p8");
+		users.put("p9", "p9");
 	}
 
 	public static boolean authenticated(String username, String password){

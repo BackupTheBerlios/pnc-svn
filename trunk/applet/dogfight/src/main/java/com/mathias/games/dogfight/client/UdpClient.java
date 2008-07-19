@@ -12,17 +12,18 @@ import org.slf4j.LoggerFactory;
 
 import com.mathias.drawutils.GenericDialog;
 import com.mathias.drawutils.Util;
-import com.mathias.games.dogfight.AbstractItem;
-import com.mathias.games.dogfight.AbstractItem.Action;
 import com.mathias.games.dogfight.common.Constants;
 import com.mathias.games.dogfight.common.TimeoutMap;
 import com.mathias.games.dogfight.common.TimeoutMapListener;
 import com.mathias.games.dogfight.common.WorldEngine;
 import com.mathias.games.dogfight.common.command.AbstractCommand;
 import com.mathias.games.dogfight.common.command.LoginCommand;
+import com.mathias.games.dogfight.common.command.LogoutCommand;
 import com.mathias.games.dogfight.common.command.MessageCommand;
 import com.mathias.games.dogfight.common.command.StateCommand;
 import com.mathias.games.dogfight.common.command.UpdateCommand;
+import com.mathias.games.dogfight.common.items.AbstractItem;
+import com.mathias.games.dogfight.common.items.AbstractItem.Action;
 
 public class UdpClient extends Thread implements TimeoutMapListener<Integer, AbstractCommand> {
 
@@ -54,6 +55,10 @@ public class UdpClient extends Thread implements TimeoutMapListener<Integer, Abs
 	 */
 	public void login(String username, String password) throws IOException {
 		sendCommand(new LoginCommand(username, password));
+	}
+	
+	public void logout(String username, String password) throws IOException {
+		sendCommand(new LogoutCommand(username, password));
 	}
 	
 	public void update(AbstractItem item) throws IOException {
@@ -88,6 +93,9 @@ public class UdpClient extends Thread implements TimeoutMapListener<Integer, Abs
 				log.debug("lgn.getUsername(): "+lgn.getUsername());
 				objects.updateAction(lgn.getUsername(), Action.ONGOING);
 			}
+		}else if(cmd instanceof LogoutCommand){
+			LogoutCommand lgo = (LogoutCommand) cmd;
+			objects.remove(lgo.getUsername());
 		}else if(cmd instanceof UpdateCommand){
 			UpdateCommand upd = (UpdateCommand) cmd;
 			log.debug("UpdateCommand: "+upd);

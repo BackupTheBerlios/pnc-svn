@@ -12,11 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mathias.drawutils.MathUtil;
-import com.mathias.games.dogfight.AbstractItem;
-import com.mathias.games.dogfight.Explosion;
-import com.mathias.games.dogfight.SolidItem;
-import com.mathias.games.dogfight.TtlItem;
-import com.mathias.games.dogfight.AbstractItem.Action;
+import com.mathias.games.dogfight.common.items.AbstractItem;
+import com.mathias.games.dogfight.common.items.Explosion;
+import com.mathias.games.dogfight.common.items.SolidItem;
+import com.mathias.games.dogfight.common.items.TtlItem;
+import com.mathias.games.dogfight.common.items.AbstractItem.Action;
 
 public class WorldEngine extends TimerTask {
 
@@ -26,6 +26,7 @@ public class WorldEngine extends TimerTask {
 
 	public WorldEngine() {
 		new Timer(false).schedule(this, 0, Constants.DELAY);
+		log.debug("WorldEngine started!");
 	}
 
 	@Override
@@ -78,6 +79,15 @@ public class WorldEngine extends TimerTask {
 			}
 			items.putAll(exp);
 		}
+		
+		// clean up
+//		synchronized (items) {
+//			for(Iterator<AbstractItem> it = items.values().iterator(); it.hasNext(); ){
+//				AbstractItem item = it.next();
+//				if(!(item instanceof TtlItem)){
+//				}
+//			}
+//		}
 	}
 
 	public void add(AbstractItem item){

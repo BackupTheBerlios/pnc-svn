@@ -1,4 +1,4 @@
-package com.mathias.games.dogfight;
+package com.mathias.games.dogfight.common.items;
 
 public class Bullet extends AbstractItem implements SolidItem, TtlItem {
 
@@ -19,8 +19,14 @@ public class Bullet extends AbstractItem implements SolidItem, TtlItem {
 		this.action = Action.ONGOING;
 	}
 
+	@Override
 	public boolean decreaseTtl() {
 		return counter-- <= 0;
+	}
+
+	@Override
+	public int getTtl() {
+		return counter;
 	}
 
 }
