@@ -53,6 +53,11 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 		Explosion,
 		ExplosionMask;
 	}
+	
+	private enum Audio{
+		Explosion,
+		Fire;
+	}
 
 	private static final double angleadd = 0.1;
 	
@@ -104,6 +109,9 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 		addImage(Images.RedExplosion, "images/redexplosion.gif", true);
 		addImage(Images.Plane, "images/plane.jpg", true);
 		addImage(Images.PlaneMask, "images/plane_mask.jpg", true);
+		
+		addAudio(Audio.Explosion, "audio/explosion.au");
+		addAudio(Audio.Fire, "audio/fire.au");
 
 		planes.put(Images.BluePlane.ordinal(), new RotateImage(this, DrawUtil
 				.composite(this, getImage(Images.Plane),
@@ -210,6 +218,7 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		getAudio(Audio.Fire).play();
 		engine.add(bullet);
 	}
 
@@ -230,6 +239,9 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 				g.drawString("x", item.x, item.y);
 			}else if(item instanceof Explosion){
 				int counter = 20-((TtlItem)item).getTtl();
+				if(counter == 0){
+					getAudio(Audio.Explosion).play();
+				}
 				if(counter < 8){
 					Image img = explosion.get(counter, 0) ;//getImage(Images.Explosion);
 					g.drawImage(img, item.x-(img.getWidth(null)/2), item.y-(img.getHeight(null)/2),

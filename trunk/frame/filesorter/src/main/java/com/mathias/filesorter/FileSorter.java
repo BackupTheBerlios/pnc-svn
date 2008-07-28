@@ -3,12 +3,8 @@ package com.mathias.filesorter;
 import java.awt.BorderLayout;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.event.WindowEvent;
 
-import javax.swing.Action;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -20,25 +16,22 @@ import javax.swing.UIManager;
 import javax.swing.border.EtchedBorder;
 
 import com.mathias.drawutils.Util;
+import com.mathias.drawutils.frame.BasicFrame;
 import com.mathias.filesorter.action.AddDirectoryAction;
 import com.mathias.filesorter.action.ExitAction;
 import com.mathias.filesorter.action.FilterAction;
 import com.mathias.filesorter.table.FileItemTable;
 
 @SuppressWarnings("serial")
-public class FileSorter extends JFrame {
+public class FileSorter extends BasicFrame {
 
 	public FileSorter() {
-		initUI();
-		pack();
-		Util.centerFrame(this);
-		setVisible(true);
+		super("FileSorter");
 	}
 
-	private void initUI() {
+	protected void init() {
 		setLayout(new BorderLayout());
-		setTitle("FileSorter");
-		
+
 		FileItemTable table = new FileItemTable();
 
 		AddDirectoryAction addDir = new AddDirectoryAction(table.getModel());
@@ -75,23 +68,13 @@ public class FileSorter extends JFrame {
 		getContentPane().add(mainPanel, BorderLayout.CENTER);
 	}
 	
-	private JButton createButton(Action action) {
-		JButton button = new JButton(action);
-		if(action.getValue(Action.SMALL_ICON) == null){
-			button.setText((String)action.getValue(Action.NAME));
-		}
-		button.setMargin(new Insets(0, 0, 0, 0));
-		button.setFocusable(false);
-		return button;
-	}
-
-	@Override
-	protected void processWindowEvent(WindowEvent e) {
-		super.processWindowEvent(e);
-		if (e.getID() == WindowEvent.WINDOW_CLOSING) {
-			System.exit(0);
-		}
-	}
+//	@Override
+//	protected void processWindowEvent(WindowEvent e) {
+//		super.processWindowEvent(e);
+//		if (e.getID() == WindowEvent.WINDOW_CLOSING) {
+//			System.exit(0);
+//		}
+//	}
 	
 	public static void main(String[] args) {
 		try {

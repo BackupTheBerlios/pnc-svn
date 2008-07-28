@@ -130,8 +130,16 @@ public abstract class MediaApplet extends Applet {
 		return images.get(e.ordinal());
 	}
 
+	protected void addAudio(Enum<?> e, String filename){
+		this.addAudio(e.ordinal(), filename);
+	}
+
 	protected void addAudio(int id, String filename){
 		sounds.put(id, getAudioClip(getCodeBase(), filename));
+	}
+
+	protected AudioClip getAudio(Enum<?> e){
+		return this.getAudio(e.ordinal());
 	}
 
 	protected AudioClip getAudio(int id){
