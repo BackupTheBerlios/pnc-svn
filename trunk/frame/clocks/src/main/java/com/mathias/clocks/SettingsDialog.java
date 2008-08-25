@@ -19,24 +19,6 @@ import com.mathias.drawutils.Util;
 @SuppressWarnings("serial")
 public class SettingsDialog extends FormDialog {
 	
-	/*
-##clock1-clock10, Name, TimeZone
-clock1=Stockholm, CET
-clock2=Atlanta, US/Eastern
-clock3=Dehli, IST
-#clock4=Yahoo, YahooTimeZone
-##none, right, left, top, bottom
-location=left
-#autohide=false
-#overlap=5
-#hidden=false
-#ontop=true
-#seconds=true
-#font=Arial
-#fontsize
-#systray=false
-	 */
-
 	private List<ClockComponent> clockFields = new ArrayList<ClockComponent>();
 	private JComboBox location = new JComboBox();
 	private JCheckBox autohide = new JCheckBox();
@@ -49,18 +31,22 @@ location=left
 	private JCheckBox systray = new JCheckBox();
 	
 	private Clocks clocks;
+	
+	private Configuration conf;
 
 	public SettingsDialog(Clocks clocks) {
 		super("Settings", false);
 		
 		this.clocks = clocks;
 
+		conf = clocks.getConf();
+
 		initUI();
 	}
 
 	@Override
 	protected void setupForm() {
-		List<Clock> clocks = Configuration.getClocks();
+		List<Clock> clocks = conf.getClocks();
 		for (Clock clock : clocks) {
 			ClockComponent nameCombo = new ClockComponent(clock.getIndex(),
 					clock.getName(), clock.getTimeZone().getID());
@@ -76,33 +62,33 @@ location=left
 		location.addItem("right");
 		location.addItem("top");
 		location.addItem("bottom");
-		location.setSelectedItem(Configuration.get("location"));
+		location.setSelectedItem(conf.getLocation());
 		addItem("Location", location);
-		autohide.setSelected(Configuration.getBoolean("autohide", true));
+		autohide.setSelected(conf.getAutohide());
 		addItem("Autohide", autohide);
 		for (int i = 0; i < 10; i++) {
 			overlap.addItem(i);
 		}
-		overlap.setSelectedItem(Configuration.getInt("overlap", 5));
+		overlap.setSelectedItem(conf.getOverlap());
 		addItem("Overlap", overlap);
-		hidden.setSelected(Configuration.getBoolean("hidden", true));
+		hidden.setSelected(conf.getHidden());
 		addItem("Hidden", hidden);
-		ontop.setSelected(Configuration.getBoolean("ontop", true));
+		ontop.setSelected(conf.getAlwaysOnTop());
 		addItem("On top", ontop);
-		seconds.setSelected(Configuration.getBoolean("seconds", false));
+		seconds.setSelected(conf.getSeconds());
 		addItem("Seconds", seconds);
 		Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
 		for (Font f : fonts) {
 			font.addItem(f.getName());
 		}
-		font.setSelectedItem(Configuration.get("font"));
+		font.setSelectedItem(conf.getFont());
 		addItem("Font", font);
 		for (int i = 10; i <= 60; i+=10) {
 			fontsize.addItem(i);
 		}
-		fontsize.setSelectedItem(Configuration.getInt("fontsize", 20));
+		fontsize.setSelectedItem(conf.getFontSize());
 		addItem("Font size", fontsize);
-		systray.setSelected(Configuration.getBoolean("systray", false));
+		systray.setSelected(conf.getSystray());
 		addItem("Systray", systray);
 	}
 
@@ -110,21 +96,21 @@ location=left
 	protected boolean validateDialog() {
 		for (ClockComponent nc : clockFields) {
 			if(nc.isComplete()){
-				Configuration.set(nc.getKey(), nc.getValue());
+				conf.set(nc.getKey(), nc.getValue());
 			}else{
-				Configuration.remove(nc.getKey());
+				conf.remove(nc.getKey());
 			}
 		}
-		Configuration.set("location", ""+location.getSelectedItem());
-		Configuration.set("autohide", ""+autohide.isSelected());
-		Configuration.set("overlap", ""+overlap.getSelectedItem());
-		Configuration.set("hidden", ""+hidden.isSelected());
-		Configuration.set("ontop", ""+ontop.isSelected());
-		Configuration.set("seconds", ""+seconds.isSelected());
-		Configuration.set("font", ""+font.getSelectedItem());
-		Configuration.set("fontsize", ""+fontsize.getSelectedItem());
-		Configuration.set("systray", ""+systray.isSelected());
-		Configuration.store();
+		conf.setLocation(location.getSelectedItem());
+		conf.setAutohide(autohide.isSelected());
+		conf.setOverlap(overlap.getSelectedItem());
+		conf.setHidden(hidden.isSelected());
+		conf.setAlwaysOnTop(ontop.isSelected());
+		conf.setSeconds(seconds.isSelected());
+		conf.setFont(font.getSelectedItem());
+		conf.setFontSize(fontsize.getSelectedItem());
+		conf.setSystray(systray.isSelected());
+		conf.store();
 		clocks.init();
 		return true;
 	}

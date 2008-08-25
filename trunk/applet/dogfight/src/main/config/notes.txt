@@ -1,4 +1,12 @@
 dogfight networking
+===================
+
+login acc: wait for opponent
+wait for opponent acc: start game
+logout acc: ...
+remove cmd: remove item, send remove acc
+
+
 
 Normal UC:
 Login to server
@@ -27,4 +35,12 @@ State change (Reliable atomic)
 Broadcast
 Transaction
 Stream
+
+
+
+Feature request:
+
+
+
+Bugs:
 

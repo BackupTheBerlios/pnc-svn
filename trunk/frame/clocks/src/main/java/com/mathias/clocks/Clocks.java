@@ -53,6 +53,7 @@ public class Clocks extends JWindow implements MouseListener {
 	private int height;
 	private Robot robot;
 	private TimerAction ta = null;
+	private Configuration conf;
 
 	private final static int WIDTH = 130;
 	private final static int DHEIGHT = 55;
@@ -62,7 +63,7 @@ public class Clocks extends JWindow implements MouseListener {
 	private final static int IMG_ICO = 11;
 
 	public Clocks(){
-		System.out.println("cons");
+//		System.out.println("cons");
 
 		imgs = new HashMap<Integer, Image>();
 //		imgs.put(IMG_0, getToolkit().getImage(getClass().getResource("images/0.gif")));
@@ -100,20 +101,25 @@ public class Clocks extends JWindow implements MouseListener {
 			e1.printStackTrace();
 		}
 
+		final JWindow win = this;
 		new Timer().schedule(new TimerTask(){
 			@Override
 			public void run() {
 				paintClocks();
+				win.setAlwaysOnTop(conf.getAlwaysOnTop());
 			}
 		}, 1000, 1000);
 	}
 	
 	public void init(){
-		System.out.println("init");
-		setAlwaysOnTop(Configuration.getBoolean("ontop", true));
+//		System.out.println("init");
+		
+		conf = new Configuration("clocks.properties");
+		
+		setAlwaysOnTop(conf.getAlwaysOnTop());
 
-		int fontSize = Configuration.getInt("fontsize", 20);
-		String fn = Configuration.get("font", "Arial");
+		int fontSize = conf.getFontSize();
+		String fn = conf.getFont();
 		Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
 		for (Font f : fonts) {
 			if(fn.equals(f.getName())){
@@ -127,7 +133,7 @@ public class Clocks extends JWindow implements MouseListener {
 		}
 
 		if(SystemTray.isSupported()){
-		    if(Configuration.getBoolean("systray", true)){
+		    if(conf.getSystray()){
 				SystemTray tray = SystemTray.getSystemTray();
 				
 				if(tray.getTrayIcons().length == 0){
@@ -147,8 +153,8 @@ public class Clocks extends JWindow implements MouseListener {
 			}
 		}
 		
-		clocks = Configuration.getClocks();
-		location = Configuration.get("location", "left");
+		clocks = conf.getClocks();
+		location = conf.getLocation();
 
 		height = clocks.size()*DHEIGHT+40;
 		img = createImage(WIDTH, height);
@@ -185,7 +191,7 @@ public class Clocks extends JWindow implements MouseListener {
 	
 	@Override
 	public void update(Graphics g) {
-		System.out.println("update");
+//		System.out.println("update");
 
 		super.update(g);
 
@@ -194,14 +200,14 @@ public class Clocks extends JWindow implements MouseListener {
 	
 	@Override
 	public void paint(Graphics arg0) {
-		System.out.println("paint");
+//		System.out.println("paint");
 
 		super.paint(arg0);
 		paintClocks();
 	}
 
 	private void paintClocks(){
-		System.out.println("alsdkjajsdkajs");
+//		System.out.println("alsdkjajsdkajs");
 
 		BufferedImage cap = robot.createScreenCapture(getBounds());
 		g.drawImage(cap, 0, 0, null);
@@ -216,7 +222,7 @@ public class Clocks extends JWindow implements MouseListener {
 		Iterator<Clock> it = clocks.iterator();
 		g.setColor(TEXTCOLOR);
 		FontRenderContext frc = g.getFontRenderContext();
-		boolean seconds = Configuration.getBoolean("seconds", false);
+		boolean seconds = conf.getSeconds();
 		for (int i = 0; it.hasNext(); i++) {
 			Clock c = it.next();
 			int y = i*DHEIGHT+30;
@@ -236,7 +242,9 @@ public class Clocks extends JWindow implements MouseListener {
 			long time = ta.td.getTimerTime();
 			long millis = time - System.currentTimeMillis();
 			if(millis > 999){
-				new TextLayout(getTime(millis), font.deriveFont(Font.PLAIN, 10), frc).draw(g, (float) 15, height-20);
+				new TextLayout(getTime(millis),
+						font.deriveFont(Font.PLAIN, 10), frc).draw(g,
+						(float) 15, height - 20);
 			}
 		}
 
@@ -282,7 +290,7 @@ public class Clocks extends JWindow implements MouseListener {
 
 	private void setLocation(boolean visible){
 		Dimension ss = getToolkit().getScreenSize();
-		if(visible || !Configuration.getBoolean("autohide", true)){
+		if(visible || !conf.getAutohide()){
 			//Show clocks
 			if("left".equals(location)) {
 				setLocation(0, ss.height/2-height/2);
@@ -295,12 +303,12 @@ public class Clocks extends JWindow implements MouseListener {
 			}else{
 				setLocation(ss.width, ss.height);
 			}
-			if(Configuration.getBoolean("hidden", false)){
+			if(conf.getHidden()){
 				setVisible(true);
 			}
 		}else{
 			//Auto hide clocks
-			int overlap = Configuration.getInt("overlap", 1);
+			int overlap = conf.getOverlap();
 			if("left".equals(location)) {
 				setLocation(overlap-WIDTH, ss.height/2-height/2);
 			} else if("right".equals(location)) {
@@ -312,10 +320,14 @@ public class Clocks extends JWindow implements MouseListener {
 			}else{
 				setLocation(ss.width, ss.height);
 			}
-			if(Configuration.getBoolean("hidden", false)){
+			if(conf.getHidden()){
 				setVisible(false);
 			}
 		}
+	}
+
+	public Configuration getConf() {
+		return conf;
 	}
 
 	public static void main(String[] args) {

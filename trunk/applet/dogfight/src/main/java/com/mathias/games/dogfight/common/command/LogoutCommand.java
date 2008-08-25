@@ -1,7 +1,7 @@
 package com.mathias.games.dogfight.common.command;
 
 
-public class LogoutCommand extends AbstractCommand implements StateCommand {
+public class LogoutCommand extends AbstractCommand {
 
 	private static final long serialVersionUID = 4875233616220054693L;
 

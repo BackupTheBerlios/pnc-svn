@@ -8,6 +8,7 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -24,7 +25,13 @@ import com.mathias.drawutils.MultiImage;
 import com.mathias.drawutils.RotateImage;
 import com.mathias.drawutils.applet.MediaApplet;
 import com.mathias.games.dogfight.common.Constants;
+import com.mathias.games.dogfight.common.UdpNetworkListener;
 import com.mathias.games.dogfight.common.WorldEngine;
+import com.mathias.games.dogfight.common.command.AbstractCommand;
+import com.mathias.games.dogfight.common.command.LoginCommand;
+import com.mathias.games.dogfight.common.command.LogoutCommand;
+import com.mathias.games.dogfight.common.command.MessageCommand;
+import com.mathias.games.dogfight.common.command.UpdateCommand;
 import com.mathias.games.dogfight.common.items.AbstractItem;
 import com.mathias.games.dogfight.common.items.Bullet;
 import com.mathias.games.dogfight.common.items.Explosion;
@@ -33,7 +40,7 @@ import com.mathias.games.dogfight.common.items.TtlItem;
 import com.mathias.games.dogfight.common.items.AbstractItem.Action;
 
 @SuppressWarnings("serial")
-public class Dogfight extends MediaApplet implements MouseListener, KeyListener {
+public class Dogfight extends MediaApplet implements UdpNetworkListener, MouseListener, KeyListener {
 	
 	private static final Logger log = LoggerFactory.getLogger(Dogfight.class);
 	
@@ -67,9 +74,11 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 
 	private Map<Integer, RotateImage> planes = new HashMap<Integer, RotateImage>();
 	
-	private UdpClient client;
+	private UdpNetworkClient client;
 	
 	private boolean connected = false;
+	
+	private boolean waitingForOpponent = false;
 	
 	private Random rand;
 	
@@ -132,7 +141,7 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 		explosion = new MultiImage(this, e, 8, 1, 100, 100);
 
 		// networking
-		client = new UdpClient(engine);
+		client = new UdpNetworkClient("localhost", Constants.PORT, this);
 
 		new Timer(true).schedule(new TimerTask(){
 			@Override
@@ -143,7 +152,7 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 
 		super.init();
 
-		log.debug("DogFight intialized!");
+		log.debug("DogFight initalized!");
 	}
 	
 	private void login(){
@@ -171,13 +180,13 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 
 				if(dlg.getUsername().equals("x")){
 					player.action = Action.ONGOING;
+					waitingForOpponent = false;
 				}else{
 					password = dlg.getPassword();
 					client.login(dlg.getUsername(), password);
-					connected = true;
 				}
 			} catch (IOException e) {
-				GenericDialog.showErrorDialog("Login", "Could connect to server: "+e.getMessage());
+				GenericDialog.showErrorDialog("Login", "Could not connect to server: "+e.getMessage());
 			}
 		}
 	}
@@ -220,6 +229,47 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 		}
 		getAudio(Audio.Fire).play();
 		engine.add(bullet);
+	}
+
+	public void receiveCommand(AbstractCommand cmd, SocketAddress addr) {
+		log.debug("Receive command: "+cmd);
+		if(cmd instanceof LoginCommand){
+			LoginCommand lgn = (LoginCommand) cmd;
+			//TODO
+			if(lgn.getUsername().equals(player.key)){
+				
+			}
+			if(!lgn.authenticated){
+				GenericDialog.showErrorDialog("Login",
+						"Could not login with user " + lgn.getUsername());
+				player = null;
+			}else{
+				connected = true;
+				waitingForOpponent = true;
+				log.debug("lgn.getUsername(): "+lgn.getUsername());
+				engine.updateAction(lgn.getUsername(), Action.ONGOING);
+			}
+		}else if(cmd instanceof LogoutCommand){
+			LogoutCommand lgo = (LogoutCommand) cmd;
+			engine.remove(lgo.getUsername());
+		}else if(cmd instanceof UpdateCommand){
+			UpdateCommand upd = (UpdateCommand) cmd;
+			log.debug("UpdateCommand: "+upd);
+			for (AbstractItem item : upd.items) {
+				if(item != null){
+					if(item.action == Action.REMOVED){
+						engine.remove(item.key);
+					}else{
+						engine.update(item);
+					}
+				}
+			}
+		}else if(cmd instanceof MessageCommand){
+			MessageCommand msg = (MessageCommand) cmd;
+			GenericDialog.showInfoDialog("Message", msg.msg);
+		}else{
+			log.warn("Unknown command");
+		}
 	}
 
 	@Override
@@ -266,6 +316,9 @@ public class Dogfight extends MediaApplet implements MouseListener, KeyListener 
 //			} catch (IOException e) {
 //				log.warn("Could not connect to server: "+e.getMessage());
 //			}
+		}
+		if(waitingForOpponent){
+			g.drawString("Waiting For Opponent", 300, 300);
 		}
 	}
 
