@@ -50,6 +50,7 @@ public class Clocks extends JWindow implements MouseListener {
 	private String location;
 	private TrayIcon trayIcon = null;
 	private Font font;
+	private Font versionfont;
 	private int height;
 	private Robot robot;
 	private TimerAction ta = null;
@@ -124,12 +125,14 @@ public class Clocks extends JWindow implements MouseListener {
 		for (Font f : fonts) {
 			if(fn.equals(f.getName())){
 				font = f.deriveFont(Font.PLAIN, fontSize);
+				versionfont = f.deriveFont(Font.PLAIN, 8);
 				break;
 			}
 		}
 		if(font == null){
 			GenericDialog.showErrorDialog("Clocks", "Could not find font: "+fn);
 			font = fonts[0];
+			versionfont = fonts[0];
 		}
 
 		if(SystemTray.isSupported()){
@@ -220,13 +223,19 @@ public class Clocks extends JWindow implements MouseListener {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Clocks");
 		Iterator<Clock> it = clocks.iterator();
-		g.setColor(TEXTCOLOR);
 		FontRenderContext frc = g.getFontRenderContext();
+		
+		//draw version
+		g.setColor(Color.white);
+		String version = getClass().getPackage().getImplementationVersion();
+		TextLayout layout = new TextLayout((version != null ? version : "N/A"), versionfont, frc);
+		layout.draw(g, (float) (WIDTH-layout.getBounds().getWidth()-10), (float)layout.getBounds().getHeight()+2);
+
+		g.setColor(TEXTCOLOR);
 		boolean seconds = conf.getSeconds();
 		for (int i = 0; it.hasNext(); i++) {
 			Clock c = it.next();
 			int y = i*DHEIGHT+30;
-			TextLayout layout;
 			String time = c.getTime(seconds);
 			//draw clock name
 			layout = new TextLayout(c.getName(), font, frc);

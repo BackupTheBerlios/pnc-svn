@@ -4,7 +4,7 @@
   <groupId>com.mathias.clocks</groupId>
   <artifactId>clocks</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
   <name>Clocks</name>
   <url>http://maven.apache.org</url>
   <dependencies>
@@ -52,6 +52,11 @@
             <manifest>
               <mainClass>com.mathias.clocks.Clocks</mainClass>
             </manifest>
+            <manifestEntries>
+              <Implementation-Title>${pom.name}</Implementation-Title>
+              <Implementation-Vendor>Mathias</Implementation-Vendor>
+              <Implementation-Version>${pom.version}</Implementation-Version>
+            </manifestEntries>
           </archive>
         </configuration>
       </plugin>
@@ -64,30 +69,69 @@
               <phase>package</phase>
               <goals><goal>launch4j</goal></goals>
               <configuration>
-	            <headerType>gui</headerType>
-                <outfile>target/clocks.exe</outfile>
-                <jar>target/clocks-1.0-SNAPSHOT.jar</jar>
-                <errTitle>Clocks</errTitle>
-                <classPath>
-                  <mainClass>com.mathias.clocks.Clocks</mainClass>
+
+
+  <dontWrapJar>true</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>clocks-1.0-SNAPSHOT.jar</jar>
+  <outfile>clocks.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir></chdir>
+  <priority>normal</priority>
+  <downloadUrl>http://java.com/download</downloadUrl>
+  <supportUrl></supportUrl>
+  <customProcName>false</customProcName>
+  <stayAlive>false</stayAlive>
+  <icon>D:\mathias\workspaces\pri\pnc\frame\clocks\src\test\config\clocks_icon.ico</icon>
+  <classPath>
+    <mainClass>com.mathias.clocks.Clocks</mainClass>
+<!--
+    <cp>draw-utils-1.0-SNAPSHOT.jar</cp>
+    -->
+  </classPath>
+  <jre>
+    <path></path>
+    <minVersion>1.6.0</minVersion>
+    <maxVersion></maxVersion>
+    <dontUsePrivateJres>false</dontUsePrivateJres>
+    <initialHeapSize>0</initialHeapSize>
+    <maxHeapSize>0</maxHeapSize>
+  </jre>
+
+
+<!--
+  <dontWrapJar>true</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>clocks-1.0-SNAPSHOT.jar</jar>
+  <outfile>target/clocks.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>http://java.com/download</downloadUrl>
+  <supportUrl></supportUrl>
+  <customProcName>false</customProcName>
+  <stayAlive>false</stayAlive>
+  <icon></icon>
+  <classPath>
+    <mainClass>com.mathias.clocks.Clocks</mainClass>
                   <addDependencies>true</addDependencies>
                   <preCp>anything</preCp>
-                </classPath>
-                <jre>
-                  <minVersion>1.6.0</minVersion>
-                </jre>
-                <versionInfo>
-                  <fileVersion>1.2.3.4</fileVersion>
-                  <txtFileVersion>txt file version?</txtFileVersion>
-                  <fileDescription>a description</fileDescription>
-                  <copyright>my copyright</copyright>
-                  <productVersion>4.3.2.1</productVersion>
-                  <txtProductVersion>txt product version</txtProductVersion>
-                  <productName>Clocks</productName>
-                  <internalName>Clocks</internalName>
-                  <originalFilename>original.exe</originalFilename>
-                </versionInfo>
-                <icon>src/test/config/clocks_icon.ico</icon>
+			    <cp>draw-utils-1.0-SNAPSHOT.jar</cp>
+  </classPath>
+  <jre>
+    <path></path>
+    <minVersion>1.6.0</minVersion>
+    <maxVersion></maxVersion>
+    <dontUsePrivateJres>false</dontUsePrivateJres>
+    <initialHeapSize>0</initialHeapSize>
+    <maxHeapSize>0</maxHeapSize>
+  </jre>
+  <icon>src/test/config/clocks_icon.ico</icon>
+-->
+
+
               </configuration>
             </execution>
           </executions>
