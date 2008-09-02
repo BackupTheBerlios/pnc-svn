@@ -6,7 +6,6 @@ import java.awt.event.ActionListener;
 import com.mathias.clocks.Clocks;
 import com.mathias.clocks.SettingsDialog;
 
-@SuppressWarnings("serial")
 public class SettingsAction implements ActionListener {
 	
 	private Clocks clocks;

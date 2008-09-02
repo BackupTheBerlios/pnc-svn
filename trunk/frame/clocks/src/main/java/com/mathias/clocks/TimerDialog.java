@@ -17,8 +17,8 @@ public class TimerDialog extends FormDialog {
 	
 	private TimerTask task = null;
 
-	public TimerDialog() {
-		super("Timer", false);
+	public TimerDialog(String name) {
+		super(name, false);
 		initUI();
 	}
 
@@ -33,7 +33,7 @@ public class TimerDialog extends FormDialog {
 		task = new TimerTask(){
 			@Override
 			public void run() {
-				Audio.play(TimerDialog.class.getResource("resources/alarm.au"));
+				action();
 			}
 		};
 		new Timer().schedule(task, seconds*1000);
@@ -59,6 +59,10 @@ public class TimerDialog extends FormDialog {
 			ret = 0;
 		}
 		return ret;
+	}
+
+	protected void action(){
+		Audio.play(TimerDialog.class.getResource("resources/alarm.au"));
 	}
 
 }

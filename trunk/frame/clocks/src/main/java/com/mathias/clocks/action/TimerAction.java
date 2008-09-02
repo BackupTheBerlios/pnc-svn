@@ -5,14 +5,18 @@ import java.awt.event.ActionListener;
 
 import com.mathias.clocks.TimerDialog;
 
-@SuppressWarnings("serial")
 public class TimerAction implements ActionListener {
 	
-	public TimerDialog td = null;
+	private TimerListener listener;
+	
+	public TimerAction(TimerListener listener) {
+		this.listener = listener;
+	}
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
-		td = new TimerDialog();
+		TimerDialog timerDialog = new TimerDialog("Timer");
+		listener.handleTimer(timerDialog.getTimerTime());
 	}
 
 }

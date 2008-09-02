@@ -5,7 +5,6 @@ import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-@SuppressWarnings("serial")
 public class ExitAction implements ActionListener {
 
 	@Override

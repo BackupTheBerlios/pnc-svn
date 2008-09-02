@@ -35,11 +35,13 @@ import javax.swing.JWindow;
 
 import com.mathias.clocks.action.ExitAction;
 import com.mathias.clocks.action.SettingsAction;
+import com.mathias.clocks.action.ShutdownAction;
 import com.mathias.clocks.action.TimerAction;
+import com.mathias.clocks.action.TimerListener;
 import com.mathias.drawutils.GenericDialog;
 
 @SuppressWarnings("serial")
-public class Clocks extends JWindow implements MouseListener {
+public class Clocks extends JWindow implements MouseListener, TimerListener {
 	
 //	private final static Logger log = Logger.getLogger(Clocks.class.getName());
 
@@ -53,8 +55,8 @@ public class Clocks extends JWindow implements MouseListener {
 	private Font versionfont;
 	private int height;
 	private Robot robot;
-	private TimerAction ta = null;
 	private Configuration conf;
+	private long timeout = 0;
 
 	private final static int WIDTH = 130;
 	private final static int DHEIGHT = 55;
@@ -170,9 +172,11 @@ public class Clocks extends JWindow implements MouseListener {
 	private PopupMenu createPopupMenu(){
 		PopupMenu popup = new PopupMenu();
 		MenuItem timerItem = new MenuItem("Timer...");
-		ta = new TimerAction();
-		timerItem.addActionListener(ta);
+		timerItem.addActionListener(new TimerAction(this));
 		popup.add(timerItem);
+		MenuItem shutdownItem = new MenuItem("Shutdown...");
+		shutdownItem.addActionListener(new ShutdownAction(this));
+		popup.add(shutdownItem);
 		popup.addSeparator();
 		MenuItem settingsItem = new MenuItem("Settings...");
 		settingsItem.addActionListener(new SettingsAction(this));
@@ -247,9 +251,8 @@ public class Clocks extends JWindow implements MouseListener {
 			sb.append("\n"+c.getName()+" "+time);
 		}
 
-		if(ta != null && ta.td != null){
-			long time = ta.td.getTimerTime();
-			long millis = time - System.currentTimeMillis();
+		if(timeout > 0){
+			long millis = timeout - System.currentTimeMillis();
 			if(millis > 999){
 				new TextLayout(getTime(millis),
 						font.deriveFont(Font.PLAIN, 10), frc).draw(g,
@@ -341,6 +344,11 @@ public class Clocks extends JWindow implements MouseListener {
 
 	public static void main(String[] args) {
 		new Clocks();
+	}
+
+	@Override
+	public void handleTimer(long millis) {
+		timeout = millis;
 	}
 
 }
