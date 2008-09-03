@@ -1,0 +1,26 @@
+<launch4jConfig>
+  <dontWrapJar>true</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>imageview-1.0-SNAPSHOT.jar</jar>
+  <outfile>C:\Users\mathias\workspace\pnc\frame\imageview\target\imageview.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>http://java.com/download</downloadUrl>
+  <supportUrl></supportUrl>
+  <customProcName>false</customProcName>
+  <stayAlive>false</stayAlive>
+  <manifest></manifest>
+  <icon>C:\Users\mathias\workspace\pnc\frame\imageview\src\main\config\imageview_icon.ico</icon>
+  <classPath>
+    <mainClass>com.mathias.imageview.ImageView</mainClass>
+    <cp>draw-utils-1.0-SNAPSHOT.jar</cp>
+  </classPath>
+  <jre>
+    <path></path>
+    <minVersion>1.6.0</minVersion>
+    <maxVersion></maxVersion>
+    <jdkPreference>preferJre</jdkPreference>
+  </jre>
+</launch4jConfig>
