@@ -1,6 +1,5 @@
 package com.mathias.drawutils.frame;
 
-import java.awt.FlowLayout;
 import java.awt.Insets;
 
 import javax.swing.Action;
@@ -12,11 +11,12 @@ import com.mathias.drawutils.Util;
 public abstract class BasicFrame extends JFrame {
 
 	public BasicFrame(String title){
-		init();
 
-		setLayout(new FlowLayout());
+//		setLayout(new FlowLayout());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle(title);
+
+		init();
 
 		Util.centerFrame(this);
 		pack();
@@ -25,11 +25,12 @@ public abstract class BasicFrame extends JFrame {
 	}
 
 	public BasicFrame(String title, int width, int height){
-		init();
 		setSize(width, height);
-		setLayout(new FlowLayout());
+//		setLayout(new FlowLayout());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle(title);
+
+		init();
 
 		Util.centerFrame(this);
 
@@ -37,14 +38,15 @@ public abstract class BasicFrame extends JFrame {
 	}
 
 	public BasicFrame(String title, int left, int top, int width, int height){
-		init();
 		setSize(width, height);
-		setLayout(new FlowLayout());
+//		setLayout(new FlowLayout());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle(title);
 
 		setLocation(left, top);
 		
+		init();
+
 		setVisible(true);
 	}
 

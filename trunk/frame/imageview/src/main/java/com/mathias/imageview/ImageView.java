@@ -10,19 +10,18 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JWindow;
 
 import com.mathias.drawutils.FormDialog;
 
+@SuppressWarnings("serial")
 public class ImageView extends JFrame implements KeyListener {
 	
 	private boolean fullscreen = false;
@@ -33,26 +32,34 @@ public class ImageView extends JFrame implements KeyListener {
 	
 	private JWindow fsWin;
 	
-	private Image image;
+	private BufferedImage image;
 	
-	private String[] imageNames;
+	private File[] imageFiles;
 	
 	private int imagePtr = 0;
 
 	public ImageView(String[] args) {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        if(args.length == 0){
-			File cwd = new File(System.getProperty("user.dir"));
-			imageNames = cwd.list(new ImageFileFilter());
-			if(imageNames.length == 0){
-				imageNames = new String[]{"clouds.jpg"};
-			}
-		}else{
-			imageNames = args;
+        if(args.length == 1){
+        	imageFiles = getSiblingImageFiles(new File(args[0]));
+		}
+        
+        if(imageFiles == null){
+        	imageFiles = fileDialog(null);
+        	if(imageFiles == null){
+    			System.exit(0);
+        	}
+        }
+        
+        for (int i = 0; i < imageFiles.length; i++) {
+        	if(args != null && args.length > 0 && imageFiles[i].getAbsolutePath().equals(args[0])){
+        		imagePtr = i;
+        		break;
+        	}
 		}
 
-		// Determine if full-screen mode is supported directly
+        // Determine if full-screen mode is supported directly
 	    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 	    GraphicsDevice gs = ge.getDefaultScreenDevice();
 	    if (gs.isFullScreenSupported()) {
@@ -90,13 +97,28 @@ public class ImageView extends JFrame implements KeyListener {
 
 	    addKeyListener(this);
 
-		setTitle(imageNames[0]);
-
-   		openImage(imageNames[0]);
+   		openImage(imageFiles[imagePtr]);
 
 	    setVisible(true);
 	}
 	
+	private static File[] fileDialog(File cwd){
+    	JFileChooser fc = new JFileChooser(cwd);
+//    	fc.setFileFilter(new ImageFileFilter());
+		int ret = fc.showOpenDialog(null);
+		File sel = fc.getSelectedFile();
+		if(JFileChooser.APPROVE_OPTION == ret && sel != null){
+			return getSiblingImageFiles(sel);
+		}else{
+			return null;
+		}
+	}
+	
+	private static File[] getSiblingImageFiles(File file){
+    	File cwd = file.getParentFile();
+    	return cwd.listFiles(new ImageFilenameFilter());
+	}
+
 	public static BufferedImage shrink(BufferedImage source, double factor) {
         int w = (int) (source.getWidth() * factor);
         int h = (int) (source.getHeight() * factor);
@@ -108,18 +130,18 @@ public class ImageView extends JFrame implements KeyListener {
         return result;
     }
 	
-	private void openImage(String filename){
+	private void openImage(File file){
 	    try {
-	        File file = new File(filename);
 	        image = ImageIO.read(file);
 	        panel.setPreferredSize(new Dimension(image.getWidth(this), image.getHeight(this)));
+//			setTitle(imageNames[0]);
 			pack();
 	        fsWin.repaint();
 	    } catch (IOException e) {
 			System.out.println("IOException: "+e.getMessage());
 	    }
 	}
-	
+
 	private void closeFullscreen(){
 		System.out.println("closeFs");
 		// Return to normal windowed mode
@@ -165,14 +187,21 @@ public class ImageView extends JFrame implements KeyListener {
 	private void paintScreen(Graphics2D g){
 		int iw = image.getWidth(this);
 		int ih = image.getHeight(this);
-		int w = g.getClipBounds().width;
-		int h = g.getClipBounds().height;
+		int sw = g.getClipBounds().width;
+		int sh = g.getClipBounds().height;
+		int nw = sw;
+		int nh = sh;
 		if(aspectRatio){
 //			do{
-				h = w*ih/iw;
+				nh = sw*ih/iw;
+				if(nh > sh){
+					nh = sh;
+					nw = sh*iw/ih;
+				}
+//				nw = nh*ih/iw;
 //			} while(iw > w || ih > h);
 		}
-		g.drawImage(image.getScaledInstance(w, h, Image.SCALE_FAST), 0, 0, this);
+		g.drawImage(image.getScaledInstance(nw, nh, Image.SCALE_FAST), 0, 0, this);
 	}
 
 	@Override
@@ -197,20 +226,38 @@ public class ImageView extends JFrame implements KeyListener {
 		}else if(k.getKeyChar() == 'q'){
 			System.exit(0);
 		}else if(k.getKeyChar() == 'o'){
-			new ImageViewOptions();
+			File[] files = fileDialog(imageFiles[imagePtr]);
+			if(files != null){
+				imageFiles = files;
+			}
 		}else if(k.getKeyChar() == 'i'){
 			//TODO show information
+			new ImageViewOptions();
 		}else if(k.getKeyChar() == 'n'){
-			if(++imagePtr >= imageNames.length){
+			if(++imagePtr >= imageFiles.length){
 				imagePtr = 0;
 			}
-			openImage(imageNames[imagePtr]);
+			openImage(imageFiles[imagePtr]);
 		}else if(k.getKeyChar() == 'p'){
 			if(--imagePtr < 0){
-				imagePtr = imageNames.length - 1;
+				imagePtr = imageFiles.length - 1;
 			}
-			openImage(imageNames[imagePtr]);
+			openImage(imageFiles[imagePtr]);
+		}else if(k.getKeyChar() == 'r'){
+			rotateRight();
+			repaint();
+		}else if(k.getKeyChar() == 'l'){
+			rotateLeft();
+			repaint();
 		}
+	}
+	
+	private void rotateRight(){
+		image = Util.rotate90DX(image);
+	}
+
+	private void rotateLeft(){
+		image = Util.rotate90SX(image);
 	}
 
 	private class ImageViewOptions extends FormDialog {
@@ -235,34 +282,6 @@ public class ImageView extends JFrame implements KeyListener {
 
 	public static void main(String[] args) {
 		new ImageView(args);
-	}
-
-	public class ImageFileFilter implements FilenameFilter {
-
-		@Override
-		public boolean accept(File file, String filename) {
-			String[] formatNames = ImageIO.getReaderFormatNames();
-			formatNames = unique(formatNames);
-			for (String fn : formatNames) {
-				if(filename.endsWith("."+fn)){
-//					System.out.println("Found: "+filename+" "+"   ."+fn);
-					return true;
-				}
-			}
-			return false;
-		}
-	}
-	
-	// Converts all strings in 'strings' to lowercase
-    // and returns an array containing the unique values.
-    // All returned values are lowercase.
-	public static String[] unique(String[] strings) {
-		Set<String> set = new HashSet<String>();
-		for (int i = 0; i < strings.length; i++) {
-			String name = strings[i].toLowerCase();
-			set.add(name);
-		}
-		return set.toArray(new String[0]);
 	}
 
 }
