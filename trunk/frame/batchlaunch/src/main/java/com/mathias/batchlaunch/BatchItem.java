@@ -1,6 +1,8 @@
 package com.mathias.batchlaunch;
 
-public class BatchItem {
+import javax.swing.JLabel;
+
+public class BatchItem extends JLabel {
 	
 	private String name;
 	
@@ -9,6 +11,7 @@ public class BatchItem {
 	public BatchItem(String name, String command) {
 		this.name = name;
 		this.command = command;
+		setText(name);
 	}
 
 	public String getName() {

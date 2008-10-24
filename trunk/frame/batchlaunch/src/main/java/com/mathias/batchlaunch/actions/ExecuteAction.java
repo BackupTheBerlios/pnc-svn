@@ -24,12 +24,12 @@ public class ExecuteAction extends AbstractAction {
 			BatchItem item = list.get(s);
 			try {
 				Process child = Runtime.getRuntime().exec(item.getCommand());
-				System.out.println("Executed "+item.getName()+" command: "+item.getCommand());
+//				System.out.println("Executed "+item.getName()+" command: "+item.getCommand());
 			} catch (IOException e) {
 				System.out.println("Could not execute "+item.getName()+" command: "+item.getCommand());
 			}
 		}
-		System.exit(0);
+//		System.exit(0);
 	}
 
 }
