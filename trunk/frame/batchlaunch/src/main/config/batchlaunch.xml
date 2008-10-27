@@ -1,0 +1,28 @@
+<launch4jConfig>
+  <dontWrapJar>true</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>bl.jar</jar>
+  <outfile>D:\mathias\workspaces\pri\pnc\frame\batchlaunch\bl.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>http://java.com/download</downloadUrl>
+  <supportUrl></supportUrl>
+  <customProcName>false</customProcName>
+  <stayAlive>false</stayAlive>
+  <icon>D:\mathias\workspaces\pri\pnc\frame\batchlaunch\src\main\config\batchlaunch_icon.ico</icon>
+  <classPath>
+    <mainClass>com.mathias.batchlaunch.BatchLaunch</mainClass>
+    <cp>bl.jar</cp>
+    <cp>draw-utils-1.0-SNAPSHOT.jar</cp>
+  </classPath>
+  <jre>
+    <path></path>
+    <minVersion>1.6.0</minVersion>
+    <maxVersion></maxVersion>
+    <dontUsePrivateJres>false</dontUsePrivateJres>
+    <initialHeapSize>0</initialHeapSize>
+    <maxHeapSize>0</maxHeapSize>
+  </jre>
+</launch4jConfig>
