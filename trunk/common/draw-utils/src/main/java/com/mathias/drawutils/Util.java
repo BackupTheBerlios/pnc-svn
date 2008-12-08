@@ -27,6 +27,8 @@ import java.util.logging.Logger;
 
 import javax.swing.JFrame;
 
+import com.sun.org.apache.xml.internal.security.algorithms.MessageDigestAlgorithm;
+
 public abstract class Util {
 
 	public static boolean isEmpty(Object s) {
@@ -168,17 +170,33 @@ public abstract class Util {
 	 * @param data
 	 * @return checksum of data in hex (length: ?)
 	 */
-	public static String md5sum(String data) {
-		if (isEmpty(data)) {
+	public static String md5(String data) {
+		return toHex(alg("MD5", data));
+	}
+
+	/**
+	 * @param data
+	 * @return checksum of data in hex (length: ?)
+	 */
+	public static String sha1(String data) {
+		return toHex(alg("SHA1", data));
+	}
+
+	/**
+	 * @param data
+	 * @return checksum of data in hex (length: ?)
+	 */
+	public static byte[] alg(String alg, String data) {
+		if (isEmpty(alg) || isEmpty(data)) {
 			return null;
 		}
 		try {
-			MessageDigest algorithm = MessageDigest.getInstance("MD5");
+			MessageDigest algorithm = MessageDigest.getInstance(alg);
 			algorithm.reset();
 			algorithm.update(data.getBytes());
-			return toHex(algorithm.digest());
+			return algorithm.digest();
 		} catch (NoSuchAlgorithmException nsae) {
-			throw new RuntimeException("NoSuchAlgorithmException: MD5");
+			throw new RuntimeException("NoSuchAlgorithmException: "+alg);
 		}
 	}
 
@@ -307,6 +325,14 @@ public abstract class Util {
 		return path;
 	}
 
+	public static String fileName(String path){
+		int i = path.lastIndexOf(File.separatorChar);
+		if(i != -1){
+			return path.substring(i+1, path.length());
+		}
+		return path;
+	}
+
 	public static byte[] concat(byte[] org, byte[] cat){
 		byte[] data = new byte[org.length+cat.length];
 		for (int i = 0; i < org.length; i++) {
@@ -333,6 +359,262 @@ public abstract class Util {
         Object obj = in.readObject();
         in.close();
 		return obj;
+	}
+
+	/**
+	 * Convert from hexadecimal string to byte array.
+	 * <p>
+	 * The input string is required to contain only valid hexadecimal characters,
+	 * and the given length must be even.
+	 * 
+	 * @param s
+	 *          the string to convert.
+	 * @return a byte array containing the values corresponding to the hexadecimal
+	 *         representation.
+	 * @exception IllegalArgumentException
+	 *              if <code>s</code> is <code>null</code>, the length is odd
+	 *              or the string contains non-hexadecimal characters.
+	 */
+	public static byte[] toBytes(String s) {
+		if (s == null) {
+			throw new IllegalArgumentException("input string is null");
+		} else {
+			return toBytes(s, 0, s.length());
+		}
+	}
+
+	/**
+	 * Convert from hexadecimal string to byte array.
+	 * <p>
+	 * The input string is required to contain only valid hexadecimal characters,
+	 * and the given length must be even.
+	 * 
+	 * @param s
+	 *          the string to convert.
+	 * @param offset
+	 *          starting position in the string.
+	 * @param length
+	 *          the number characters to convert.
+	 * @return a byte array containing the values corresponding to the hexadecimal
+	 *         representation.
+	 * @exception StringIndexOutOfBoundsException
+	 *              if conversion would cause access of data outside string
+	 *              bounds.
+	 * @exception IllegalArgumentException
+	 *              if <code>s</code> is <code>null</code>,
+	 *              <code>length</code> is less than zero, the length is odd or
+	 *              the string contains non-hexadecimal characters.
+	 */
+	public static byte[] toBytes(String s, int offset, int length) {
+		if (s == null) {
+			throw new IllegalArgumentException("input string is null");
+		}
+		if (length < 0) {
+			throw new IllegalArgumentException("length is < 0");
+		}
+		if (offset < 0) {
+			throw new StringIndexOutOfBoundsException(offset);
+		}
+
+		int end = offset + length;
+
+		if (end > s.length()) {
+			throw new StringIndexOutOfBoundsException(end);
+		}
+
+		else if ((length % 2) == 1) {
+			throw new IllegalArgumentException("length of input string is odd >" + s + "<");
+		}
+
+		byte[] bb = new byte[length / 2];
+		char ch;
+		byte b;
+		int pos = 0;
+
+		for (int i = offset; i < end; i += 2, pos += 1) {
+			b = 0;
+
+			ch = s.charAt(i);
+			if ((ch >= '0') && (ch <= '9')) {
+				b += ((ch - '0') * 16);
+			} else if ((ch >= 'a') && (ch <= 'f')) {
+				b += ((ch - 'a' + 10) * 16);
+			} else if ((ch >= 'A') && (ch <= 'F')) {
+				b += ((ch - 'A' + 10) * 16);
+			} else {
+				throw new IllegalArgumentException("invalid hex character >" + s + "<");
+			}
+
+			ch = s.charAt(i + 1);
+			if ((ch >= '0') && (ch <= '9')) {
+				b += (ch - '0');
+			} else if ((ch >= 'a') && (ch <= 'f')) {
+				b += (ch - 'a' + 10);
+			} else if ((ch >= 'A') && (ch <= 'F')) {
+				b += (ch - 'A' + 10);
+			} else {
+				throw new IllegalArgumentException("invalid hex character >" + s + "<");
+			}
+
+			bb[pos] = b;
+		}
+
+		return bb;
+	}
+
+	/**
+	 * Checks if a <code>String</code> contains only digits.
+	 * 
+	 * @param s
+	 *            the <code>String</code> to test.
+	 * @return <code>true</code> if the value of the provided String contains
+	 *         only digits; <code>false</code> otherwise.
+	 */
+	public static boolean isNumeric(String s) {
+		if (isEmpty(s)) {
+			return false;
+		}
+
+		for (int i = 0; i < s.length(); i++) {
+			if (!Character.isDigit(s.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Returns a right aligned string.
+	 * <p>
+	 * Aligns the string to the right of a field of the given length. If the
+	 * length of the string is less than the given length, the space to the left
+	 * of the string will be padded with the given character.
+	 * <p>
+	 * If the length of the string is longer than the given length, the input
+	 * string will be returned unmodified.
+	 * 
+	 * @param s
+	 *            the string.
+	 * @param length
+	 *            the length of the resulting string.
+	 * @param c
+	 *            the pad character.
+	 * @return a right aligned string.
+	 */
+	public static String rightAlign(String s, int length, char c) {
+		if (length <= 0) {
+			throw new IllegalArgumentException("Length of field <= 0");
+		}
+
+		if (isEmpty(s)) {
+			return fill(c, length);
+		}
+
+		if (s.length() < length) {
+			StringBuffer sb = new StringBuffer(length);
+			int len = length - s.length();
+			for (int i = 0; i < len; i++) {
+				sb.append(c);
+			}
+			sb.append(s);
+			return sb.toString();
+		} else {
+			return s;
+		}
+	}
+
+	/**
+	 * Returns a left aligned string.
+	 * <p>
+	 * Aligns the string to the left of a field of the given length. If the
+	 * length of the string is less than the given length, the space to the
+	 * right of the string will be padded with the given character.
+	 * <p>
+	 * If the length of the string is longer than the given length, the input
+	 * string will be returned unmodified.
+	 * 
+	 * @param s
+	 *            the string.
+	 * @param length
+	 *            the length of the resulting string.
+	 * @param c
+	 *            the pad character.
+	 * @return a left aligned string.
+	 */
+	public static String leftAlign(String s, int length, char c) {
+		if (length <= 0) {
+			throw new IllegalArgumentException("Length of field <= 0");
+		}
+
+		if (isEmpty(s)) {
+			return fill(c, length);
+		}
+
+		if (s.length() < length) {
+			StringBuffer sb = new StringBuffer(length);
+			int len = length - s.length();
+			sb.append(s);
+			for (int i = 0; i < len; i++) {
+				sb.append(c);
+			}
+			return sb.toString();
+		} else {
+			return s;
+		}
+	}
+
+	/**
+	 * Creates a new <code>String</code> of the given length.
+	 * <p>
+	 * All characters in the string will be initialized to the provided
+	 * character.
+	 * 
+	 * @param c
+	 *            the character.
+	 * @param s
+	 *            the length.
+	 * @return a string of given length, filled with the given character.
+	 */
+	public static String fill(char c, int length) {
+		if (length <= 0) {
+			throw new IllegalArgumentException("Length of field <= 0");
+		}
+
+		StringBuffer sb = new StringBuffer(length);
+		for (int i = 0; i < length; i++) {
+			sb.append(c);
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Checks if a <code>String</code> is a valid hexadecimal string.
+	 * 
+	 * @param s
+	 *            the <code>String</code> to test.
+	 * @return <code>true</code> if the value of the provided String contains
+	 *         only hexadecimal characters; <code>false</code> otherwise.
+	 * @throws IllegalArgumentException
+	 *             if the <code>String</code> contains an odd number of
+	 *             characters.
+	 */
+	public static boolean isHex(String s) {
+		if (isEmpty(s)) {
+			return false;
+		}
+
+		if (s.length() % 2 != 0) {
+			throw new IllegalArgumentException("Length of hex string is odd");
+		}
+
+		for (int i = 0; i < s.length(); i++) {
+			char ch = s.charAt(i);
+			if ((ch < '0' && ch > '9') && (ch < 'a' && ch > 'f')
+					&& (ch < 'A' && ch > 'F')) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
