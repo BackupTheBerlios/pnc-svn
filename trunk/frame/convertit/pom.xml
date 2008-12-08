@@ -16,7 +16,7 @@
     </dependency>
     <dependency>
       <groupId>com.mathias</groupId>
-      <artifactId>util-mathias</artifactId>
+      <artifactId>draw-utils</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
   </dependencies>

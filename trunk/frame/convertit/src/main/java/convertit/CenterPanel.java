@@ -8,7 +8,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import com.mathias.util.Util;
+import com.mathias.drawutils.Util;
 
 import convertit.util.Des;
 
