@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="hello">ACast</string>
+	<string name="app_name">ACast</string>
+	<string name="title">Title:</string>
+	<string name="url">URL:</string>
+	<string name="confirm">Confirm</string>
+	<string name="addfeed">Add feed</string>
+	<string name="editfeed">Edit feed</string>
+	<string name="removefeed">Remove feed</string>
+	<string name="refreshfeeds">Refresh feeds</string>
+	<string name="playitem">Play item</string>
+	<string name="downloaditem">Download item</string>
+	<string name="deleteitem">Delete item</string>
+	<string name="refreshfeed">Refresh feed</string>
+</resources>

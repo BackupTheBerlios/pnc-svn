@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">File Browser</string>
+    <string name="no_files">This directory is empty</string>
+    <string name="to_top">[Back to Top]</string>
+</resources>

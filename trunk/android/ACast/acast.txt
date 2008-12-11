@@ -1,0 +1,20 @@
+ACast
+-----
+
+Dialog: Feeds list:
+Add feed
+Delete feed
+Refresh all feeds
+
+Dialog: Feed list:
+Download
+Remove
+Play
+
+Dialog: Add feed
+
+Features:
+Individual bookmark
+
+
+Illegal character in path at index 37: http://192.168.254.125/audio/music/14 - Nowhere.mp3
