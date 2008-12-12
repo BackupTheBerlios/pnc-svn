@@ -10,66 +10,65 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.SimpleCursorAdapter;
 
+import com.mathias.android.acast.common.ChoiceArrayAdapter;
+import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.rss.RssUtil;
 
-public class FeedList extends ListActivity {
+public class FeedItemList extends ListActivity {
+
+	private static final String TAG = FeedItemList.class.getSimpleName();
 
 	private static final int PLAY_ID = Menu.FIRST;
 	private static final int DOWNLOAD_ID = Menu.FIRST + 1;
 	private static final int DELETE_ID = Menu.FIRST + 2;
 	private static final int REFRESH_ID = Menu.FIRST + 3;
 
-	private Long mRowId;
+	private Long mFeedId;
 
 	private ACastDbAdapter mDbHelper;
+	
+	private ChoiceArrayAdapter<FeedItem> adapter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.feed_list);
+		setContentView(R.layout.feeditem_list);
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
-		mRowId = savedInstanceState != null ? savedInstanceState
+		mFeedId = savedInstanceState != null ? savedInstanceState
 				.getLong(ACast.KEY) : null;
-		if (mRowId == null) {
+		if (mFeedId == null) {
 			Bundle extras = getIntent().getExtras();
-			mRowId = extras != null ? extras.getLong(ACast.KEY)
+			mFeedId = extras != null ? extras.getLong(ACast.KEY)
 					: null;
 		}
 		populateFields();
 	}
 
 	private void populateFields() {
-		if (mRowId != null) {
-			Cursor c = mDbHelper.fetchFeedItems(mRowId);
-			startManagingCursor(c);
-
-			String[] from = new String[] { ACastDbAdapter.FEEDITEM_TITLE };
-			int[] to = new int[] { R.id.text1 };
-
-			SimpleCursorAdapter notes = new SimpleCursorAdapter(this,
-					R.layout.feed_row, c, from, to);
-			setListAdapter(notes);
+		if (mFeedId != null) {
+			Feed feed = mDbHelper.fetchFeed(mFeedId);
+			adapter = new ChoiceArrayAdapter<FeedItem>(this,
+					R.layout.feed_row, R.id.text1, feed.getItems(), "title");
+			setListAdapter(adapter);
 		}
 	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putLong(ACast.KEY, mRowId);
+		outState.putLong(ACast.KEY, mFeedId);
 	}
 
 	@Override
@@ -90,17 +89,28 @@ public class FeedList extends ListActivity {
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		switch (item.getItemId()) {
-		case PLAY_ID:
-			playItem(getListView().getSelectedItemId());
+		if(PLAY_ID == item.getItemId()){
+			int pos = getSelectedItemPosition();
+			if(pos >= 0){
+				long id = adapter.getItem(pos).getId();
+				playItem(id);
+			}
 			return true;
-		case DOWNLOAD_ID:
-			downloadItem(getListView().getSelectedItemId());
+		}else if(DOWNLOAD_ID == item.getItemId()){
+			int pos = getSelectedItemPosition();
+			if(pos >= 0){
+				long id = adapter.getItem(pos).getId();
+				downloadItem(id);
+			}
 			return true;
-		case DELETE_ID:
-			deleteItem(getListView().getSelectedItemId());
+		}else if(DELETE_ID == item.getItemId()){
+			int pos = getSelectedItemPosition();
+			if(pos >= 0){
+				long id = adapter.getItem(pos).getId();
+				deleteItem(id);
+			}
 			return true;
-		case REFRESH_ID:
+		}else if(REFRESH_ID == item.getItemId()){
 			refreshFeed();
 			return true;
 		}
@@ -108,35 +118,45 @@ public class FeedList extends ListActivity {
 	}
 
 	private void playItem(long id){
-		FeedItem item = mDbHelper.fetchFeedItem(mRowId, id);
-		if(item.getMp3file() == null){
-			MediaPlayer mp = MediaPlayer.create(this, Uri.parse(item.getMp3uri()));
+		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
+		String file = item.getMp3file();
+		String uri = item.getMp3uri().replace(' ', '+');
+		if(file == null){
+			MediaPlayer mp = MediaPlayer.create(this, Uri.parse(uri));
+			if(mp == null){
+				Util.showDialog(this, "Could not create media player for: "+uri);
+				return;
+			}
 			mp.start();
 		}else{
 			MediaPlayer mp = new MediaPlayer();
 			try {
-				mp.setDataSource(item.getMp3file());
-				mp.prepare();
+				mp.setDataSource(file);
+				//mp.setDisplay();
+//				mp.prepare();
 				mp.start();
 			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
+				Log.e(TAG, item.getMp3file(), e);
+				Util.showDialog(this, e.getMessage()+": "+uri);
 			} catch (IllegalStateException e) {
-				e.printStackTrace();
+				Log.e(TAG, item.getMp3file(), e);
+				Util.showDialog(this, e.getMessage()+": "+uri);
 			} catch (IOException e) {
-				e.printStackTrace();
+				Log.e(TAG, item.getMp3file(), e);
+				Util.showDialog(this, e.getMessage()+": "+uri);
 			}
 		}
 	}
 
 	private void downloadItem(long id){
-		FeedItem item = mDbHelper.fetchFeedItem(mRowId, id);
-		if(item.getMp3file() != null){
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setTitle("Already downloaded: "+item.getMp3file());
-			builder.show();
+		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
+		String file = item.getMp3file();
+		String uri = item.getMp3uri().replace(' ', '+');
+		if(file != null){
+			Util.showDialog(this, "Already downloaded: "+file);
 			return;
 		}
-		String file = item.getTitle();
+		file = item.getTitle();
 		InputStream input = null;
 		FileOutputStream output = null;
 		
@@ -146,7 +166,7 @@ public class FeedList extends ListActivity {
 		progress.show();
 		try {
 			DefaultHttpClient client = new DefaultHttpClient();
-			HttpResponse response = client.execute(new HttpGet(item.getMp3uri().replaceAll(" ", "+")));
+			HttpResponse response = client.execute(new HttpGet(uri));
 			input = response.getEntity().getContent();
 			output = openFileOutput(item.getTitle(), MODE_WORLD_READABLE);
 			while(true){
@@ -161,11 +181,11 @@ public class FeedList extends ListActivity {
 			item.setMp3file(file);
 			mDbHelper.updateFeedItem(item);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.getMessage(), e);
 		} catch (ClientProtocolException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.getMessage(), e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.getMessage(), e);
 		}finally{
 			if(input != null){
 				try {
@@ -180,11 +200,11 @@ public class FeedList extends ListActivity {
 				}
 			}
 		}
-		progress.dismiss();
+		//progress.dismiss();
 	}
 
 	private void deleteItem(long id){
-		FeedItem item = mDbHelper.fetchFeedItem(mRowId, id);
+		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
 		if(item != null && item.getMp3file() != null){
 			deleteFile(item.getMp3file());
 			item.setMp3file(null);
@@ -193,10 +213,9 @@ public class FeedList extends ListActivity {
 	}
 
 	private void refreshFeed(){
-		Cursor c = mDbHelper.fetchFeed(mRowId);
-		String uri = c.getString(c.getColumnIndex(ACastDbAdapter.FEED_URI));
-		Feed feed = new RssUtil().parse(uri);
-		mDbHelper.updateFeed(mRowId, feed);
+		Feed feed = mDbHelper.fetchFeed(mFeedId);
+		feed = new RssUtil().parse(feed.getUri());
+		mDbHelper.updateFeed(mFeedId, feed);
 		populateFields();
 	}
 

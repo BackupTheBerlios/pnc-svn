@@ -12,7 +12,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".FeedEdit"/>
-        <activity android:name=".FeedList"/>
+        <activity android:name=".FeedItemList"/>
     </application>
 
 <uses-permission android:name="android.permission.INTERNET"></uses-permission>

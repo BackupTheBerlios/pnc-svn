@@ -1,16 +1,16 @@
 package com.mathias.android.acast;
 
+import java.util.List;
+
 import android.app.ListActivity;
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
 
+import com.mathias.android.acast.common.ChoiceArrayAdapter;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.rss.RssUtil;
 
@@ -18,7 +18,7 @@ public class ACast extends ListActivity {
 	
 	public static final String KEY = "keyyyy";
 
-	private static final String TAG = ACast.class.getSimpleName();
+//	private static final String TAG = ACast.class.getSimpleName();
 
 	private static final int INSERT_ID = Menu.FIRST;
 	private static final int UPDATE_ID = Menu.FIRST + 1;
@@ -26,26 +26,23 @@ public class ACast extends ListActivity {
 	private static final int REFRESH_ID = Menu.FIRST + 3;
 
 	private ACastDbAdapter mDbHelper;
+	
+	private ChoiceArrayAdapter<Feed> adapter;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.feeds_list);
+		setContentView(R.layout.feed_list);
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		fillData();
 	}
 
 	private void fillData() {
-		Cursor c = mDbHelper.fetchAllFeeds();
-		startManagingCursor(c);
-
-		String[] from = new String[] { ACastDbAdapter.FEED_TITLE };
-		int[] to = new int[] { R.id.text1 };
-
-		SimpleCursorAdapter feeds = new SimpleCursorAdapter(this,
-				R.layout.feed_row, c, from, to);
-		setListAdapter(feeds);
+		List<Feed> names = mDbHelper.fetchAllFeedsLight();
+		adapter = new ChoiceArrayAdapter<Feed>(this,
+				R.layout.feed_row, R.id.text1, names, "title");
+		setListAdapter(adapter);
 	}
 
 	@Override
@@ -59,18 +56,33 @@ public class ACast extends ListActivity {
 	}
 
 	@Override
+	protected void onListItemClick(ListView l, View v, int position, long id) {
+		super.onListItemClick(l, v, position, id);
+		Intent i = new Intent(this, FeedItemList.class);
+		i.putExtra(KEY, adapter.getItem(position).getId());
+		startActivityForResult(i, 0);
+	}
+
+	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		switch (item.getItemId()) {
-		case INSERT_ID:
+		if(INSERT_ID == item.getItemId()){
 			createFeed();
 			return true;
-		case UPDATE_ID:
-			editFeed(getListView().getSelectedItemId());
+		}else if(UPDATE_ID == item.getItemId()){
+			int pos = getSelectedItemPosition();
+			if(pos >= 0){
+				long feedId = adapter.getItem(pos).getId();
+				editFeed(feedId);
+			}
 			return true;
-		case DELETE_ID:
-			deleteFeed(getListView().getSelectedItemId());
+		}else if(DELETE_ID == item.getItemId()){
+			int pos = getSelectedItemPosition();
+			if(pos >= 0){
+				long feedId = adapter.getItem(pos).getId();
+				deleteFeed(feedId);
+			}
 			return true;
-		case REFRESH_ID:
+		}else if(REFRESH_ID == item.getItemId()){
 			refreshFeeds();
 			return true;
 		}
@@ -89,32 +101,18 @@ public class ACast extends ListActivity {
 	}
 
 	private void deleteFeed(long id) {
-		mDbHelper.deleteFeed(getListView().getSelectedItemId());
+		mDbHelper.deleteFeed(id);
 		fillData();
 	}
 	
 	private void refreshFeeds(){
-		Cursor c = mDbHelper.fetchAllFeeds();
-		if(!c.moveToFirst()){
-			Log.w(TAG, "No feeds!");
-			return;
-		}
-		do{
-			long rowId = c.getLong(c.getColumnIndexOrThrow(ACastDbAdapter.FEED_ID));
-			String title = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEED_TITLE));
-			String uri = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEED_URI));
-			Log.d(TAG, "Title: "+title+" Uri: "+uri);
-			Feed feed = new RssUtil().parse(uri);
+		List<Feed> feeds = mDbHelper.fetchAllFeedsLight();
+		for (Feed feed : feeds) {
+			long rowId = feed.getId();
+			String uri = feed.getUri();
+			feed = new RssUtil().parse(uri);
 			mDbHelper.updateFeed(rowId, feed);
-		}while(c.moveToNext());
-	}
-
-	@Override
-	protected void onListItemClick(ListView l, View v, int position, long id) {
-		super.onListItemClick(l, v, position, id);
-		Intent i = new Intent(this, FeedList.class);
-		i.putExtra(KEY, id);
-		startActivityForResult(i, 0);
+		}
 	}
 
 	@Override

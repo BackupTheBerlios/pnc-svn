@@ -2,5 +2,9 @@
 <resources>
     <string name="app_name">File Browser</string>
     <string name="no_files">This directory is empty</string>
-    <string name="to_top">[Back to Top]</string>
+    <string name="to_top">[Top]</string>
+    <string name="to_priv">[Private]</string>
+    <string name="to_cache">[Cache]</string>
+    <string name="at">\@:</string>
+    <string name="go">go</string>
 </resources>

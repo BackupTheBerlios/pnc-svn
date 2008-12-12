@@ -9,25 +9,42 @@ import android.app.ListActivity;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 
 public class FileBrowser extends ListActivity {
 
 	private List<String> items = null;
+	
+	private EditText at;
+
+	private Button go;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.directory_list);
+		at = (EditText) findViewById(R.id.at);
+		go = (Button) findViewById(R.id.go);
+		go.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				list(at.getText().toString());
+			}
+		});
 		fillWithRoot();
 	}
 
-	private void fill(File[] files) {
+	private void fill(String[] files) {
 		items = new ArrayList<String>();
 		items.add(getString(R.string.to_top));
-		for (File file : files){
-			items.add(file.getPath());
+		items.add(getString(R.string.to_priv));
+		items.add(getString(R.string.to_cache));
+		for (String file : files){
+			items.add(file);
 		}
 		ArrayAdapter<String> fileList = new ArrayAdapter<String>(this,
 				R.layout.file_row, items);
@@ -38,12 +55,17 @@ public class FileBrowser extends ListActivity {
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		if (id == 0) {
 			fillWithRoot();
+		} else if(id == 1) {
+			fillWithPrivate();
+		} else if(id == 2) {
+			fillWithCache();
 		} else {
 			File file = new File(items.get((int)id));
 			if (file.isDirectory()){
-				fill(file.listFiles());
-			} else if (file.getName().endsWith("ogg")
-					|| file.getName().endsWith("mp3")) {
+				at.setText(file.getAbsolutePath());
+				fill(file.list());
+			} else if (file.getName().endsWith(".ogg")
+					|| file.getName().endsWith(".mp3")) {
 				try {
 					MediaPlayer mp = new MediaPlayer();
 					mp.setDataSource(file.getAbsolutePath());
@@ -61,9 +83,27 @@ public class FileBrowser extends ListActivity {
 			}
 		}
 	}
+	
+	private void list(String path){
+		list(new File(path));
+	}
+
+	private void list(File path){
+		at.setText(path.getAbsolutePath());
+		fill(path.list());
+	}
 
 	private void fillWithRoot() {
-		fill(new File("/").listFiles());
+		list("/");
+	}
+
+	private void fillWithCache() {
+		list(getCacheDir());
+	}
+
+	private void fillWithPrivate() {
+		at.setText(R.string.to_priv);
+		fill(fileList());
 	}
 
 }
