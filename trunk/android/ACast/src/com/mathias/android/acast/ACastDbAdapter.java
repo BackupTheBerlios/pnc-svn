@@ -13,6 +13,7 @@ import android.util.Log;
 
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings;
 
 public class ACastDbAdapter {
 
@@ -25,16 +26,26 @@ public class ACastDbAdapter {
 	private static final String FEEDITEM_TITLE = "title";
 	private static final String FEEDITEM_MP3URI = "mp3uri";
 	private static final String FEEDITEM_MP3FILE = "mp3file";
+	private static final String FEEDITEM_SIZE = "size";
+	private static final String FEEDITEM_TYPE = "type";
+	private static final String FEEDITEM_BOOKMARK = "bookmark";
+
+	private static final String SETTING_ID = "_id";
+	private static final String SETTING_VOLUME = "volume";
 
 	private static final String DATABASE_NAME = "acast";
 	private static final String DATABASE_TABLE_FEED = "feed";
 	private static final String DATABASE_TABLE_FEEDITEM = "feeditem";
-	private static final int DATABASE_VERSION = 10;
+	private static final String DATABASE_TABLE_SETTING = "setting";
 
 	private static final String DATABASE_CREATE_FEED = "create table feed (_id integer primary key autoincrement, "
 			+ "title text not null, uri text not null);";
 	private static final String DATABASE_CREATE_FEEDITEM = "create table feeditem (_id integer primary key autoincrement, "
-			+ "feed_id integer, title text, mp3uri text, mp3file text);";
+			+ "feed_id integer, title text, mp3uri text, mp3file text, size long, type text, bookmark integer);";
+	private static final String DATABASE_CREATE_SETTING = "create table setting (_id integer primary key autoincrement, "
+		+ "volume integer not null);";
+
+	private static final int DATABASE_VERSION = 16;
 
 	private static final String TAG = ACastDbAdapter.class.getSimpleName();
 	private DatabaseHelper mDbHelper;
@@ -51,6 +62,7 @@ public class ACastDbAdapter {
 		public void onCreate(SQLiteDatabase db) {
 			db.execSQL(DATABASE_CREATE_FEED);
 			db.execSQL(DATABASE_CREATE_FEEDITEM);
+			db.execSQL(DATABASE_CREATE_SETTING);
 		}
 
 		@Override
@@ -59,6 +71,7 @@ public class ACastDbAdapter {
 					+ newVersion + ", which will destroy all old data");
 			db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE_FEED);
 			db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE_FEEDITEM);
+			db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE_SETTING);
 			onCreate(db);
 		}
 	}
@@ -108,13 +121,14 @@ public class ACastDbAdapter {
 
 	public List<String> fetchAllFeedNames() {
 		List<String> names = new ArrayList<String>();
-		Cursor c = mDb.query(DATABASE_TABLE_FEED, new String[] { FEED_TITLE }, null, null, null, null, null);
+		Cursor c = mDb.query(DATABASE_TABLE_FEED, new String[] { FEED_TITLE },
+				null, null, null, null, null);
 		if(!c.moveToFirst()){
 			Log.w(TAG, "No feeds!");
 			return names;
 		}
 		do{
-			names.add(c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEED_TITLE)));
+			names.add(c.getString(c.getColumnIndexOrThrow(FEED_TITLE)));
 		}while(c.moveToNext());
 		return names;
 	}
@@ -128,9 +142,9 @@ public class ACastDbAdapter {
 			return uris;
 		}
 		do{
-			long id = c.getLong(c.getColumnIndexOrThrow(ACastDbAdapter.FEED_ID));
-			String title = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEED_TITLE));
-			String uri = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEED_URI));
+			long id = c.getLong(c.getColumnIndexOrThrow(FEED_ID));
+			String title = c.getString(c.getColumnIndexOrThrow(FEED_TITLE));
+			String uri = c.getString(c.getColumnIndexOrThrow(FEED_URI));
 			uris.add(new Feed(id, title, uri));
 		}while(c.moveToNext());
 		return uris;
@@ -138,46 +152,55 @@ public class ACastDbAdapter {
 
 	public Feed fetchFeed(long id) throws SQLException {
 		Cursor c = mDb.query(true, DATABASE_TABLE_FEED, new String[] {
-				FEED_ID, FEED_TITLE, FEED_URI }, FEED_ID + "=" + id, null,
+				FEED_TITLE, FEED_URI }, FEED_ID + "=" + id, null,
 				null, null, null, null);
 		if (c == null || !c.moveToFirst()) {
 			Log.w(TAG, "No feed for: "+id);
 			return null;
 		}
-		String title = c.getString(c.getColumnIndex(ACastDbAdapter.FEED_TITLE));
-		String uri = c.getString(c.getColumnIndex(ACastDbAdapter.FEED_URI));
+		String title = c.getString(c.getColumnIndex(FEED_TITLE));
+		String uri = c.getString(c.getColumnIndex(FEED_URI));
 		Feed feed = new Feed(id, title, uri);
 		c = fetchFeedItems(id);
-		if(!c.moveToFirst()){
+		if(!c.moveToFirst()) {
 			Log.w(TAG, "No feed items for: "+id);
 			return feed;
 		}
 		do{
-			long itemId = c.getLong(c.getColumnIndexOrThrow(ACastDbAdapter.FEEDITEM_ID));
-			String itemTitle = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEEDITEM_TITLE));
-			String mp3uri = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEEDITEM_MP3URI));
-			String mp3file = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEEDITEM_MP3FILE));
-			feed.addItem(new FeedItem(itemId, id, itemTitle, mp3uri, mp3file));
+			long itemId = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_ID));
+			String itemTitle = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
+			String mp3uri = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3URI));
+			String mp3file = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3FILE));
+			long size = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_SIZE));
+			String type = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TYPE));
+			int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
+			feed.addItem(new FeedItem(itemId, id, itemTitle, mp3uri, mp3file, size, type, bookmark));
 		}while(c.moveToNext());
 		return feed;
 	}
 
 	private Cursor fetchFeedItems(long id) throws SQLException {
 		return mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
-				FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI, FEEDITEM_MP3FILE }, FEEDITEM_FEEDID + "=" + id, null,
-				null, null, null, null);
+				FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI, FEEDITEM_MP3FILE,
+				FEEDITEM_SIZE, FEEDITEM_TYPE, FEEDITEM_BOOKMARK }, FEEDITEM_FEEDID + "=" + id,
+				null, null, null, null, null);
 	}
 
 	public FeedItem fetchFeedItem(long feedId, long feedItemId) throws SQLException {
 		Cursor c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
-				FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI, FEEDITEM_MP3FILE }, FEEDITEM_FEEDID + "=" + feedId+" and "+FEEDITEM_ID +"="+feedItemId, null,
-				null, null, null, null);
+				FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI, FEEDITEM_MP3FILE,
+				FEEDITEM_SIZE, FEEDITEM_TYPE, FEEDITEM_BOOKMARK }, FEEDITEM_FEEDID + "=" + feedId
+				+ " and " + FEEDITEM_ID + "=" + feedItemId, null, null, null,
+				null, null);
 		if (c != null) {
 			c.moveToFirst();
-			String title = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEEDITEM_TITLE));
-			String mp3uri = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEEDITEM_MP3URI));
-			String mp3file = c.getString(c.getColumnIndexOrThrow(ACastDbAdapter.FEEDITEM_MP3FILE));
-			return new FeedItem(feedItemId, feedId, title, mp3uri, mp3file);
+			String title = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
+			String mp3uri = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3URI));
+			String mp3file = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3FILE));
+			long size = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_SIZE));
+			String type = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TYPE));
+			int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
+			return new FeedItem(feedItemId, feedId, title, mp3uri, mp3file, size, type, bookmark);
 		}else{
 			Log.w(TAG, "No feed item for: "+feedId+" "+feedItemId);
 		}
@@ -215,6 +238,9 @@ public class ACastDbAdapter {
 		args.put(FEEDITEM_TITLE, item.getTitle());
 		args.put(FEEDITEM_MP3URI, item.getMp3uri());
 		args.put(FEEDITEM_MP3FILE, item.getMp3file());
+		args.put(FEEDITEM_SIZE, item.getSize());
+		args.put(FEEDITEM_TYPE, item.getType());
+		args.put(FEEDITEM_BOOKMARK, item.getBookmark());
 		return mDb.update(DATABASE_TABLE_FEEDITEM, args, FEEDITEM_ID + "=" + item.getId(),
 				null) > 0;
 	}
@@ -229,7 +255,41 @@ public class ACastDbAdapter {
 		initialValues.put(FEEDITEM_TITLE, item.getTitle());
 		initialValues.put(FEEDITEM_MP3URI, item.getMp3uri());
 		initialValues.put(FEEDITEM_MP3FILE, item.getMp3file());
+		initialValues.put(FEEDITEM_SIZE, item.getSize());
+		initialValues.put(FEEDITEM_TYPE, item.getType());
+		initialValues.put(FEEDITEM_BOOKMARK, item.getBookmark());
 		return mDb.insert(DATABASE_TABLE_FEEDITEM, null, initialValues);
+	}
+
+	public Settings fetchSettings() {
+		Cursor c = mDb.query(true, DATABASE_TABLE_SETTING,
+				new String[] { SETTING_VOLUME }, SETTING_ID + "=0", null, null,
+				null, null, null);
+		if (c != null && c.moveToFirst()) {
+			int volume = c.getInt(c.getColumnIndexOrThrow(SETTING_VOLUME));
+			return new Settings(volume);
+		}else{
+			Log.w(TAG, "No settings found!");
+			return null;
+		}
+	}
+
+	public boolean updateSettings(Settings settings) {
+		if(settings == null){
+			return false;
+		}
+		ContentValues args = new ContentValues();
+		args.put(SETTING_ID, 0);
+		args.put(SETTING_VOLUME, settings.getVolume());
+		boolean update = mDb.update(DATABASE_TABLE_SETTING, args, SETTING_ID
+				+ "= 0", null) > 0;
+		if (!update) {
+			long id = mDb.insert(DATABASE_TABLE_SETTING, null, args);
+			if(id != 0){
+				return false;
+			}
+		}
+		return true;
 	}
 
 }

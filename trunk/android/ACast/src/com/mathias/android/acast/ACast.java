@@ -16,7 +16,8 @@ import com.mathias.android.acast.rss.RssUtil;
 
 public class ACast extends ListActivity {
 	
-	public static final String KEY = "keyyyy";
+	public static final String KEY = "key";
+	public static final String FEEDITEM = "feeditem";
 
 //	private static final String TAG = ACast.class.getSimpleName();
 

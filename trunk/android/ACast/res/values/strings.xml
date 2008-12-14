@@ -20,4 +20,14 @@
 	<string name="downloaditem">Download item</string>
 	<string name="deleteitem">Delete item</string>
 	<string name="refreshfeed">Refresh feed</string>
+	<!-- videoplayer -->
+	<string name="play">Play</string>
+	<string name="pause">Pause</string>
+	<string name="reset">Reset</string>
+	<string name="stop">Stop</string>
+	<!-- player -->
+	<string name="rewind">Rewind</string>
+	<string name="forward">Forward</string>
+	<string name="volup">Volume up</string>
+	<string name="voldown">Volume down</string>
 </resources>

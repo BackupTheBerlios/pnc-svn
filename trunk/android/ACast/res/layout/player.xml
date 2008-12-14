@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+	<TextView android:id="@+id/title" 
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content" />
+
+	<TextView android:id="@+id/duration" 
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content" />
+
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+ 
+		<Button android:id="@+id/play" 
+		  android:text="@string/play"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	
+		<Button android:id="@+id/pause" 
+		  android:text="@string/pause"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
+	
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+ 
+		<Button android:id="@+id/reset" 
+		  android:text="@string/reset"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	
+		<Button android:id="@+id/stop" 
+		  android:text="@string/stop"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
+	
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+ 
+		<Button android:id="@+id/rewind" 
+		  android:text="@string/rewind"
+		  android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	
+		<Button android:id="@+id/forward" 
+		  android:text="@string/forward"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
+	
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+ 
+		<Button android:id="@+id/volup" 
+		  android:text="@string/volup"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	
+		<Button android:id="@+id/voldown" 
+		  android:text="@string/voldown"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
+
+	<SeekBar android:id="@+id/seekbar" 
+		android:text="@string/voldown"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content" />
+
+</LinearLayout>

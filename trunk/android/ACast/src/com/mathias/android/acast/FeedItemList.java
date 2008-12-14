@@ -1,23 +1,19 @@
 package com.mathias.android.acast;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.media.MediaPlayer;
-import android.net.Uri;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ListView;
 
 import com.mathias.android.acast.common.ChoiceArrayAdapter;
 import com.mathias.android.acast.common.Util;
@@ -39,6 +35,10 @@ public class FeedItemList extends ListActivity {
 	private ACastDbAdapter mDbHelper;
 	
 	private ChoiceArrayAdapter<FeedItem> adapter;
+	
+	private ProgressDialog pd;
+	
+	private Integer currPos;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -88,27 +88,29 @@ public class FeedItemList extends ListActivity {
 	}
 
 	@Override
+	protected void onListItemClick(ListView l, View v, int position, long id) {
+		currPos = position;
+		openOptionsMenu();
+	}
+
+	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		if(PLAY_ID == item.getItemId()){
-			int pos = getSelectedItemPosition();
-			if(pos >= 0){
-				long id = adapter.getItem(pos).getId();
-				playItem(id);
-			}
+		int pos = getSelectedItemPosition();
+		if(currPos != null){
+			pos = currPos;
+			currPos = null;
+		}
+		if(pos >= 0 && PLAY_ID == item.getItemId()){
+			long id = adapter.getItem(pos).getId();
+			playItem(id);
 			return true;
-		}else if(DOWNLOAD_ID == item.getItemId()){
-			int pos = getSelectedItemPosition();
-			if(pos >= 0){
-				long id = adapter.getItem(pos).getId();
-				downloadItem(id);
-			}
+		}else if(pos >= 0 && DOWNLOAD_ID == item.getItemId()){
+			long id = adapter.getItem(pos).getId();
+			downloadItem(id);
 			return true;
-		}else if(DELETE_ID == item.getItemId()){
-			int pos = getSelectedItemPosition();
-			if(pos >= 0){
-				long id = adapter.getItem(pos).getId();
-				deleteItem(id);
-			}
+		}else if(pos >= 0 && DELETE_ID == item.getItemId()){
+			long id = adapter.getItem(pos).getId();
+			deleteItem(id);
 			return true;
 		}else if(REFRESH_ID == item.getItemId()){
 			refreshFeed();
@@ -119,88 +121,88 @@ public class FeedItemList extends ListActivity {
 
 	private void playItem(long id){
 		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
-		String file = item.getMp3file();
-		String uri = item.getMp3uri().replace(' ', '+');
-		if(file == null){
-			MediaPlayer mp = MediaPlayer.create(this, Uri.parse(uri));
-			if(mp == null){
-				Util.showDialog(this, "Could not create media player for: "+uri);
-				return;
-			}
-			mp.start();
-		}else{
-			MediaPlayer mp = new MediaPlayer();
+		Intent i = new Intent(this, Player.class);
+		i.putExtra(ACast.FEEDITEM, item);
+		startActivityForResult(i, 0);
+	}
+
+	private class Download extends Thread implements Util.ProgressListener {
+		
+		private FeedItem item;
+		
+		private Context cxt;
+		
+		public Download(Context cxt, FeedItem item){
+			setDaemon(false);
+			this.cxt = cxt;
+			this.item = item;
+		}
+		
+		@Override
+		public void run() {
+			String uri = item.getMp3uri().replace(' ', '+');
+			String file = getFilename();
 			try {
-				mp.setDataSource(file);
-				//mp.setDisplay();
-//				mp.prepare();
-				mp.start();
-			} catch (IllegalArgumentException e) {
+				Util.downloadFile(cxt, uri, file, null);
+				item.setMp3file(file);
+				mDbHelper.updateFeedItem(item);
+			} catch (Exception e) {
 				Log.e(TAG, item.getMp3file(), e);
-				Util.showDialog(this, e.getMessage()+": "+uri);
-			} catch (IllegalStateException e) {
-				Log.e(TAG, item.getMp3file(), e);
-				Util.showDialog(this, e.getMessage()+": "+uri);
-			} catch (IOException e) {
-				Log.e(TAG, item.getMp3file(), e);
-				Util.showDialog(this, e.getMessage()+": "+uri);
 			}
+			downloadHandler.sendEmptyMessage(0);
+		}
+		
+		public String getFilename(){
+			String file = item.getTitle();
+			if(!file.endsWith(".mp3")){
+				file += ".mp3";
+			}
+			return file;
+		}
+
+		@Override
+		public void progressDiff(long diff) {
+			pd.incrementProgressBy((int)diff);
 		}
 	}
 
+	private Handler downloadHandler = new Handler(){
+		@Override
+		public void handleMessage(Message msg) {
+			pd.dismiss();
+		}
+	};
+
 	private void downloadItem(long id){
-		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
+		final FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
 		String file = item.getMp3file();
-		String uri = item.getMp3uri().replace(' ', '+');
 		if(file != null){
 			Util.showDialog(this, "Already downloaded: "+file);
 			return;
 		}
-		file = item.getTitle();
-		InputStream input = null;
-		FileOutputStream output = null;
-		
-		ProgressDialog progress = new ProgressDialog(this);
-		progress.setTitle("Downloading: "+file);
-		progress.setMax(100);
-		progress.show();
-		try {
-			DefaultHttpClient client = new DefaultHttpClient();
-			HttpResponse response = client.execute(new HttpGet(uri));
-			input = response.getEntity().getContent();
-			output = openFileOutput(item.getTitle(), MODE_WORLD_READABLE);
-			while(true){
-				byte[] buffer = new byte[8192];
-				int c = input.read(buffer);
-				if(c == -1){
-					break;
-				}
-				output.write(buffer, 0, c);
-				progress.incrementProgressBy(5);
+
+		final Download download = new Download(this, item);
+		download.start();
+
+		pd = new ProgressDialog(this);
+		pd.setTitle("Downloading");
+		pd.setMessage(item.getMp3uri());
+		pd.setButton("Background", new OnClickListener(){
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				pd.dismiss();
 			}
-			item.setMp3file(file);
-			mDbHelper.updateFeedItem(item);
-		} catch (FileNotFoundException e) {
-			Log.e(TAG, e.getMessage(), e);
-		} catch (ClientProtocolException e) {
-			Log.e(TAG, e.getMessage(), e);
-		} catch (IOException e) {
-			Log.e(TAG, e.getMessage(), e);
-		}finally{
-			if(input != null){
-				try {
-					input.close();
-				} catch (IOException e) {
-				}
+		});
+		pd.setButton2("Cancel", new OnClickListener(){
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				download.stop();
+				deleteFile(download.getFilename());
 			}
-			if(output != null){
-				try {
-					output.close();
-				} catch (IOException e) {
-				}
-			}
-		}
-		//progress.dismiss();
+		});
+		pd.setMax((int)item.getSize());
+		pd.show();
+
 	}
 
 	private void deleteItem(long id){

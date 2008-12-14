@@ -76,7 +76,8 @@ public class RssUtil implements ContentHandler {
 					String value = attr.getValue(i);
 					if("url".equalsIgnoreCase(localName)){
 						currentFeedItem.setMp3uri(value);
-						break;
+					}else if("length".equalsIgnoreCase(localName)){
+						currentFeedItem.setSize(Long.parseLong(value));
 					}
 				}
 			}

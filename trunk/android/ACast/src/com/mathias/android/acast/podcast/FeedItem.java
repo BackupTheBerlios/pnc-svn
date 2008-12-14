@@ -1,6 +1,9 @@
 package com.mathias.android.acast.podcast;
 
-public class FeedItem {
+import java.io.Serializable;
+
+@SuppressWarnings("serial")
+public class FeedItem implements Serializable {
 
 	private long id;
 
@@ -12,15 +15,25 @@ public class FeedItem {
 
 	private String mp3file;
 	
+	private long size;
+	
+	private String type;
+	
+	private int bookmark;
+	
 	public FeedItem(){
 	}
 
-	public FeedItem(long id, long feedId, String title, String mp3uri, String mp3file) {
+	public FeedItem(long id, long feedId, String title, String mp3uri,
+			String mp3file, long size, String type, int bookmark) {
 		this.id = id;
 		this.feedId = feedId;
 		this.title = title;
 		this.mp3uri = mp3uri;
 		this.mp3file = mp3file;
+		this.size = size;
+		this.type = type;
+		this.bookmark = bookmark;
 	}
 
 	public long getId() {
@@ -61,6 +74,30 @@ public class FeedItem {
 
 	public void setFeedId(long feedId) {
 		this.feedId = feedId;
+	}
+
+	public long getSize() {
+		return size;
+	}
+
+	public void setSize(long size) {
+		this.size = size;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public int getBookmark() {
+		return bookmark;
+	}
+
+	public void setBookmark(int bookmark) {
+		this.bookmark = bookmark;
 	}
 
 }

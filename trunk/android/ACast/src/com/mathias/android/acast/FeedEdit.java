@@ -35,6 +35,8 @@ public class FeedEdit extends Activity {
 		if (mRowId != null) {
 			Feed feed = mDbHelper.fetchFeed(mRowId);
 			mUrlText.setText(feed.getUri());
+		}else{
+			mUrlText.setText("http://");
 		}
 
 		confirm.setOnClickListener(new View.OnClickListener() {

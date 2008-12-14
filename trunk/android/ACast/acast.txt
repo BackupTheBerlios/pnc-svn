@@ -17,4 +17,11 @@ Features:
 Individual bookmark
 
 
-Illegal character in path at index 37: http://192.168.254.125/audio/music/14 - Nowhere.mp3
+- Illegal character in path at index 37: http://192.168.254.125/audio/music/14 - Nowhere.mp3
+- fetch size from rss xml
+
+use size with progress dialog
+show if downloaded with icon, show if bookmark exist with icon
+rotate with gravity or keyboard?
+show duration, seekbar duration update
+play in background, show notification in tray
