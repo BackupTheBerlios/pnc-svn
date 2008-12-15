@@ -2,18 +2,29 @@ package com.mathias.android.acast.podcast;
 
 public class Settings {
 
-	private int volume;
+	private Integer volume;
+	
+	private Long lastFeedItemId;
 
-	public Settings(int volume){
+	public Settings(Integer volume, Long lastFeedItemId){
 		this.volume = volume;
+		this.lastFeedItemId = lastFeedItemId;
 	}
 
-	public int getVolume() {
+	public Integer getVolume() {
 		return volume;
 	}
 
-	public void setVolume(int volume) {
+	public void setVolume(Integer volume) {
 		this.volume = volume;
+	}
+
+	public Long getLastFeedItemId() {
+		return lastFeedItemId;
+	}
+
+	public void setLastFeedItemId(Long lastFeedId) {
+		this.lastFeedItemId = lastFeedId;
 	}
 
 }

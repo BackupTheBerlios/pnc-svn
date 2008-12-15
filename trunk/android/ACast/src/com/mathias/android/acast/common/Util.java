@@ -1,5 +1,6 @@
 package com.mathias.android.acast.common;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.database.Cursor;
 import android.util.Log;
 
 public abstract class Util {
@@ -43,9 +45,20 @@ public abstract class Util {
 		void progressDiff(long size);
 	}
 	
-	public static void downloadFile(Context cxt, String src, String dest, ProgressListener listener) throws Exception {
+	public static void downloadFile(Context cxt, String src, File dest, ProgressListener listener) throws Exception {
 		if(src == null || dest == null){
 			throw new Exception("src or dest null!");
+		}
+		File dir = dest.getParentFile();
+		if(!dir.exists()){
+			if(!dir.mkdir()){
+				Log.e(TAG, "Could not create dirs: "+dir.getAbsolutePath());
+				throw new Exception("Could not create dirs: "+dir.getAbsolutePath());
+			}
+		}
+		if(!dest.createNewFile()){
+			Log.e(TAG, "Could not create file: "+dest.getAbsolutePath());
+			throw new Exception("Could not create file: "+dest.getAbsolutePath());
 		}
 		InputStream input = null;
 		FileOutputStream output = null;
@@ -53,7 +66,9 @@ public abstract class Util {
 			DefaultHttpClient client = new DefaultHttpClient();
 			HttpResponse response = client.execute(new HttpGet(src));
 			input = response.getEntity().getContent();
-			output = cxt.openFileOutput(dest, Context.MODE_WORLD_READABLE);
+			output = new FileOutputStream(dest);
+//			input = new InputStreamReader(response.getEntity().getContent(), "UTF8");
+//			output = cxt.openFileOutput(dest, Context.MODE_WORLD_READABLE);
 			while(true){
 				byte[] buffer = new byte[8192];
 				int c = input.read(buffer);
@@ -72,6 +87,9 @@ public abstract class Util {
 			Log.e(TAG, e.getMessage(), e);
 			throw new Exception("Download failed");
 		} catch (IOException e) {
+			Log.e(TAG, e.getMessage(), e);
+			throw new Exception("Download failed");
+		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
 			throw new Exception("Download failed");
 		}finally{
@@ -96,6 +114,13 @@ public abstract class Util {
 		int minutes = (int) ((totalseconds/60) % 60);
 		int hours = (int) ((totalseconds/3600) % 24);
 		return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+	}
+
+	public static void closeCursor(Cursor c){
+		if(c != null){
+			c.close();
+			c = null;
+		}
 	}
 
 }

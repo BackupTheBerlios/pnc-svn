@@ -1,5 +1,7 @@
 package com.mathias.android.acast;
 
+import java.io.File;
+
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -69,6 +71,17 @@ public class FeedItemList extends ListActivity {
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		outState.putLong(ACast.KEY, mFeedId);
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+	}
+	
+	@Override
+	protected void onStop() {
+		super.onStop();
+//		mDbHelper.close();
 	}
 
 	@Override
@@ -143,7 +156,7 @@ public class FeedItemList extends ListActivity {
 			String uri = item.getMp3uri().replace(' ', '+');
 			String file = getFilename();
 			try {
-				Util.downloadFile(cxt, uri, file, null);
+				Util.downloadFile(cxt, uri, new File(file), this);
 				item.setMp3file(file);
 				mDbHelper.updateFeedItem(item);
 			} catch (Exception e) {
@@ -153,10 +166,8 @@ public class FeedItemList extends ListActivity {
 		}
 		
 		public String getFilename(){
-			String file = item.getTitle();
-			if(!file.endsWith(".mp3")){
-				file += ".mp3";
-			}
+			String file = File.separator + "sdcard" + File.separator + "acast"
+					+ File.separator + new File(item.getMp3uri()).getName();
 			return file;
 		}
 
@@ -193,6 +204,7 @@ public class FeedItemList extends ListActivity {
 				pd.dismiss();
 			}
 		});
+		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		pd.setButton2("Cancel", new OnClickListener(){
 			@Override
 			public void onClick(DialogInterface dialog, int which) {

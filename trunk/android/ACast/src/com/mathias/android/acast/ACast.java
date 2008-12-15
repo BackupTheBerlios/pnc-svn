@@ -8,10 +8,14 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.ListView;
 
 import com.mathias.android.acast.common.ChoiceArrayAdapter;
 import com.mathias.android.acast.podcast.Feed;
+import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings;
 import com.mathias.android.acast.rss.RssUtil;
 
 public class ACast extends ListActivity {
@@ -37,6 +41,23 @@ public class ACast extends ListActivity {
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		fillData();
+		
+		Button resume = (Button) findViewById(R.id.resume);
+		resume.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				Settings settings = mDbHelper.fetchSettings();
+				if(settings != null){
+					Long lastFeedItemId = settings.getLastFeedItemId();
+					if(lastFeedItemId != null){
+						FeedItem item = mDbHelper.fetchFeedItem(lastFeedItemId);
+						Intent i = new Intent(ACast.this, Player.class);
+						i.putExtra(ACast.FEEDITEM, item);
+						startActivity(i);
+					}
+				}
+			}
+		});
 	}
 
 	private void fillData() {
@@ -120,6 +141,17 @@ public class ACast extends ListActivity {
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 		fillData();
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+//		mDbHelper.close();
 	}
 
 }

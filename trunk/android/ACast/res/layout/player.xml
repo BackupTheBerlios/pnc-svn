@@ -16,64 +16,48 @@
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
  
-		<Button android:id="@+id/play" 
-		  android:text="@string/play"
+		<ImageButton android:id="@+id/play" 
+			android:src="@drawable/play" 
+			android:text="@string/play"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content" />
 	
-		<Button android:id="@+id/pause" 
-		  android:text="@string/pause"
+		<ImageButton android:id="@+id/pause" 
+			android:src="@drawable/pause" 
+			android:text="@string/pause"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content" />
-	</LinearLayout>
-	
-	<LinearLayout android:orientation="horizontal" 
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
- 
-		<Button android:id="@+id/reset" 
-		  android:text="@string/reset"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-	
-		<Button android:id="@+id/stop" 
-		  android:text="@string/stop"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-	</LinearLayout>
-	
-	<LinearLayout android:orientation="horizontal" 
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
- 
-		<Button android:id="@+id/rewind" 
-		  android:text="@string/rewind"
-		  android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-	
-		<Button android:id="@+id/forward" 
-		  android:text="@string/forward"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-	</LinearLayout>
-	
-	<LinearLayout android:orientation="horizontal" 
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
- 
-		<Button android:id="@+id/volup" 
-		  android:text="@string/volup"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-	
-		<Button android:id="@+id/voldown" 
-		  android:text="@string/voldown"
+
+		<ImageButton android:id="@+id/stop" 
+			android:src="@drawable/stop" 
+			android:text="@string/stop"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content" />
 	</LinearLayout>
 
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+ 
+		<ImageButton android:id="@+id/rewind" 
+			android:src="@drawable/rewind" 
+			android:text="@string/rewind"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	
+		<ImageButton android:id="@+id/forward" 
+			android:src="@drawable/forward" 
+			android:text="@string/forward"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	
+		<ImageButton android:id="@+id/eject" 
+			android:src="@drawable/eject" 
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
+	
 	<SeekBar android:id="@+id/seekbar" 
-		android:text="@string/voldown"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content" />
 

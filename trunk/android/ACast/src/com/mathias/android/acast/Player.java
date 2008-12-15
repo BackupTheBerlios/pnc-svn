@@ -13,7 +13,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.SeekBar.OnSeekBarChangeListener;
@@ -25,13 +25,11 @@ import com.mathias.android.acast.podcast.Settings;
 public class Player extends Activity {
 
 	private static final String TAG = Player.class.getSimpleName();
-	
-	private static final int VOLUME_INC = 1;
-	
+
 	private static final int VOLUME_MAX = 15;
-	
+
 	private static final int SEEK_INC = 30000;
-	
+
 	private static final long UPDATE_DELAY = 300;
 
 	private Boolean tracking = false;
@@ -43,8 +41,10 @@ public class Player extends Activity {
 	private FeedItem item;
 
 	private Settings settings;
-	
+
 	private TextView duration;
+
+	private boolean active = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -54,11 +54,6 @@ public class Player extends Activity {
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		
-		settings = mDbHelper.fetchSettings();
-		if(settings == null){
-			settings = new Settings(VOLUME_MAX);
-		}
-
 		TextView title = (TextView) findViewById(R.id.title);
 
 		duration = (TextView) findViewById(R.id.duration);
@@ -76,6 +71,11 @@ public class Player extends Activity {
 		}
 		title.setText(item.getTitle());
 
+		settings = mDbHelper.fetchSettings();
+		if(settings == null){
+			settings = new Settings(VOLUME_MAX, item.getId());
+		}
+
 		String file = item.getMp3file();
 		if(file == null){
 			String uri = item.getMp3uri().replace(' ', '+');
@@ -88,7 +88,8 @@ public class Player extends Activity {
 		}else{
 			mp = new MediaPlayer();
 			try {
-				File f = new File(getFilesDir()+File.separator+file);
+//				File f = new File(getFilesDir()+File.separator+file);
+				File f = new File(file);
 				if(!f.exists()){
 					Util.showDialog(this, "File does not exist: "+file);
 					return;
@@ -107,11 +108,16 @@ public class Player extends Activity {
 				Util.showDialog(this, e.getMessage()+": "+file);
 			}
 		}
-		
-		mp.setVolume(settings.getVolume(), settings.getVolume());
+
+		mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+			@Override
+			public void onCompletion(MediaPlayer mp) {
+			}
+		});
+//		mp.setVolume(settings.getVolume(), settings.getVolume());
 		mp.seekTo(item.getBookmark());
 
-		Button play = (Button) findViewById(R.id.play);
+		ImageButton play = (ImageButton) findViewById(R.id.play);
 		play.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -119,7 +125,7 @@ public class Player extends Activity {
 			}
 		});
 
-		Button pause = (Button) findViewById(R.id.pause);
+		ImageButton pause = (ImageButton) findViewById(R.id.pause);
 		pause.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -127,23 +133,24 @@ public class Player extends Activity {
 			}
 		});
 
-		Button reset = (Button) findViewById(R.id.reset);
-		reset.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View v) {
-				mp.reset();
-			}
-		});
-
-		Button stop = (Button) findViewById(R.id.stop);
+		ImageButton stop = (ImageButton) findViewById(R.id.stop);
 		stop.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				mp.stop();
+				try {
+					mp.prepare();
+				} catch (IllegalStateException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				} catch (IOException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}
 			}
 		});
 
-		Button rewind = (Button) findViewById(R.id.rewind);
+		ImageButton rewind = (ImageButton) findViewById(R.id.rewind);
 		rewind.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -151,7 +158,7 @@ public class Player extends Activity {
 			}
 		});
 
-		Button forward = (Button) findViewById(R.id.forward);
+		ImageButton forward = (ImageButton) findViewById(R.id.forward);
 		forward.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -159,37 +166,9 @@ public class Player extends Activity {
 			}
 		});
 
-		Button volup = (Button) findViewById(R.id.volup);
-		volup.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View v) {
-				int volume = settings.getVolume();
-				volume += VOLUME_INC;
-				if(volume > VOLUME_MAX){
-					volume = VOLUME_MAX;
-				}
-				mp.setVolume(volume, volume);
-				settings.setVolume(volume);
-			}
-		});
-
-		Button voldown = (Button) findViewById(R.id.voldown);
-		voldown.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View v) {
-				int volume = settings.getVolume();
-				volume -= VOLUME_INC;
-				if(volume < 0){
-					volume = 0;
-				}
-				mp.setVolume(volume, volume);
-				settings.setVolume(volume);
-			}
-		});
-
-		final SeekBar bar = (SeekBar) findViewById(R.id.seekbar);
-		bar.setMax(mp.getDuration());
-		bar.setOnSeekBarChangeListener(new OnSeekBarChangeListener(){
+		final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
+		seekbar.setMax(mp.getDuration());
+		seekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener(){
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromTouch) {
@@ -204,27 +183,31 @@ public class Player extends Activity {
 				mp.seekTo(seekBar.getProgress());
 			}
 		});
-		
-		new Thread(){
+
+		Thread progressThread = new Thread(){
 			@Override
 			public void run() {
 				while(true){
 					try {
 						sleep(UPDATE_DELAY);
-						Message message = new Message();
-						if(!tracking){
-							bar.setProgress(mp.getCurrentPosition());
-							message.obj = mp.getCurrentPosition();
-						}else{
-							message.obj = bar.getProgress();
+						if(active){
+							Message message = new Message();
+							if(!tracking){
+								seekbar.setProgress(mp.getCurrentPosition());
+								message.obj = mp.getCurrentPosition();
+							}else{
+								message.obj = seekbar.getProgress();
+							}
+							durationHandler.sendMessage(message);
 						}
-						durationHandler.sendMessage(message);
 					} catch (InterruptedException e) {
+						Log.d(TAG, e.getMessage(), e);
 					}
 				}
 			}
-		}.start();
-
+		};
+//		progressThread.setDaemon(true);
+		progressThread.start();
 	}
 	
 	private Handler durationHandler = new Handler(){
@@ -240,13 +223,20 @@ public class Player extends Activity {
 
 	@Override
 	protected void onPause() {
-		super.onPause();
+		super.onPause(); // called after onSaveInstanceState, calls onStop
 		saveState();
 	}
 	
 	@Override
+	protected void onStop() {
+		super.onStop(); //called after onPause
+//		mDbHelper.close();
+	}
+
+	@Override
 	protected void onResume() {
-		super.onResume();
+		super.onResume(); // called after onCreate
+		active = true;
 	}
 	
 	@Override
@@ -257,12 +247,15 @@ public class Player extends Activity {
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+		//saveState(); onPause is called after this
 	}
 	
 	private void saveState(){
+		active = false;
 		item.setBookmark(mp.getCurrentPosition());
 		mp.reset();
-		mDbHelper.updateFeedItem(item);
+		mDbHelper.updateFeedItemBookmark(item.getId(), item.getBookmark());
+		settings.setLastFeedItemId(item.getId());
 		mDbHelper.updateSettings(settings);
 	}
 

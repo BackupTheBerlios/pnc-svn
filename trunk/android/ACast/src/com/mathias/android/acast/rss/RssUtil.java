@@ -54,7 +54,14 @@ public class RssUtil implements ContentHandler {
 
 	@Override
 	public void characters(char[] buff, int start, int end) throws SAXException {
-		characters = new String(buff).substring(start, end);
+		StringBuilder sb = new StringBuilder();
+		for (int i = start; i < end; i++) {
+			char c = buff[i];
+			if('\'' != c){
+				sb.append(c);
+			}
+		}
+		characters += sb.toString();
 	}
 
 	@Override
@@ -84,6 +91,7 @@ public class RssUtil implements ContentHandler {
 			break;
 		}
 		level++;
+		characters = "";
 	}
 
 	@Override
@@ -105,6 +113,7 @@ public class RssUtil implements ContentHandler {
 			}
 			break;
 		}
+		characters = "";
 	}
 
 	@Override

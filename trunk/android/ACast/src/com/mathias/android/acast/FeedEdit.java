@@ -57,4 +57,15 @@ public class FeedEdit extends Activity {
 		outState.putLong(ACast.KEY, mRowId);
 	}
 
+	@Override
+	protected void onPause() {
+		super.onPause();
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+//		mDbHelper.close();
+	}
+
 }
