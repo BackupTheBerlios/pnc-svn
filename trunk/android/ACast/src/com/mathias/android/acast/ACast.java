@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.mathias.android.acast.common.ChoiceArrayAdapter;
 import com.mathias.android.acast.podcast.Feed;
@@ -33,6 +34,8 @@ public class ACast extends ListActivity {
 	private ACastDbAdapter mDbHelper;
 	
 	private ChoiceArrayAdapter<Feed> adapter;
+	
+	private Settings settings;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -41,12 +44,11 @@ public class ACast extends ListActivity {
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		fillData();
-		
+
 		Button resume = (Button) findViewById(R.id.resume);
 		resume.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				Settings settings = mDbHelper.fetchSettings();
 				if(settings != null){
 					Long lastFeedItemId = settings.getLastFeedItemId();
 					if(lastFeedItemId != null){
@@ -65,6 +67,13 @@ public class ACast extends ListActivity {
 		adapter = new ChoiceArrayAdapter<Feed>(this,
 				R.layout.feed_row, R.id.text1, names, "title");
 		setListAdapter(adapter);
+
+		settings = mDbHelper.fetchSettings();
+		if(settings != null && settings.getLastFeedItemId() != null){
+			TextView resumetitle = (TextView) findViewById(R.id.resumetitle);
+			FeedItem item = mDbHelper.fetchFeedItem(settings.getLastFeedItemId());
+			resumetitle.setText(item.getTitle());
+		}
 	}
 
 	@Override

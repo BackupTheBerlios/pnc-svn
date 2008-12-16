@@ -11,61 +11,29 @@ import com.mathias.android.acast.rss.RssUtil;
 
 public class FeedEdit extends Activity {
 
-	private EditText mUrlText;
-	private Long mRowId = null;
-
-	private ACastDbAdapter mDbHelper;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.feed_edit);
-		mDbHelper = new ACastDbAdapter(this);
-		mDbHelper.open();
-		mUrlText = (EditText) findViewById(R.id.url);
-		Button confirm = (Button) findViewById(R.id.add);
-		mRowId = savedInstanceState != null ? savedInstanceState
-				.getLong(ACast.KEY) : null;
-//		if (mRowId == null) {
-//			Bundle extras = getIntent().getExtras();
-//			mRowId = extras != null ? extras.getLong(ACast.KEY)
-//					: null;
-//		}
 
-		if (mRowId != null) {
-			Feed feed = mDbHelper.fetchFeed(mRowId);
-			mUrlText.setText(feed.getUri());
-		}else{
-			mUrlText.setText("http://");
-		}
+		final ACastDbAdapter dbHelper = new ACastDbAdapter(this);
+		dbHelper.open();
+		
+		final EditText urlText = (EditText) findViewById(R.id.url);
+		Button confirm = (Button) findViewById(R.id.add);
+
+		urlText.setText("http://");
 
 		confirm.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				String uri = mUrlText.getText().toString();
+				String uri = urlText.getText().toString();
 				Feed feed = new RssUtil().parse(uri);
-				mDbHelper.createFeed(feed);
+				dbHelper.createFeed(feed);
 				setResult(RESULT_OK);
 				finish();
 			}
 		});
-	}
-
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putLong(ACast.KEY, mRowId);
-	}
-
-	@Override
-	protected void onPause() {
-		super.onPause();
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-//		mDbHelper.close();
 	}
 
 }

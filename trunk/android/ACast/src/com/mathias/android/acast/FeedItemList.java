@@ -1,6 +1,10 @@
 package com.mathias.android.acast;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -17,7 +21,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 
-import com.mathias.android.acast.common.ChoiceArrayAdapter;
+import com.mathias.android.acast.common.ChoiceSimpleAdapter;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
@@ -26,6 +30,10 @@ import com.mathias.android.acast.rss.RssUtil;
 public class FeedItemList extends ListActivity {
 
 	private static final String TAG = FeedItemList.class.getSimpleName();
+
+	// used to fetch data out of map for SimpleAdapter
+	private static final String ICON = "ICON";
+	private static final String FEEDITEM = "FEEDITEM";
 
 	private static final int PLAY_ID = Menu.FIRST;
 	private static final int DOWNLOAD_ID = Menu.FIRST + 1;
@@ -36,7 +44,7 @@ public class FeedItemList extends ListActivity {
 
 	private ACastDbAdapter mDbHelper;
 	
-	private ChoiceArrayAdapter<FeedItem> adapter;
+	private ChoiceSimpleAdapter adapter;
 	
 	private ProgressDialog pd;
 	
@@ -61,10 +69,57 @@ public class FeedItemList extends ListActivity {
 	private void populateFields() {
 		if (mFeedId != null) {
 			Feed feed = mDbHelper.fetchFeed(mFeedId);
-			adapter = new ChoiceArrayAdapter<FeedItem>(this,
-					R.layout.feed_row, R.id.text1, feed.getItems(), "title");
+			List<Map<String, Object>> arr = buildArray(feed);
+			adapter = new ChoiceSimpleAdapter(
+					this, 
+					arr,
+					android.R.layout.activity_list_item,
+					new String[] {FEEDITEM, ICON}, 
+					new int[] { android.R.id.text1, android.R.id.icon },
+					"title");
 			setListAdapter(adapter);
 		}
+	}
+	
+	private List<Map<String, Object>> buildArray(Feed feed){
+		List<FeedItem> items = feed.getItems();
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>(
+				items.size());
+		for (FeedItem item : items) {
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put(FEEDITEM, item);
+			if(item.getMp3file() != null){
+				if(item.isCompleted()){
+					if(item.getBookmark() > 0){
+						map.put(ICON, R.drawable.downloaded_done_bm);
+					}else{
+						map.put(ICON, R.drawable.downloaded_done);
+					}
+				}else{
+					if(item.getBookmark() > 0){
+						map.put(ICON, R.drawable.downloaded_bm);
+					}else{
+						map.put(ICON, R.drawable.downloaded);
+					}
+				}
+			}else{
+				if(item.isCompleted()){
+					if(item.getBookmark() > 0){
+						map.put(ICON, R.drawable.notdownloaded_done_bm);
+					}else{
+						map.put(ICON, R.drawable.notdownloaded_done);
+					}
+				}else{
+					if(item.getBookmark() > 0){
+						map.put(ICON, R.drawable.notdownloaded_bm);
+					}else{
+						map.put(ICON, R.drawable.notdownloaded);
+					}
+				}
+			}
+			list.add(map);
+		}
+		return list;
 	}
 
 	@Override
@@ -114,15 +169,15 @@ public class FeedItemList extends ListActivity {
 			currPos = null;
 		}
 		if(pos >= 0 && PLAY_ID == item.getItemId()){
-			long id = adapter.getItem(pos).getId();
+			long id = ((FeedItem)adapter.getItem(pos).get(FEEDITEM)).getId();
 			playItem(id);
 			return true;
 		}else if(pos >= 0 && DOWNLOAD_ID == item.getItemId()){
-			long id = adapter.getItem(pos).getId();
+			long id = ((FeedItem)adapter.getItem(pos).get(FEEDITEM)).getId();
 			downloadItem(id);
 			return true;
 		}else if(pos >= 0 && DELETE_ID == item.getItemId()){
-			long id = adapter.getItem(pos).getId();
+			long id = ((FeedItem)adapter.getItem(pos).get(FEEDITEM)).getId();
 			deleteItem(id);
 			return true;
 		}else if(REFRESH_ID == item.getItemId()){
@@ -159,10 +214,13 @@ public class FeedItemList extends ListActivity {
 				Util.downloadFile(cxt, uri, new File(file), this);
 				item.setMp3file(file);
 				mDbHelper.updateFeedItem(item);
+				downloadHandler.sendEmptyMessage(0);
 			} catch (Exception e) {
 				Log.e(TAG, item.getMp3file(), e);
+				Message msg = new Message();
+				msg.obj = e;
+				downloadHandler.sendMessage(msg);
 			}
-			downloadHandler.sendEmptyMessage(0);
 		}
 		
 		public String getFilename(){
@@ -181,6 +239,14 @@ public class FeedItemList extends ListActivity {
 		@Override
 		public void handleMessage(Message msg) {
 			pd.dismiss();
+			populateFields();
+			if(msg != null && msg.obj != null){
+				if(msg.obj instanceof Exception){
+					Util.showDialog(FeedItemList.this, "Problem during download: "+((Exception)msg.obj).getMessage());
+				}else{
+					Util.showDialog(FeedItemList.this, "Problem during download!");
+				}
+			}
 		}
 	};
 
@@ -209,7 +275,7 @@ public class FeedItemList extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				download.stop();
-				deleteFile(download.getFilename());
+				new File(download.getFilename()).delete();
 			}
 		});
 		pd.setMax((int)item.getSize());
@@ -220,9 +286,10 @@ public class FeedItemList extends ListActivity {
 	private void deleteItem(long id){
 		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
 		if(item != null && item.getMp3file() != null){
-			deleteFile(item.getMp3file());
+			new File(item.getMp3file()).delete();
 			item.setMp3file(null);
 			mDbHelper.updateFeedItem(item);
+			populateFields();
 		}
 	}
 

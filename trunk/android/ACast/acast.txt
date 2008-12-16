@@ -1,30 +1,24 @@
 ACast
 -----
-
-Dialog: Feeds list:
-Add feed
-Delete feed
-Refresh all feeds
-
-Dialog: Feed list:
-Download
-Remove
-Play
-
-Dialog: Add feed
-
-Features:
-Individual bookmark
-
-
+- Individual bookmark
 - Illegal character in path at index 37: http://192.168.254.125/audio/music/14 - Nowhere.mp3
 - fetch size from rss xml
 - show duration, seekbar duration update
-use size with progress dialog
-show if downloaded with icon, show if bookmark exist with icon
+- use file size with download progress bar
+- use duration with player progress bar
+- volume slider? No, use hard volume controller
+- Show in (not)downloaded icons if feed item has ever completed
+- http://192.168.254.125/mp3.xml does not work. mount -o bind problem...
+- show if downloaded with icon
+- Show in (not)downloaded icons if feed item has bookmark or not
 rotate with gravity or keyboard?
-play in background, show notification in tray
-volume slider?
-resume last item button
+play in background, show notification in tray. Service
+resume last item button, show title of feed item
 store mp3s on sdcard
 escape chars in title before creating file name
+Download progress screen
+Download all feed items in sequence
+Player, press home, start acast
+Player, change screen mode, media restarts
+Fetch icon from RSS and present in feed list
+Error when selecting add feed textview and switching to landscape mode

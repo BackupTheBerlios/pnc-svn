@@ -9,6 +9,7 @@
 	<string name="nofeeds">No feeds!</string>
 	<!-- feeds_list -->
 	<string name="resume">Resume</string>
+	<string name="noresume">No feed item to resume!</string>
 	<!-- feed_list -->
 	<string name="nofeeditems">No feed items!</string>
 	<!-- feeds_list menu items -->

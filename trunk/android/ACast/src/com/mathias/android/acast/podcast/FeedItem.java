@@ -21,11 +21,13 @@ public class FeedItem implements Serializable {
 	
 	private int bookmark;
 	
+	private boolean completed;
+	
 	public FeedItem(){
 	}
 
 	public FeedItem(long id, long feedId, String title, String mp3uri,
-			String mp3file, long size, String type, int bookmark) {
+			String mp3file, long size, String type, int bookmark, boolean completed) {
 		this.id = id;
 		this.feedId = feedId;
 		this.title = title;
@@ -34,6 +36,7 @@ public class FeedItem implements Serializable {
 		this.size = size;
 		this.type = type;
 		this.bookmark = bookmark;
+		this.completed = completed;
 	}
 
 	public long getId() {
@@ -98,6 +101,14 @@ public class FeedItem implements Serializable {
 
 	public void setBookmark(int bookmark) {
 		this.bookmark = bookmark;
+	}
+
+	public boolean isCompleted() {
+		return completed;
+	}
+
+	public void setCompleted(boolean completed) {
+		this.completed = completed;
 	}
 
 }

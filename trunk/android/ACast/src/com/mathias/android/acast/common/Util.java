@@ -82,16 +82,16 @@ public abstract class Util {
 			}
 		} catch (FileNotFoundException e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception("Download failed");
+			throw new Exception(e.getMessage());
 		} catch (ClientProtocolException e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception("Download failed");
+			throw new Exception(e.getMessage());
 		} catch (IOException e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception("Download failed");
+			throw new Exception(e.getMessage());
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception("Download failed");
+			throw new Exception(e.getMessage());
 		}finally{
 			if(input != null){
 				try {

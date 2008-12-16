@@ -4,10 +4,20 @@
     android:layout_width="wrap_content"
 	android:layout_height="wrap_content">
 
-	<Button android:id="@+id/resume" 
-		android:text="@string/resume"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content" />
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+ 
+		<Button android:id="@+id/resume" 
+			android:text="@string/resume"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	
+	  	<TextView android:id="@+id/resumetitle"
+	          android:layout_width="wrap_content"
+	        	android:layout_height="wrap_content"
+	        	android:text="@string/noresume"/>
+	</LinearLayout>
 
     <ListView android:id="@+id/android:list"
           android:layout_width="wrap_content"

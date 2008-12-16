@@ -8,7 +8,6 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import android.app.Activity;
-import android.graphics.PixelFormat;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnBufferingUpdateListener;
 import android.media.MediaPlayer.OnCompletionListener;

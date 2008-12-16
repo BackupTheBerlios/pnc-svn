@@ -253,6 +253,11 @@ public class Player extends Activity {
 	private void saveState(){
 		active = false;
 		item.setBookmark(mp.getCurrentPosition());
+		if(mp.getCurrentPosition()+100 >= mp.getDuration()){
+			item.setCompleted(true);
+			mDbHelper.updateFeedItemCompleted(item.getId(), item
+					.isCompleted());
+		}
 		mp.reset();
 		mDbHelper.updateFeedItemBookmark(item.getId(), item.getBookmark());
 		settings.setLastFeedItemId(item.getId());
