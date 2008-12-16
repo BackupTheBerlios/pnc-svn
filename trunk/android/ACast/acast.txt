@@ -11,14 +11,15 @@ ACast
 - http://192.168.254.125/mp3.xml does not work. mount -o bind problem...
 - show if downloaded with icon
 - Show in (not)downloaded icons if feed item has bookmark or not
+- Player, press home, start acast = problem. Prob because of continuing duration progress thread
+- Error when selecting add feed textview and switching to landscape mode
+- resume last item button, show title of feed item
+- store mp3s on sdcard
+- escape chars in title before creating file name
 rotate with gravity or keyboard?
 play in background, show notification in tray. Service
-resume last item button, show title of feed item
-store mp3s on sdcard
-escape chars in title before creating file name
 Download progress screen
 Download all feed items in sequence
-Player, press home, start acast
-Player, change screen mode, media restarts
-Fetch icon from RSS and present in feed list
-Error when selecting add feed textview and switching to landscape mode
+Player, change screen mode, media restarts from last save point
+Fetch icon from RSS and present in feed list, or bigger letters in feed list
+When screen locks audio stops

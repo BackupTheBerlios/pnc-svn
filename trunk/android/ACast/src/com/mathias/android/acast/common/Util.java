@@ -56,7 +56,7 @@ public abstract class Util {
 				throw new Exception("Could not create dirs: "+dir.getAbsolutePath());
 			}
 		}
-		if(!dest.createNewFile()){
+		if(!dest.exists() && !dest.createNewFile()){
 			Log.e(TAG, "Could not create file: "+dest.getAbsolutePath());
 			throw new Exception("Could not create file: "+dest.getAbsolutePath());
 		}

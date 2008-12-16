@@ -1,15 +1,16 @@
 package com.mathias.android.acast;
 
-import java.io.File;
-import java.io.IOException;
-
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
-import android.media.MediaPlayer;
-import android.net.Uri;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.DeadObjectException;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
+import android.os.Process;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -22,19 +23,15 @@ import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
 
-public class Player extends Activity {
+public class Player extends Activity implements ServiceConnection {
 
 	private static final String TAG = Player.class.getSimpleName();
 
 	private static final int VOLUME_MAX = 15;
 
-	private static final int SEEK_INC = 30000;
-
 	private static final long UPDATE_DELAY = 300;
 
 	private Boolean tracking = false;
-
-	private MediaPlayer mp;
 
 	private ACastDbAdapter mDbHelper;
 
@@ -45,6 +42,8 @@ public class Player extends Activity {
 	private TextView duration;
 
 	private boolean active = false;
+	
+	private IMediaService binder;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -76,52 +75,35 @@ public class Player extends Activity {
 			settings = new Settings(VOLUME_MAX, item.getId());
 		}
 
-		String file = item.getMp3file();
-		if(file == null){
-			String uri = item.getMp3uri().replace(' ', '+');
-			mp = MediaPlayer.create(this, Uri.parse(uri));
-			if(mp == null){
-				Util.showDialog(this, "Could not create media player for: "+uri);
-				return;
-			}
-			mp.start();
-		}else{
-			mp = new MediaPlayer();
-			try {
-//				File f = new File(getFilesDir()+File.separator+file);
-				File f = new File(file);
-				if(!f.exists()){
-					Util.showDialog(this, "File does not exist: "+file);
-					return;
-				}
-				mp.setDataSource(this, Uri.fromFile(f));
-				mp.prepare();
-				mp.start();
-			} catch (IllegalArgumentException e) {
-				Log.e(TAG, item.getMp3file(), e);
-				Util.showDialog(this, e.getMessage()+": "+file);
-			} catch (IllegalStateException e) {
-				Log.e(TAG, item.getMp3file(), e);
-				Util.showDialog(this, e.getMessage()+": "+file);
-			} catch (IOException e) {
-				Log.e(TAG, item.getMp3file(), e);
-				Util.showDialog(this, e.getMessage()+": "+file);
-			}
+//		Intent i = new Intent(Player.this, MediaService.class);
+		Intent i = new Intent();
+		i.setClassName(MediaService.class.getPackage().getName(),
+				MediaService.class.getName());
+//		i.putExtra(ACast.FEEDITEM, item);
+//		startService(i);
+		
+//		if(!stopService(i)){
+//			Util.showDialog(Player.this, "Could not stop media service!");
+//		}
+		if(!bindService(i, Player.this, BIND_AUTO_CREATE)){
+			Util.showDialog(Player.this, "Could not connect to media service!");
 		}
-
-		mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
-			@Override
-			public void onCompletion(MediaPlayer mp) {
-			}
-		});
-//		mp.setVolume(settings.getVolume(), settings.getVolume());
-		mp.seekTo(item.getBookmark());
 
 		ImageButton play = (ImageButton) findViewById(R.id.play);
 		play.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				mp.start();
+				try{
+					if(binder != null){
+						binder.play();
+					}
+				}catch(DeadObjectException e){
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				} catch (RemoteException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}
 			}
 		});
 
@@ -129,7 +111,17 @@ public class Player extends Activity {
 		pause.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				mp.pause();
+				try{
+					if(binder != null){
+						binder.pause();
+					}
+				}catch(DeadObjectException e){
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				} catch (RemoteException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}
 			}
 		});
 
@@ -137,13 +129,14 @@ public class Player extends Activity {
 		stop.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				mp.stop();
-				try {
-					mp.prepare();
-				} catch (IllegalStateException e) {
+				try{
+					if(binder != null){
+						binder.stop();
+					}
+				}catch(DeadObjectException e){
 					Log.e(TAG, item.getMp3file(), e);
 					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (IOException e) {
+				} catch (RemoteException e) {
 					Log.e(TAG, item.getMp3file(), e);
 					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
 				}
@@ -154,7 +147,17 @@ public class Player extends Activity {
 		rewind.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				mp.seekTo(mp.getCurrentPosition()-SEEK_INC);
+				try{
+					if(binder != null){
+						binder.rewind();
+					}
+				}catch(DeadObjectException e){
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				} catch (RemoteException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}
 			}
 		});
 
@@ -162,12 +165,49 @@ public class Player extends Activity {
 		forward.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				mp.seekTo(mp.getCurrentPosition()+SEEK_INC);
+				try{
+					if(binder != null){
+						binder.forward();
+					}
+				}catch(DeadObjectException e){
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				} catch (RemoteException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}
+			}
+		});
+
+		ImageButton eject = (ImageButton) findViewById(R.id.eject);
+		eject.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				try {
+					int pid = binder.getPid();
+					Process.killProcess(pid);
+				}catch(DeadObjectException e){
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				} catch (RemoteException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}
 			}
 		});
 
 		final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
-		seekbar.setMax(mp.getDuration());
+		try{
+			if(binder != null){
+				seekbar.setMax(binder.getDuration());
+			}
+		}catch(DeadObjectException e){
+			Log.e(TAG, item.getMp3file(), e);
+			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+		} catch (RemoteException e) {
+			Log.e(TAG, item.getMp3file(), e);
+			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+		}
 		seekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener(){
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
@@ -180,7 +220,17 @@ public class Player extends Activity {
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
 				tracking = false;
-				mp.seekTo(seekBar.getProgress());
+				try{
+					if(binder != null){
+						binder.setCurrentPosition(seekBar.getProgress());
+					}
+				}catch(DeadObjectException e){
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				} catch (RemoteException e) {
+					Log.e(TAG, item.getMp3file(), e);
+					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}
 			}
 		});
 
@@ -192,15 +242,20 @@ public class Player extends Activity {
 						sleep(UPDATE_DELAY);
 						if(active){
 							Message message = new Message();
-							if(!tracking){
-								seekbar.setProgress(mp.getCurrentPosition());
-								message.obj = mp.getCurrentPosition();
+							if(!tracking && binder != null){
+								int pos = binder.getCurrentPosition();
+								seekbar.setProgress(pos);
+								message.obj = pos;
 							}else{
 								message.obj = seekbar.getProgress();
 							}
 							durationHandler.sendMessage(message);
 						}
 					} catch (InterruptedException e) {
+						Log.d(TAG, e.getMessage(), e);
+					}catch(DeadObjectException e){
+						Log.d(TAG, e.getMessage(), e);
+					} catch (RemoteException e) {
 						Log.d(TAG, e.getMessage(), e);
 					}
 				}
@@ -214,7 +269,17 @@ public class Player extends Activity {
 		@Override
 		public void handleMessage(Message msg) {
 			String dur = Util.convertDuration((Integer)msg.obj);
-			dur += "/"+Util.convertDuration(mp.getDuration());
+			try{
+				if(binder != null){
+					dur += "/"+Util.convertDuration(binder.getDuration());
+				}
+			}catch(DeadObjectException e){
+				Log.e(TAG, item.getMp3file(), e);
+				Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+			} catch (RemoteException e) {
+				Log.e(TAG, item.getMp3file(), e);
+				Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+			}
 			duration.setText(dur);
 		}
 	};
@@ -250,18 +315,32 @@ public class Player extends Activity {
 		//saveState(); onPause is called after this
 	}
 	
-	private void saveState(){
+	private void saveState() {
 		active = false;
-		item.setBookmark(mp.getCurrentPosition());
-		if(mp.getCurrentPosition()+100 >= mp.getDuration()){
-			item.setCompleted(true);
-			mDbHelper.updateFeedItemCompleted(item.getId(), item
-					.isCompleted());
-		}
-		mp.reset();
-		mDbHelper.updateFeedItemBookmark(item.getId(), item.getBookmark());
 		settings.setLastFeedItemId(item.getId());
 		mDbHelper.updateSettings(settings);
+		unbindService(this);
+	}
+
+	@Override
+	public void onServiceConnected(ComponentName name, IBinder service) {
+		Log.e(TAG, "onServiceConnected: "+name);
+		binder = IMediaService.Stub.asInterface(service);
+		try {
+			binder.playFeedItem((int)item.getId());
+		}catch(DeadObjectException e){
+			Log.e(TAG, item.getMp3file(), e);
+			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+		} catch (RemoteException e) {
+			Log.e(TAG, item.getMp3file(), e);
+			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+		}
+	}
+
+	@Override
+	public void onServiceDisconnected(ComponentName name) {
+		Log.e(TAG, "onServiceDisconnected: "+name);
+		binder = null;
 	}
 
 }
