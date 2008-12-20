@@ -2,6 +2,8 @@ package com.mathias.android.acast.rss;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -16,6 +18,7 @@ import android.util.Log;
 import android.util.Xml;
 import android.util.Xml.Encoding;
 
+import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 
@@ -30,6 +33,8 @@ public class RssUtil implements ContentHandler {
 	private String characters;
 	
 	private int level = 0;
+	
+	private Map<Integer, String> parent = new HashMap<Integer, String>();
 
 	public RssUtil(){
 	}
@@ -73,15 +78,10 @@ public class RssUtil implements ContentHandler {
 	public void endDocument() throws SAXException {
 	}
 	
-	private static String buildFileName(String uri){
-		String file = File.separator + "sdcard" + File.separator + "acast"
-				+ File.separator + new File(uri).getName();
-		return file;
-	}
-
 	@Override
 	public void startElement(String arg0, String name, String arg2,
 			Attributes attr) throws SAXException {
+		parent.put(level, name);
 		switch(level){
 		case 3:
 			if("enclosure".equalsIgnoreCase(name)){
@@ -90,9 +90,9 @@ public class RssUtil implements ContentHandler {
 					String value = attr.getValue(i);
 					if("url".equalsIgnoreCase(localName)){
 						currentFeedItem.setMp3uri(value);
-						String file = buildFileName(value);
-						currentFeedItem.setMp3file(file);
-						currentFeedItem.setDownloaded(new File(file).exists());
+						File file = buildFile(value);
+						currentFeedItem.setMp3file(file.getAbsolutePath());
+						currentFeedItem.setDownloaded(file.exists());
 					}else if("length".equalsIgnoreCase(localName)){
 						currentFeedItem.setSize(Long.parseLong(value));
 					}
@@ -118,14 +118,26 @@ public class RssUtil implements ContentHandler {
 			}
 			break;
 		case 3:
-			if("title".equalsIgnoreCase(name)){
-				currentFeedItem.setTitle(characters);
+			if("image".equalsIgnoreCase(parent.get(level))){
+				if("url".equalsIgnoreCase(name)){
+					try {
+						File file = buildFile(characters);
+						Util.downloadFile(0, characters, file, null);
+						feed.setIcon(file.getAbsolutePath());
+					} catch (Exception e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+				}
+			}else if("item".equalsIgnoreCase(parent.get(level))){
+				if("title".equalsIgnoreCase(name)){
+					currentFeedItem.setTitle(characters);
+				}
 			}
 			break;
 		}
 		characters = "";
 	}
-
+	
 	@Override
 	public void startPrefixMapping(String arg0, String arg1)
 			throws SAXException {
@@ -159,6 +171,13 @@ public class RssUtil implements ContentHandler {
 	@Override
 	public void skippedEntity(String arg0) throws SAXException {
 		Log.d(TAG, "skippedEntity() "+arg0);
+	}
+	
+	private File buildFile(String uri){
+		String file = File.separator + "sdcard" + File.separator + "acast"
+				+ File.separator + feed.getTitle() + File.separator
+				+ new File(uri).getName();
+		return new File(file);
 	}
 
 }

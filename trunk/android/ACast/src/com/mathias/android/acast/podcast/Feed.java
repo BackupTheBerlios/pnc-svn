@@ -11,15 +11,18 @@ public class Feed {
 	
 	private String uri;
 	
+	private String icon;
+	
 	private List<FeedItem> items = new ArrayList<FeedItem>();
 
 	public Feed(){
 	}
 
-	public Feed(long id, String title, String uri) {
+	public Feed(long id, String title, String uri, String icon) {
 		this.id = id;
 		this.title = title;
 		this.uri = uri;
+		this.icon = icon;
 	}
 
 	public long getId() {
@@ -52,6 +55,14 @@ public class Feed {
 
 	public List<FeedItem> getItems(){
 		return items;
+	}
+
+	public String getIcon() {
+		return icon;
+	}
+
+	public void setIcon(String icon) {
+		this.icon = icon;
 	}
 
 }

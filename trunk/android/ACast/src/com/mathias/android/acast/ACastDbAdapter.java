@@ -21,6 +21,7 @@ public class ACastDbAdapter {
 	public static final String FEED_ID = "_id";
 	public static final String FEED_TITLE = "title";
 	public static final String FEED_URI = "uri";
+	public static final String FEED_ICON = "icon";
 
 	public static final String FEEDITEM_ID = "_id";
 	public static final String FEEDITEM_FEEDID = "feed_id";
@@ -43,25 +44,29 @@ public class ACastDbAdapter {
 	private static final String DATABASE_TABLE_SETTING = "setting";
 
 	private static final String DATABASE_CREATE_FEED = "create table feed ("
-			+ "_id integer primary key autoincrement, "
-			+ "title text not null, " + "uri text not null);";
+			+ FEED_ID+" integer primary key autoincrement, "
+			+ FEED_TITLE+" text not null, " 
+			+ FEED_URI+" text not null, " 
+			+ FEED_ICON+" text not null);";
 
 	private static final String DATABASE_CREATE_FEEDITEM = "create table feeditem ("
-			+ "_id integer primary key autoincrement, "
-			+ "feed_id integer not null, "
-			+ "title text not null, "
-			+ "mp3uri text not null, "
-			+ "mp3file text not null, "
-			+ "size long not null, "
-			+ "type text, bookmark integer, "
-			+ "completed boolean, " + "downloaded boolean);";
+			+ FEEDITEM_ID+" integer primary key autoincrement, "
+			+ FEEDITEM_FEEDID+" integer not null, "
+			+ FEEDITEM_TITLE+" text not null, "
+			+ FEEDITEM_MP3URI+" text not null, "
+			+ FEEDITEM_MP3FILE+" text not null, "
+			+ FEEDITEM_SIZE+" long not null, "
+			+ FEEDITEM_TYPE+" text, "
+			+ FEEDITEM_BOOKMARK+" integer, "
+			+ FEEDITEM_COMPLETED+" boolean, " 
+			+ FEEDITEM_DOWNLOADED+" boolean);";
 
 	private static final String DATABASE_CREATE_SETTING = "create table setting ("
-			+ "_id integer primary key autoincrement, "
-			+ "volume integer, "
-			+ "lastfeeditemid integer);";
+			+ SETTING_ID+" integer primary key autoincrement, "
+			+ SETTING_VOLUME+" integer, "
+			+ SETTING_LASTFEEDITEMID+" integer);";
 
-	private static final int DATABASE_VERSION = 22;
+	private static final int DATABASE_VERSION = 23;
 
 	private static final String TAG = ACastDbAdapter.class.getSimpleName();
 	private DatabaseHelper mDbHelper;
@@ -157,7 +162,8 @@ public class ACastDbAdapter {
 				long id = c.getLong(c.getColumnIndexOrThrow(FEED_ID));
 				String title = c.getString(c.getColumnIndexOrThrow(FEED_TITLE));
 				String uri = c.getString(c.getColumnIndexOrThrow(FEED_URI));
-				uris.add(new Feed(id, title, uri));
+				String icon = c.getString(c.getColumnIndexOrThrow(FEED_ICON));
+				uris.add(new Feed(id, title, uri, icon));
 			}while(c.moveToNext());
 		}
 		Util.closeCursor(c);
@@ -174,8 +180,9 @@ public class ACastDbAdapter {
 		}else{
 			String title = c.getString(c.getColumnIndex(FEED_TITLE));
 			String uri = c.getString(c.getColumnIndex(FEED_URI));
+			String icon = c.getString(c.getColumnIndex(FEED_ICON));
 			Util.closeCursor(c);
-			feed = new Feed(id, title, uri);
+			feed = new Feed(id, title, uri, icon);
 			c = mDb.query(true, DATABASE_TABLE_FEEDITEM,
 					new String[] { FEEDITEM_ID, FEEDITEM_TITLE,
 							FEEDITEM_MP3URI, FEEDITEM_MP3FILE, FEEDITEM_SIZE,

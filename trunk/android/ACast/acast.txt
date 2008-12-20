@@ -16,37 +16,27 @@ ACast
 - resume last item button, show title of feed item
 - store mp3s on sdcard
 - escape chars in title before creating file name
+- play in background, show notification in tray. Service, NotificationManager
+- Use NotificationManager to be able to go back to current playing feed item
+- (not used) AlarmManager, Context.getSystemService(Context.ALARM_SERVICE)
+- Remove notification on pause and stop
+End service and remove notification when song is complete
+Bug: Fix threaded mediaplayer bug which does not stop playback sometimes
 rotate with gravity or keyboard?
-play in background, show notification in tray. Service, NotificationManager
-Use NotificationManager to be able to go back to current playing feed item
-Download progress screen
-Download all feed items in sequence
-Player, change screen mode, media restarts from last save point
-Fetch icon from RSS and present in feed list, or bigger letters in feed list
+All Download progress screen
+Download all feed items in sequence (if not already downloaded)
+Bug: Player, change screen mode, media restarts from last save point
+Fetch icon from RSS and present in feed list, and/or bigger letters in feed list
 downloads can not handle screen timeout, when screen locks audio stops
 show kb/s for download progress window
 create /sdcard/<feed> dirs for mp3s
-refresh feed should not clear downloads/bookmark/completed
-AlarmManager, Context.getSystemService(Context.ALARM_SERVICE)
+Refresh feed should not clear -downloads-/bookmark/completed
 Use default media player with broadcast sender.
-Play/Pause button, Big buttons
-Main icon
-Feed list icon, 
-Feed and feeditem information Dialog
-
-Use Cases
-Start playing item.
-
-AudioService
-On start, set notification
-End service and remove notification when song is complete
-
-DownloadService
-On start set notification
-End service and remove notification when download is complete
-
-
-
+Play/Pause button, Big buttons, black and white?
+Draw main icon
+Feed list icon, download main feed icon if exists 
+Feed and feeditem extended information Dialog (or show everything in listitem)
+Queue downloads, show download queue and current progress. notification on completion/queue empty
 
 
 

@@ -46,7 +46,7 @@ public abstract class Util {
 		boolean continueDownload(long externalid);
 	}
 
-	public static void downloadFile(Context cxt, long externalid, String src,
+	public static void downloadFile(long externalid, String src,
 			File dest, ProgressListener listener) throws Exception {
 		if(src == null || dest == null){
 			throw new Exception("src or dest null!");

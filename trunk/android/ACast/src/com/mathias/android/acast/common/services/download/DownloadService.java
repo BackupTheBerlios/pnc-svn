@@ -84,7 +84,7 @@ public class DownloadService extends Service implements ProgressListener {
 			Message msg = new Message();
 			msg.arg1 = (int)externalId;
 			try {
-				Util.downloadFile(DownloadService.this, externalId, srcuri, new File(
+				Util.downloadFile(externalId, srcuri, new File(
 						destfile), DownloadService.this);
 				msg.what = 0;
 				handler.sendMessage(msg);
