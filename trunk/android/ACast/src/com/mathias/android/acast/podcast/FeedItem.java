@@ -23,11 +23,13 @@ public class FeedItem implements Serializable {
 	
 	private boolean completed;
 	
+	private boolean downloaded;
+	
 	public FeedItem(){
 	}
 
 	public FeedItem(long id, long feedId, String title, String mp3uri,
-			String mp3file, long size, String type, int bookmark, boolean completed) {
+			String mp3file, long size, String type, int bookmark, boolean completed, boolean downloaded) {
 		this.id = id;
 		this.feedId = feedId;
 		this.title = title;
@@ -37,6 +39,7 @@ public class FeedItem implements Serializable {
 		this.type = type;
 		this.bookmark = bookmark;
 		this.completed = completed;
+		this.downloaded = downloaded;
 	}
 
 	public long getId() {
@@ -109,6 +112,14 @@ public class FeedItem implements Serializable {
 
 	public void setCompleted(boolean completed) {
 		this.completed = completed;
+	}
+
+	public boolean isDownloaded() {
+		return downloaded;
+	}
+
+	public void setDownloaded(boolean downloaded) {
+		this.downloaded = downloaded;
 	}
 
 }

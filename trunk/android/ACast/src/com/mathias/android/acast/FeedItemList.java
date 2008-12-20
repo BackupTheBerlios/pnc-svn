@@ -5,16 +5,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.content.Context;
+import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,11 +25,14 @@ import android.widget.ListView;
 
 import com.mathias.android.acast.common.ChoiceSimpleAdapter;
 import com.mathias.android.acast.common.Util;
+import com.mathias.android.acast.common.services.download.DownloadService;
+import com.mathias.android.acast.common.services.download.IDownloadService;
+import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.rss.RssUtil;
 
-public class FeedItemList extends ListActivity {
+public class FeedItemList extends ListActivity implements ServiceConnection {
 
 	private static final String TAG = FeedItemList.class.getSimpleName();
 
@@ -49,6 +54,8 @@ public class FeedItemList extends ListActivity {
 	private ProgressDialog pd;
 	
 	private Integer currPos;
+
+	private IDownloadService binder;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -88,7 +95,7 @@ public class FeedItemList extends ListActivity {
 		for (FeedItem item : items) {
 			Map<String, Object> map = new HashMap<String, Object>();
 			map.put(FEEDITEM, item);
-			if(item.getMp3file() != null){
+			if(item.isDownloaded()){
 				if(item.isCompleted()){
 					if(item.getBookmark() > 0){
 						map.put(ICON, R.drawable.downloaded_done_bm);
@@ -194,72 +201,24 @@ public class FeedItemList extends ListActivity {
 		startActivityForResult(i, 0);
 	}
 
-	private class Download extends Thread implements Util.ProgressListener {
-		
-		private FeedItem item;
-		
-		private Context cxt;
-		
-		public Download(Context cxt, FeedItem item){
-			setDaemon(false);
-			this.cxt = cxt;
-			this.item = item;
-		}
-		
-		@Override
-		public void run() {
-			String uri = item.getMp3uri().replace(' ', '+');
-			String file = getFilename();
-			try {
-				Util.downloadFile(cxt, uri, new File(file), this);
-				item.setMp3file(file);
-				mDbHelper.updateFeedItem(item);
-				downloadHandler.sendEmptyMessage(0);
-			} catch (Exception e) {
-				Log.e(TAG, item.getMp3file(), e);
-				Message msg = new Message();
-				msg.obj = e;
-				downloadHandler.sendMessage(msg);
-			}
-		}
-		
-		public String getFilename(){
-			String file = File.separator + "sdcard" + File.separator + "acast"
-					+ File.separator + new File(item.getMp3uri()).getName();
-			return file;
-		}
-
-		@Override
-		public void progressDiff(long diff) {
-			pd.incrementProgressBy((int)diff);
-		}
-	}
-
-	private Handler downloadHandler = new Handler(){
-		@Override
-		public void handleMessage(Message msg) {
-			pd.dismiss();
-			populateFields();
-			if(msg != null && msg.obj != null){
-				if(msg.obj instanceof Exception){
-					Util.showDialog(FeedItemList.this, "Problem during download: "+((Exception)msg.obj).getMessage());
-				}else{
-					Util.showDialog(FeedItemList.this, "Problem during download!");
-				}
-			}
-		}
-	};
-
 	private void downloadItem(long id){
-		final FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
+		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
 		String file = item.getMp3file();
-		if(file != null){
+		if(item.isDownloaded()){
 			Util.showDialog(this, "Already downloaded: "+file);
 			return;
 		}
 
-		final Download download = new Download(this, item);
-		download.start();
+		String srcuri = item.getMp3uri().replace(' ', '+');
+		Intent i = new Intent(this, DownloadService.class);
+		i.putExtra(DownloadService.EXTERNALID, item.getId());
+		i.putExtra(DownloadService.SRCURI, srcuri);
+		i.putExtra(DownloadService.DESTFILE, item.getMp3file());
+		startService(i);
+		if(!bindService(i, this, BIND_AUTO_CREATE)) {
+			Util.showDialog(this, "Could not start download!");
+			return;
+		}
 
 		pd = new ProgressDialog(this);
 		pd.setTitle("Downloading");
@@ -274,20 +233,23 @@ public class FeedItemList extends ListActivity {
 		pd.setButton2("Cancel", new OnClickListener(){
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				download.stop();
-				new File(download.getFilename()).delete();
+				if(binder != null){
+					try {
+						binder.cancelAndRemove();
+					} catch (RemoteException e) {
+					}
+				}
 			}
 		});
 		pd.setMax((int)item.getSize());
 		pd.show();
-
 	}
 
 	private void deleteItem(long id){
 		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
 		if(item != null && item.getMp3file() != null){
 			new File(item.getMp3file()).delete();
-			item.setMp3file(null);
+			item.setDownloaded(false);
 			mDbHelper.updateFeedItem(item);
 			populateFields();
 		}
@@ -299,5 +261,52 @@ public class FeedItemList extends ListActivity {
 		mDbHelper.updateFeed(mFeedId, feed);
 		populateFields();
 	}
+
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		super.onDestroy();
+	}
+
+	@Override
+	public void onServiceConnected(ComponentName name, IBinder service) {
+		Log.e(TAG, "onServiceConnected: "+name);
+		binder = IDownloadService.Stub.asInterface(service);
+		try {
+			binder.registerCallback(downloadCallback);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+	
+	@Override
+	public void onServiceDisconnected(ComponentName name) {
+		Log.e(TAG, "onServiceDisconnected: "+name);
+		try {
+			binder.unregisterCallback(downloadCallback);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		binder = null;
+	}
+
+	private final IDownloadServiceCallback downloadCallback = new IDownloadServiceCallback.Stub() {
+		@Override
+		public void onCompleted(long externalid) throws RemoteException {
+			pd.dismiss();
+			mDbHelper.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
+			populateFields();
+		}
+		@Override
+		public void onException(long externalid, String exception) throws RemoteException {
+			pd.dismiss();
+			Util.showDialog(FeedItemList.this, "Download failed: "+exception);
+			populateFields();
+		}
+		@Override
+		public void onProgress(long externalid, long diff) throws RemoteException {
+			pd.incrementProgressBy((int)diff);
+		}
+	};
 
 }

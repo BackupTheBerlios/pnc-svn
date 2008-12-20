@@ -17,9 +17,64 @@ ACast
 - store mp3s on sdcard
 - escape chars in title before creating file name
 rotate with gravity or keyboard?
-play in background, show notification in tray. Service
+play in background, show notification in tray. Service, NotificationManager
+Use NotificationManager to be able to go back to current playing feed item
 Download progress screen
 Download all feed items in sequence
 Player, change screen mode, media restarts from last save point
 Fetch icon from RSS and present in feed list, or bigger letters in feed list
-When screen locks audio stops
+downloads can not handle screen timeout, when screen locks audio stops
+show kb/s for download progress window
+create /sdcard/<feed> dirs for mp3s
+refresh feed should not clear downloads/bookmark/completed
+AlarmManager, Context.getSystemService(Context.ALARM_SERVICE)
+Use default media player with broadcast sender.
+Play/Pause button, Big buttons
+Main icon
+Feed list icon, 
+Feed and feeditem information Dialog
+
+Use Cases
+Start playing item.
+
+AudioService
+On start, set notification
+End service and remove notification when song is complete
+
+DownloadService
+On start set notification
+End service and remove notification when download is complete
+
+
+
+
+
+
+
+
+
+
+
+
+detailMessage	"Only the original thread that created a view hierarchy can touch its views." (id=830057026112)	
+
+detailMessage	"column 'lastfeeditemid' does not exist" (id=830056939992)	
+
+
+12-14 12:11:22.226: ERROR/Util(4407): File /sdcard/TWiT 163: MitNicked.mp3 contains a path separator
+12-14 12:11:22.226: ERROR/Util(4407): java.lang.IllegalArgumentException: File /sdcard/TWiT 163: MitNicked.mp3 contains a path separator
+12-14 12:11:22.226: ERROR/Util(4407):     at android.app.ApplicationContext.makeFilename(ApplicationContext.java:1405)
+12-14 12:11:22.226: ERROR/Util(4407):     at android.app.ApplicationContext.openFileOutput(ApplicationContext.java:350)
+12-14 12:11:22.226: ERROR/Util(4407):     at android.content.ContextWrapper.openFileOutput(ContextWrapper.java:146)
+12-14 12:11:22.226: ERROR/Util(4407):     at com.mathias.android.acast.common.Util.downloadFile(Util.java:56)
+12-14 12:11:22.226: ERROR/Util(4407):     at com.mathias.android.acast.FeedItemList$Download.run(FeedItemList.java:146)
+
+
+E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
+E/MediaPlayer(  277): Error (-38,0)
+E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
+E/MediaPlayer(  277): Error (-38,0)
+E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
+E/MediaPlayer(  277): Error (-38,0)
+E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
+E/MediaPlayer(  277): Error (-38,0)

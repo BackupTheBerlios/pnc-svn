@@ -1,10 +1,14 @@
 package com.mathias.android.acast;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,17 +18,22 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.mathias.android.acast.common.ChoiceArrayAdapter;
+import com.mathias.android.acast.common.ChoiceSimpleAdapter;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
 import com.mathias.android.acast.rss.RssUtil;
 
 public class ACast extends ListActivity {
-	
+
+	private static final String TAG = ACast.class.getSimpleName();
+
+	// used to fetch data out of map for SimpleAdapter
+	private static final String ICON = "ICON";
+	private static final String FEED = "FEED";
+
 	public static final String KEY = "key";
 	public static final String FEEDITEM = "feeditem";
-
-//	private static final String TAG = ACast.class.getSimpleName();
 
 	private static final int INSERT_ID = Menu.FIRST;
 	private static final int UPDATE_ID = Menu.FIRST + 1;
@@ -33,7 +42,7 @@ public class ACast extends ListActivity {
 
 	private ACastDbAdapter mDbHelper;
 	
-	private ChoiceArrayAdapter<Feed> adapter;
+	private ChoiceSimpleAdapter adapter;
 	
 	private Settings settings;
 
@@ -63,17 +72,37 @@ public class ACast extends ListActivity {
 	}
 
 	private void fillData() {
-		List<Feed> names = mDbHelper.fetchAllFeedsLight();
-		adapter = new ChoiceArrayAdapter<Feed>(this,
-				R.layout.feed_row, R.id.text1, names, "title");
+		List<Feed> feeds = mDbHelper.fetchAllFeedsLight();
+		List<Map<String, Object>> arr = buildArray(feeds);
+		adapter = new ChoiceSimpleAdapter(
+				this,
+				arr,
+				android.R.layout.activity_list_item,
+				new String[] {FEED, ICON}, 
+				new int[] { android.R.id.text1, android.R.id.icon },
+				"title");
 		setListAdapter(adapter);
 
 		settings = mDbHelper.fetchSettings();
 		if(settings != null && settings.getLastFeedItemId() != null){
 			TextView resumetitle = (TextView) findViewById(R.id.resumetitle);
 			FeedItem item = mDbHelper.fetchFeedItem(settings.getLastFeedItemId());
-			resumetitle.setText(item.getTitle());
+			if(item != null){
+				resumetitle.setText(item.getTitle());
+			}
 		}
+	}
+
+	private List<Map<String, Object>> buildArray(List<Feed> feeds){
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>(
+				feeds.size());
+		for (Feed feed : feeds) {
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put(FEED, feed);
+			map.put(ICON, R.drawable.downloaded_done_bm);
+			list.add(map);
+		}
+		return list;
 	}
 
 	@Override
@@ -90,7 +119,8 @@ public class ACast extends ListActivity {
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
 		Intent i = new Intent(this, FeedItemList.class);
-		i.putExtra(KEY, adapter.getItem(position).getId());
+		long feedId = ((Feed) adapter.getItem(position).get(FEED)).getId();
+		i.putExtra(KEY, feedId);
 		startActivityForResult(i, 0);
 	}
 
@@ -102,14 +132,14 @@ public class ACast extends ListActivity {
 		}else if(UPDATE_ID == item.getItemId()){
 			int pos = getSelectedItemPosition();
 			if(pos >= 0){
-				long feedId = adapter.getItem(pos).getId();
+				long feedId = ((Feed) adapter.getItem(pos).get(FEED)).getId();
 				editFeed(feedId);
 			}
 			return true;
 		}else if(DELETE_ID == item.getItemId()){
 			int pos = getSelectedItemPosition();
 			if(pos >= 0){
-				long feedId = adapter.getItem(pos).getId();
+				long feedId = ((Feed) adapter.getItem(pos).get(FEED)).getId();
 				deleteFeed(feedId);
 			}
 			return true;
@@ -135,7 +165,7 @@ public class ACast extends ListActivity {
 		mDbHelper.deleteFeed(id);
 		fillData();
 	}
-	
+
 	private void refreshFeeds(){
 		List<Feed> feeds = mDbHelper.fetchAllFeedsLight();
 		for (Feed feed : feeds) {
@@ -153,14 +183,10 @@ public class ACast extends ListActivity {
 	}
 
 	@Override
-	protected void onPause() {
-		super.onPause();
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-//		mDbHelper.close();
+	protected void onDestroy() {
+		Log.d(TAG, "onDestroy");
+		mDbHelper.close();
+		super.onDestroy();
 	}
 
 }

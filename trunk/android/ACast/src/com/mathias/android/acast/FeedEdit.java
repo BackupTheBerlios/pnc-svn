@@ -10,14 +10,16 @@ import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.rss.RssUtil;
 
 public class FeedEdit extends Activity {
+	
+	private ACastDbAdapter mDbHelper;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.feed_edit);
 
-		final ACastDbAdapter dbHelper = new ACastDbAdapter(this);
-		dbHelper.open();
+		mDbHelper = new ACastDbAdapter(this);
+		mDbHelper.open();
 		
 		final EditText urlText = (EditText) findViewById(R.id.url);
 		Button confirm = (Button) findViewById(R.id.add);
@@ -29,11 +31,17 @@ public class FeedEdit extends Activity {
 			public void onClick(View v) {
 				String uri = urlText.getText().toString();
 				Feed feed = new RssUtil().parse(uri);
-				dbHelper.createFeed(feed);
+				mDbHelper.createFeed(feed);
 				setResult(RESULT_OK);
 				finish();
 			}
 		});
+	}
+
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		super.onDestroy();
 	}
 
 }

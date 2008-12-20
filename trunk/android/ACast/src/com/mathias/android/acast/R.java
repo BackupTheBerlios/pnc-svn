@@ -31,18 +31,18 @@ public final class R {
     public static final class id {
         public static final int add=0x7f050001;
         public static final int duration=0x7f050006;
-        public static final int eject=0x7f05000c;
-        public static final int forward=0x7f05000b;
-        public static final int path=0x7f05000f;
-        public static final int pause=0x7f050008;
-        public static final int play=0x7f050007;
+        public static final int forward=0x7f05000a;
+        public static final int path=0x7f05000d;
+        public static final int pause=0x7f05000f;
+        public static final int play=0x7f05000e;
+        public static final int playpause=0x7f050007;
         public static final int reset=0x7f050010;
         public static final int resume=0x7f050002;
         public static final int resumetitle=0x7f050003;
-        public static final int rewind=0x7f05000a;
-        public static final int seekbar=0x7f05000d;
-        public static final int stop=0x7f050009;
-        public static final int surface=0x7f05000e;
+        public static final int rewind=0x7f050009;
+        public static final int seekbar=0x7f05000b;
+        public static final int stop=0x7f050008;
+        public static final int surface=0x7f05000c;
         public static final int text1=0x7f050004;
         public static final int title=0x7f050005;
         public static final int url=0x7f050000;
@@ -64,7 +64,6 @@ public final class R {
         public static final int deleteitem=0x7f04000e;
         public static final int downloaditem=0x7f04000d;
         public static final int editfeed=0x7f040009;
-        public static final int forward=0x7f040015;
         /**  general 
          */
         public static final int hello=0x7f040000;
@@ -82,19 +81,18 @@ public final class R {
         public static final int playitem=0x7f04000c;
         public static final int refreshfeed=0x7f04000f;
         public static final int refreshfeeds=0x7f04000b;
+        /**  player 
+ media service 
+         */
+        public static final int remote_service_started=0x7f040014;
         public static final int removefeed=0x7f04000a;
         public static final int reset=0x7f040012;
         /**  feeds_list 
          */
         public static final int resume=0x7f040005;
-        /**  player 
-         */
-        public static final int rewind=0x7f040014;
         public static final int stop=0x7f040013;
         /**  feed_edit 
          */
         public static final int url=0x7f040002;
-        public static final int voldown=0x7f040017;
-        public static final int volup=0x7f040016;
     }
 }

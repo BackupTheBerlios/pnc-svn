@@ -1,5 +1,6 @@
 package com.mathias.android.acast.rss;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.http.HttpEntity;
@@ -71,6 +72,12 @@ public class RssUtil implements ContentHandler {
 	@Override
 	public void endDocument() throws SAXException {
 	}
+	
+	private static String buildFileName(String uri){
+		String file = File.separator + "sdcard" + File.separator + "acast"
+				+ File.separator + new File(uri).getName();
+		return file;
+	}
 
 	@Override
 	public void startElement(String arg0, String name, String arg2,
@@ -83,6 +90,9 @@ public class RssUtil implements ContentHandler {
 					String value = attr.getValue(i);
 					if("url".equalsIgnoreCase(localName)){
 						currentFeedItem.setMp3uri(value);
+						String file = buildFileName(value);
+						currentFeedItem.setMp3file(file);
+						currentFeedItem.setDownloaded(new File(file).exists());
 					}else if("length".equalsIgnoreCase(localName)){
 						currentFeedItem.setSize(Long.parseLong(value));
 					}

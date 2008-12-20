@@ -15,7 +15,8 @@
         <activity android:name=".FeedItemList"/>
         <activity android:name=".VideoPlayer"/>
         <activity android:name=".Player"/>
-        <service android:name=".MediaService"/>
+        <service android:name=".common.services.media.MediaService"/>
+        <service android:name=".common.services.download.DownloadService"/>
     </application>
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 </manifest>

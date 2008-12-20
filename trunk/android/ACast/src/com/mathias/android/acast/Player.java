@@ -5,11 +5,9 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.DeadObjectException;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
@@ -20,39 +18,46 @@ import android.widget.TextView;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 
 import com.mathias.android.acast.common.Util;
+import com.mathias.android.acast.common.services.media.IMediaService;
+import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
+import com.mathias.android.acast.common.services.media.MediaService;
 import com.mathias.android.acast.podcast.FeedItem;
-import com.mathias.android.acast.podcast.Settings;
 
 public class Player extends Activity implements ServiceConnection {
 
 	private static final String TAG = Player.class.getSimpleName();
 
-	private static final int VOLUME_MAX = 15;
+	private static final int SEEK_REW = -30000;
 
-	private static final long UPDATE_DELAY = 300;
+	private static final int SEEK_FOR = 30000;
+
+	private static final long UPDATE_DELAY = 1000;
 
 	private Boolean tracking = false;
 
-	private ACastDbAdapter mDbHelper;
-
 	private FeedItem item;
-
-	private Settings settings;
 
 	private TextView duration;
 
-	private boolean active = false;
-	
 	private IMediaService binder;
+	
+	private SeekBar seekbar;
+	
+	private ImageButton playpause;
+	
+	private ACastDbAdapter mDbHandler;
+	
+    private boolean mIsBound = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		Log.d(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.player);
-
-		mDbHelper = new ACastDbAdapter(this);
-		mDbHelper.open();
 		
+		mDbHandler = new ACastDbAdapter(this);
+		mDbHandler.open();
+
 		TextView title = (TextView) findViewById(R.id.title);
 
 		duration = (TextView) findViewById(R.id.duration);
@@ -63,151 +68,101 @@ public class Player extends Activity implements ServiceConnection {
 			Bundle extras = getIntent().getExtras();
 			item = (FeedItem) (extras != null ? extras.getSerializable(ACast.FEEDITEM)
 					: null);
-			if(item == null){
-				title.setText("No item!");
-				return;
-			}
 		}
-		title.setText(item.getTitle());
-
-		settings = mDbHelper.fetchSettings();
-		if(settings == null){
-			settings = new Settings(VOLUME_MAX, item.getId());
+		if(item != null){
+			title.setText(item.getTitle());
+		}else{
+			title.setText("No item!");
 		}
 
-//		Intent i = new Intent(Player.this, MediaService.class);
-		Intent i = new Intent();
-		i.setClassName(MediaService.class.getPackage().getName(),
-				MediaService.class.getName());
-//		i.putExtra(ACast.FEEDITEM, item);
-//		startService(i);
-		
-//		if(!stopService(i)){
-//			Util.showDialog(Player.this, "Could not stop media service!");
-//		}
-		if(!bindService(i, Player.this, BIND_AUTO_CREATE)){
-			Util.showDialog(Player.this, "Could not connect to media service!");
+		// MEDIA SERVICE
+		Intent i = new Intent(this, MediaService.class);
+		startService(i);
+		if(!bindService(i, this, BIND_AUTO_CREATE)){
+			Log.w(TAG, "Could not connect to media service!");
+			Util.showDialog(this, "Could not connect to media service!");
+		}else{
+			mIsBound = true;
 		}
 
-		ImageButton play = (ImageButton) findViewById(R.id.play);
-		play.setOnClickListener(new OnClickListener(){
+		// PAUSE
+		playpause = (ImageButton) findViewById(R.id.playpause);
+		playpause.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				try{
 					if(binder != null){
-						binder.play();
+						if(binder.isPlaying()){
+							mDbHandler.updateFeedItem(item.getId(),
+									ACastDbAdapter.FEEDITEM_BOOKMARK, binder
+											.getCurrentPosition());
+							binder.pause();
+							playpause.setImageResource(R.drawable.play);
+						}else{
+							binder.play();
+							playpause.setImageResource(R.drawable.pause);
+						}
 					}
-				}catch(DeadObjectException e){
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (RemoteException e) {
+				}catch(Exception e){
 					Log.e(TAG, item.getMp3file(), e);
 					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
 				}
 			}
 		});
 
-		ImageButton pause = (ImageButton) findViewById(R.id.pause);
-		pause.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View v) {
-				try{
-					if(binder != null){
-						binder.pause();
-					}
-				}catch(DeadObjectException e){
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (RemoteException e) {
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				}
-			}
-		});
-
+		// STOP
 		ImageButton stop = (ImageButton) findViewById(R.id.stop);
 		stop.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				try{
 					if(binder != null){
+						mDbHandler.updateFeedItem(item.getId(),
+								ACastDbAdapter.FEEDITEM_BOOKMARK, binder
+										.getCurrentPosition());
 						binder.stop();
+						finish();
 					}
-				}catch(DeadObjectException e){
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (RemoteException e) {
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+				}catch(Exception e){
+					Log.e(TAG, e.getMessage(), e);
 				}
 			}
 		});
 
+		// REWIND
 		ImageButton rewind = (ImageButton) findViewById(R.id.rewind);
 		rewind.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				try{
 					if(binder != null){
-						binder.rewind();
+						binder.seek(SEEK_REW);
 					}
-				}catch(DeadObjectException e){
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (RemoteException e) {
+				}catch(Exception e){
 					Log.e(TAG, item.getMp3file(), e);
 					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
 				}
 			}
 		});
 
+		// FORWARD
 		ImageButton forward = (ImageButton) findViewById(R.id.forward);
 		forward.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				try{
 					if(binder != null){
-						binder.forward();
+						binder.seek(SEEK_FOR);
 					}
-				}catch(DeadObjectException e){
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (RemoteException e) {
+				}catch(Exception e){
 					Log.e(TAG, item.getMp3file(), e);
 					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
 				}
 			}
 		});
 
-		ImageButton eject = (ImageButton) findViewById(R.id.eject);
-		eject.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View v) {
-				try {
-					int pid = binder.getPid();
-					Process.killProcess(pid);
-				}catch(DeadObjectException e){
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (RemoteException e) {
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				}
-			}
-		});
-
-		final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
-		try{
-			if(binder != null){
-				seekbar.setMax(binder.getDuration());
-			}
-		}catch(DeadObjectException e){
-			Log.e(TAG, item.getMp3file(), e);
-			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-		} catch (RemoteException e) {
-			Log.e(TAG, item.getMp3file(), e);
-			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-		}
+		// SEEKBAR
+		seekbar = (SeekBar) findViewById(R.id.seekbar);
 		seekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener(){
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
@@ -224,84 +179,91 @@ public class Player extends Activity implements ServiceConnection {
 					if(binder != null){
 						binder.setCurrentPosition(seekBar.getProgress());
 					}
-				}catch(DeadObjectException e){
-					Log.e(TAG, item.getMp3file(), e);
-					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-				} catch (RemoteException e) {
+				}catch(Exception e){
 					Log.e(TAG, item.getMp3file(), e);
 					Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
 				}
 			}
 		});
 
-		Thread progressThread = new Thread(){
-			@Override
-			public void run() {
-				while(true){
-					try {
-						sleep(UPDATE_DELAY);
-						if(active){
-							Message message = new Message();
-							if(!tracking && binder != null){
-								int pos = binder.getCurrentPosition();
-								seekbar.setProgress(pos);
-								message.obj = pos;
-							}else{
-								message.obj = seekbar.getProgress();
-							}
-							durationHandler.sendMessage(message);
-						}
-					} catch (InterruptedException e) {
-						Log.d(TAG, e.getMessage(), e);
-					}catch(DeadObjectException e){
-						Log.d(TAG, e.getMessage(), e);
-					} catch (RemoteException e) {
-						Log.d(TAG, e.getMessage(), e);
-					}
-				}
-			}
-		};
-//		progressThread.setDaemon(true);
-		progressThread.start();
+		// start progress handler loop
+		progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
 	}
 	
-	private Handler durationHandler = new Handler(){
+	private Handler progressHandler = new Handler(){
 		@Override
-		public void handleMessage(Message msg) {
-			String dur = Util.convertDuration((Integer)msg.obj);
-			try{
+		public void handleMessage(Message notused) {
+			try {
+				int pos;
+				if(!tracking && binder != null){
+					pos = binder.getCurrentPosition();
+					seekbar.setProgress(pos);
+				}else{
+					pos = seekbar.getProgress();
+				}
+				String dur = Util.convertDuration(pos);
 				if(binder != null){
 					dur += "/"+Util.convertDuration(binder.getDuration());
+					duration.setText(dur);
 				}
-			}catch(DeadObjectException e){
-				Log.e(TAG, item.getMp3file(), e);
-				Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-			} catch (RemoteException e) {
+			}catch(Exception e){
 				Log.e(TAG, item.getMp3file(), e);
 				Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
 			}
-			duration.setText(dur);
+			sendEmptyMessageDelayed(0, UPDATE_DELAY);
 		}
 	};
-	
-	// state methods:
+
+	@Override
+	protected void onStart() {
+		Log.d(TAG, "onStart");
+		super.onStart();
+	}
 
 	@Override
 	protected void onPause() {
+		Log.d(TAG, "onPause");
 		super.onPause(); // called after onSaveInstanceState, calls onStop
-		saveState();
+		if(mIsBound){
+			unbindService(this);
+			mIsBound = false;
+		}
+	}
+	
+	@Override
+	protected void onDestroy() {
+		Log.d(TAG, "onDestroy");
+		mDbHandler.close();
+		super.onDestroy();
 	}
 	
 	@Override
 	protected void onStop() {
 		super.onStop(); //called after onPause
-//		mDbHelper.close();
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume(); // called after onCreate
-		active = true;
+		try {
+			if(binder != null){
+				if(!binder.isPlaying()){
+					if(item.isDownloaded()){
+						binder.playFeedItem(item.getId(), item.getMp3file(), false);
+					}else{
+						binder.playFeedItem(item.getId(), item.getMp3uri(), true);
+					}
+					binder.setCurrentPosition(item.getBookmark());
+					playpause.setImageResource(R.drawable.pause);
+				}else{
+					playpause.setImageResource(R.drawable.play);
+				}
+				seekbar.setMax(binder.getDuration());
+			}
+		} catch (Exception e) {
+			Log.e(TAG, item.getMp3file(), e);
+			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+		}
 	}
 	
 	@Override
@@ -314,30 +276,59 @@ public class Player extends Activity implements ServiceConnection {
 		super.onSaveInstanceState(outState);
 		//saveState(); onPause is called after this
 	}
-	
-	private void saveState() {
-		active = false;
-		settings.setLastFeedItemId(item.getId());
-		mDbHelper.updateSettings(settings);
-		unbindService(this);
-	}
 
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
 		Log.e(TAG, "onServiceConnected: "+name);
 		binder = IMediaService.Stub.asInterface(service);
 		try {
-			binder.playFeedItem((int)item.getId());
-		}catch(DeadObjectException e){
-			Log.e(TAG, item.getMp3file(), e);
-			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
-		} catch (RemoteException e) {
-			Log.e(TAG, item.getMp3file(), e);
-			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
+			if(item == null){
+				long id = binder.getExternalId();
+				item = mDbHandler.fetchFeedItem(id);
+				TextView title = (TextView) findViewById(R.id.title);
+				title.setText(item.getTitle());
+			}
+			if(item == null){
+				return;
+			}
+			binder.registerCallback(mCallback);
+			if (binder.isPlaying()
+					&& ((item.isDownloaded() && binder.getLocator().equals(
+							item.getMp3file())) || (!item.isDownloaded() && binder
+							.getLocator().equals(item.getMp3uri())))) {
+				Log.e(TAG, "Already playing: " + item.getMp3uri());
+			} else {
+				if (item.isDownloaded()) {
+					binder.playFeedItem(item.getId(), item.getMp3file(),
+							false);
+				} else {
+					binder.playFeedItem(item.getId(), item.getMp3uri(),
+							true);
+				}
+				binder.setCurrentPosition(item.getBookmark());
+			}
+			playpause.setImageResource(R.drawable.pause);
+			seekbar.setMax(binder.getDuration());
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 
-	@Override
+    private IMediaServiceCallback mCallback = new IMediaServiceCallback.Stub() {
+		@Override
+		public void onCompletion() throws RemoteException {
+			if (item != null && mDbHandler != null) {
+				int currentPosition = binder.getCurrentPosition();
+				item.setBookmark(currentPosition);
+				if (currentPosition + 100 >= binder.getDuration()) {
+					item.setCompleted(true);
+				}
+				mDbHandler.updateFeedItem(item);
+			}
+		}
+	};
+
+    @Override
 	public void onServiceDisconnected(ComponentName name) {
 		Log.e(TAG, "onServiceDisconnected: "+name);
 		binder = null;

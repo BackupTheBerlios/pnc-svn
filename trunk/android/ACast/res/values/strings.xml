@@ -28,8 +28,6 @@
 	<string name="reset">Reset</string>
 	<string name="stop">Stop</string>
 	<!-- player -->
-	<string name="rewind">Rewind</string>
-	<string name="forward">Forward</string>
-	<string name="volup">Volume up</string>
-	<string name="voldown">Volume down</string>
+	<!-- media service -->
+	<string name="remote_service_started">remote service started</string>
 </resources>

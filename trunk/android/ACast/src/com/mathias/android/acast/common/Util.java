@@ -42,10 +42,12 @@ public abstract class Util {
 	}
 	
 	public interface ProgressListener{
-		void progressDiff(long size);
+		void progressDiff(long externalid, long size);
+		boolean continueDownload(long externalid);
 	}
-	
-	public static void downloadFile(Context cxt, String src, File dest, ProgressListener listener) throws Exception {
+
+	public static void downloadFile(Context cxt, long externalid, String src,
+			File dest, ProgressListener listener) throws Exception {
 		if(src == null || dest == null){
 			throw new Exception("src or dest null!");
 		}
@@ -69,7 +71,7 @@ public abstract class Util {
 			output = new FileOutputStream(dest);
 //			input = new InputStreamReader(response.getEntity().getContent(), "UTF8");
 //			output = cxt.openFileOutput(dest, Context.MODE_WORLD_READABLE);
-			while(true){
+			while(listener.continueDownload(externalid)){
 				byte[] buffer = new byte[8192];
 				int c = input.read(buffer);
 				if(c == -1){
@@ -77,7 +79,7 @@ public abstract class Util {
 				}
 				output.write(buffer, 0, c);
 				if(listener != null){
-					listener.progressDiff(c);
+					listener.progressDiff(externalid, c);
 				}
 			}
 		} catch (FileNotFoundException e) {
