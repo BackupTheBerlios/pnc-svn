@@ -20,6 +20,7 @@ ACast
 - Use NotificationManager to be able to go back to current playing feed item
 - (not used) AlarmManager, Context.getSystemService(Context.ALARM_SERVICE)
 - Remove notification on pause and stop
+- Draw main icon
 End service and remove notification when song is complete
 Bug: Fix threaded mediaplayer bug which does not stop playback sometimes
 rotate with gravity or keyboard?
@@ -33,7 +34,6 @@ create /sdcard/<feed> dirs for mp3s
 Refresh feed should not clear -downloads-/bookmark/completed
 Use default media player with broadcast sender.
 Play/Pause button, Big buttons, black and white?
-Draw main icon
 Feed list icon, download main feed icon if exists 
 Feed and feeditem extended information Dialog (or show everything in listitem)
 Queue downloads, show download queue and current progress. notification on completion/queue empty

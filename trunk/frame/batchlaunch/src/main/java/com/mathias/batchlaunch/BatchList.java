@@ -1,5 +1,8 @@
 package com.mathias.batchlaunch;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,7 +11,7 @@ import javax.swing.JList;
 @SuppressWarnings("serial")
 public class BatchList extends JList {
 	
-	private Map<String, BatchItem> items = new HashMap<String, BatchItem>();
+	private Map<String, BatchItem> batchItems = new HashMap<String, BatchItem>();
 	
 	public BatchList(){
 		super();
@@ -17,18 +20,19 @@ public class BatchList extends JList {
 	public BatchList(BatchItem ... items){
 		this();
 		for (BatchItem item : items) {
-			this.items.put(item.getName(), item);
+			batchItems.put(item.getName(), item);
 		}
+		Collections.sort(Arrays.asList(items));
 		setListData(items);
 	}
 
 	public void add(BatchItem item){
-		items.put(item.getName(), item);
-		setListData(items.keySet().toArray());
+		batchItems.put(item.getName(), item);
+		setListData(batchItems.keySet().toArray());
 	}
 
 	public BatchItem get(Object key){
-		return items.get(key);
+		return batchItems.get(key);
 	}
 
 }

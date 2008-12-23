@@ -14,11 +14,31 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.drawable.Drawable;
+import android.text.Html.ImageGetter;
 import android.util.Log;
 
 public abstract class Util {
 
 	private static final String TAG = Util.class.getSimpleName();
+	
+	public static final ImageGetter NULLIMAGEGETTER = new ImageGetter(){
+		@Override
+		public Drawable getDrawable(String source) {
+			return new Drawable(){
+				@Override
+				public void draw(Canvas canvas) {}
+				@Override
+				public int getOpacity() { return 0; }
+				@Override
+				public void setAlpha(int alpha) {}
+				@Override
+				public void setColorFilter(ColorFilter cf) {}
+			};
+		}
+    };
 
 	private Util() {
 	}
@@ -53,7 +73,7 @@ public abstract class Util {
 		}
 		File dir = dest.getParentFile();
 		if(!dir.exists()){
-			if(!dir.mkdir()){
+			if(!dir.mkdirs()){
 				Log.e(TAG, "Could not create dirs: "+dir.getAbsolutePath());
 				throw new Exception("Could not create dirs: "+dir.getAbsolutePath());
 			}
@@ -71,7 +91,8 @@ public abstract class Util {
 			output = new FileOutputStream(dest);
 //			input = new InputStreamReader(response.getEntity().getContent(), "UTF8");
 //			output = cxt.openFileOutput(dest, Context.MODE_WORLD_READABLE);
-			while(listener.continueDownload(externalid)){
+			boolean cont = (listener != null ? listener.continueDownload(externalid) : true);
+			while(cont){
 				byte[] buffer = new byte[8192];
 				int c = input.read(buffer);
 				if(c == -1){

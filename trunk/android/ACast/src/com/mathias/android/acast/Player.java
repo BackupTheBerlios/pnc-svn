@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
+import android.text.Html;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -40,13 +41,13 @@ public class Player extends Activity implements ServiceConnection {
 	private TextView duration;
 
 	private IMediaService binder;
-	
+
 	private SeekBar seekbar;
-	
+
 	private ImageButton playpause;
-	
+
 	private ACastDbAdapter mDbHandler;
-	
+
     private boolean mIsBound = false;
 
 	@Override
@@ -58,10 +59,6 @@ public class Player extends Activity implements ServiceConnection {
 		mDbHandler = new ACastDbAdapter(this);
 		mDbHandler.open();
 
-		TextView title = (TextView) findViewById(R.id.title);
-
-		duration = (TextView) findViewById(R.id.duration);
-
 		item = (FeedItem) (savedInstanceState != null ? savedInstanceState
 				.getSerializable(ACast.FEEDITEM) : null);
 		if (item == null) {
@@ -69,6 +66,16 @@ public class Player extends Activity implements ServiceConnection {
 			item = (FeedItem) (extras != null ? extras.getSerializable(ACast.FEEDITEM)
 					: null);
 		}
+
+        String desc = item != null && item.getDescription() != null ? item
+				.getDescription() : "";
+        TextView description = (TextView) findViewById(R.id.description);
+        description.setText(Html.fromHtml(desc, Util.NULLIMAGEGETTER, null));
+
+		TextView title = (TextView) findViewById(R.id.title);
+
+		duration = (TextView) findViewById(R.id.duration);
+
 		if(item != null){
 			title.setText(item.getTitle());
 		}else{
@@ -234,6 +241,7 @@ public class Player extends Activity implements ServiceConnection {
 	protected void onDestroy() {
 		Log.d(TAG, "onDestroy");
 		mDbHandler.close();
+		mDbHandler = null;
 		super.onDestroy();
 	}
 	

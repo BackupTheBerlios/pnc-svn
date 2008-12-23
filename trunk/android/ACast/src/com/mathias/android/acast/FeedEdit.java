@@ -2,15 +2,19 @@ package com.mathias.android.acast;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.rss.RssUtil;
 
 public class FeedEdit extends Activity {
 	
+	private static final String TAG = FeedEdit.class.getSimpleName();
+
 	private ACastDbAdapter mDbHelper;
 
 	@Override
@@ -30,8 +34,13 @@ public class FeedEdit extends Activity {
 			@Override
 			public void onClick(View v) {
 				String uri = urlText.getText().toString();
-				Feed feed = new RssUtil().parse(uri);
-				mDbHelper.createFeed(feed);
+				try {
+					Feed feed = new RssUtil().parse(uri);
+					mDbHelper.createFeed(feed);
+				} catch (Exception e) {
+					Log.e(TAG, e.getMessage(), e);
+					Util.showDialog(FeedEdit.this, e.getMessage());
+				}
 				setResult(RESULT_OK);
 				finish();
 			}

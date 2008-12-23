@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.xml.sax.Attributes;
@@ -39,22 +40,15 @@ public class RssUtil implements ContentHandler {
 	public RssUtil(){
 	}
 	
-	public Feed parse(String uri){
+	public Feed parse(String uri) throws ClientProtocolException, IOException,
+			IllegalStateException, SAXException {
 		feed = new Feed();
 		feed.setUri(uri);
-		try {
-			DefaultHttpClient client = new DefaultHttpClient();
-			HttpResponse response = client.execute(new HttpGet(uri));
-			HttpEntity entity = response.getEntity();
-//			Encoding enc = Encoding.valueOf(entity.getContentEncoding().getValue());
-			Xml.parse(entity.getContent(), Encoding.UTF_8, this);
-		} catch (SAXException e) {
-			Log.e(TAG, e.getMessage());
-		} catch (IllegalStateException e) {
-			Log.e(TAG, e.getMessage());
-		} catch (IOException e) {
-			Log.e(TAG, e.getMessage());
-		}
+		DefaultHttpClient client = new DefaultHttpClient();
+		HttpResponse response = client.execute(new HttpGet(uri));
+		HttpEntity entity = response.getEntity();
+//		Encoding enc = Encoding.valueOf(entity.getContentEncoding().getValue());
+		Xml.parse(entity.getContent(), Encoding.UTF_8, this);
 		return feed;
 	}
 
@@ -108,17 +102,22 @@ public class RssUtil implements ContentHandler {
 	public void endElement(String arg0, String name, String arg2)
 			throws SAXException {
 		level--;
+		String p = parent.get(level-1);
 		switch(level){
 		case 2:
-			if("title".equalsIgnoreCase(name)){
-				feed.setTitle(characters);
-			}else if("item".equalsIgnoreCase(name)){
-				feed.addItem(currentFeedItem);
-				currentFeedItem = new FeedItem();
+			if("channel".equalsIgnoreCase(p)){
+				if("title".equalsIgnoreCase(name)){
+					feed.setTitle(characters);
+				}else if("description".equalsIgnoreCase(name)){
+					feed.setDescription(characters);
+				}else if("item".equalsIgnoreCase(name)){
+					feed.addItem(currentFeedItem);
+					currentFeedItem = new FeedItem();
+				}
 			}
 			break;
 		case 3:
-			if("image".equalsIgnoreCase(parent.get(level))){
+			if("image".equalsIgnoreCase(p)){
 				if("url".equalsIgnoreCase(name)){
 					try {
 						File file = buildFile(characters);
@@ -126,11 +125,14 @@ public class RssUtil implements ContentHandler {
 						feed.setIcon(file.getAbsolutePath());
 					} catch (Exception e) {
 						Log.e(TAG, e.getMessage(), e);
+						throw new SAXException(e);
 					}
 				}
-			}else if("item".equalsIgnoreCase(parent.get(level))){
+			}else if("item".equalsIgnoreCase(p)){
 				if("title".equalsIgnoreCase(name)){
 					currentFeedItem.setTitle(characters);
+				}else if("description".equalsIgnoreCase(name)){
+					currentFeedItem.setDescription(characters);
 				}
 			}
 			break;

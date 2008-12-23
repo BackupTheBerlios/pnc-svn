@@ -15,6 +15,7 @@
         <activity android:name=".FeedItemList"/>
         <activity android:name=".VideoPlayer"/>
         <activity android:name=".Player"/>
+        <activity android:name=".FeedItemInfo"/>
         <service android:name=".common.services.media.MediaService"/>
         <service android:name=".common.services.download.DownloadService"/>
     </application>

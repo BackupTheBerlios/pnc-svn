@@ -32,10 +32,12 @@ public class BatchLaunch extends BasicFrame {
 				String val = prop.getProperty("command"+i);
 				if(val != null && val.length() > 0){
 					String[] split = val.split(",");
-					if(split.length > 1){
-						list.add(new BatchItem(split[0], split[1]));
+					if(split.length > 2){
+						list.add(new BatchItem(split[0], split[1], split[2]));
+					}else if(split.length > 1){
+						list.add(new BatchItem(split[0], split[1], null));
 					}else{
-						list.add(new BatchItem(val, val));
+						list.add(new BatchItem(val, val, null));
 					}
 //					System.out.println("added: "+val);
 				}

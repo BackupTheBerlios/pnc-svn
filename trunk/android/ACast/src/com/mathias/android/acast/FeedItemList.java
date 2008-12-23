@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -30,6 +29,7 @@ import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings;
 import com.mathias.android.acast.rss.RssUtil;
 
 public class FeedItemList extends ListActivity implements ServiceConnection {
@@ -44,6 +44,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	private static final int DOWNLOAD_ID = Menu.FIRST + 1;
 	private static final int DELETE_ID = Menu.FIRST + 2;
 	private static final int REFRESH_ID = Menu.FIRST + 3;
+	private static final int INFO_ID = Menu.FIRST + 4;
 
 	private Long mFeedId;
 
@@ -134,17 +135,6 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		super.onSaveInstanceState(outState);
 		outState.putLong(ACast.KEY, mFeedId);
 	}
-	
-	@Override
-	protected void onPause() {
-		super.onPause();
-	}
-	
-	@Override
-	protected void onStop() {
-		super.onStop();
-//		mDbHelper.close();
-	}
 
 	@Override
 	protected void onResume() {
@@ -159,6 +149,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		menu.add(0, DOWNLOAD_ID, 0, R.string.downloaditem);
 		menu.add(0, DELETE_ID, 0, R.string.deleteitem);
 		menu.add(0, REFRESH_ID, 0, R.string.refreshfeed);
+		menu.add(0, INFO_ID, 0, R.string.info);
 		return true;
 	}
 
@@ -190,11 +181,23 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		}else if(REFRESH_ID == item.getItemId()){
 			refreshFeed();
 			return true;
+		}else if(INFO_ID == item.getItemId()){
+			long id = ((FeedItem)adapter.getItem(pos).get(FEEDITEM)).getId();
+			infoItem(id);
+			return true;
 		}
 		return super.onMenuItemSelected(featureId, item);
 	}
 
+	private void infoItem(long id){
+		FeedItem feeditem = mDbHelper.fetchFeedItem(mFeedId, id);
+		Intent i = new Intent(this, FeedItemInfo.class);
+		i.putExtra(ACast.FEEDITEM, feeditem);
+		startActivityForResult(i, 0);
+	}
+
 	private void playItem(long id){
+		mDbHelper.updateSettings(new Settings(0, id));
 		FeedItem item = mDbHelper.fetchFeedItem(mFeedId, id);
 		Intent i = new Intent(this, Player.class);
 		i.putExtra(ACast.FEEDITEM, item);
@@ -257,8 +260,13 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
 	private void refreshFeed(){
 		Feed feed = mDbHelper.fetchFeed(mFeedId);
-		feed = new RssUtil().parse(feed.getUri());
-		mDbHelper.updateFeed(mFeedId, feed);
+		try {
+			feed = new RssUtil().parse(feed.getUri());
+			mDbHelper.updateFeed(mFeedId, feed);
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
+			Util.showDialog(this, e.getMessage());
+		}
 		populateFields();
 	}
 

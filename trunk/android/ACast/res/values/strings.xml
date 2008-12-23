@@ -12,6 +12,8 @@
 	<string name="noresume">No feed item to resume!</string>
 	<!-- feed_list -->
 	<string name="nofeeditems">No feed items!</string>
+	<!-- feeditem_info -->
+	<string name="bookmark">Bookmark: </string>
 	<!-- feeds_list menu items -->
 	<string name="addfeed">Add feed</string>
 	<string name="editfeed">Edit feed</string>
@@ -22,6 +24,7 @@
 	<string name="downloaditem">Download item</string>
 	<string name="deleteitem">Delete item</string>
 	<string name="refreshfeed">Refresh feed</string>
+	<string name="info">Information</string>
 	<!-- videoplayer -->
 	<string name="play">Play</string>
 	<string name="pause">Pause</string>

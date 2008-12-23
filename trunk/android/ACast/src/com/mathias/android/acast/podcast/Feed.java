@@ -13,16 +13,19 @@ public class Feed {
 	
 	private String icon;
 	
+	private String description;
+	
 	private List<FeedItem> items = new ArrayList<FeedItem>();
 
 	public Feed(){
 	}
 
-	public Feed(long id, String title, String uri, String icon) {
+	public Feed(long id, String title, String uri, String icon, String description) {
 		this.id = id;
 		this.title = title;
 		this.uri = uri;
 		this.icon = icon;
+		this.description = description;
 	}
 
 	public long getId() {
@@ -63,6 +66,14 @@ public class Feed {
 
 	public void setIcon(String icon) {
 		this.icon = icon;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 }

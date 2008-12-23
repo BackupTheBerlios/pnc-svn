@@ -1,24 +1,27 @@
 package com.mathias.android.acast;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import android.app.ListActivity;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.mathias.android.acast.common.ChoiceArrayAdapter;
-import com.mathias.android.acast.common.ChoiceSimpleAdapter;
+import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
@@ -27,10 +30,6 @@ import com.mathias.android.acast.rss.RssUtil;
 public class ACast extends ListActivity {
 
 	private static final String TAG = ACast.class.getSimpleName();
-
-	// used to fetch data out of map for SimpleAdapter
-	private static final String ICON = "ICON";
-	private static final String FEED = "FEED";
 
 	public static final String KEY = "key";
 	public static final String FEEDITEM = "feeditem";
@@ -42,7 +41,7 @@ public class ACast extends ListActivity {
 
 	private ACastDbAdapter mDbHelper;
 	
-	private ChoiceSimpleAdapter adapter;
+	private FeedAdapter adapter;
 	
 	private Settings settings;
 
@@ -73,14 +72,7 @@ public class ACast extends ListActivity {
 
 	private void fillData() {
 		List<Feed> feeds = mDbHelper.fetchAllFeedsLight();
-		List<Map<String, Object>> arr = buildArray(feeds);
-		adapter = new ChoiceSimpleAdapter(
-				this,
-				arr,
-				android.R.layout.activity_list_item,
-				new String[] {FEED, ICON}, 
-				new int[] { android.R.id.text1, android.R.id.icon },
-				"title");
+		adapter = new FeedAdapter(this, feeds);
 		setListAdapter(adapter);
 
 		settings = mDbHelper.fetchSettings();
@@ -91,18 +83,6 @@ public class ACast extends ListActivity {
 				resumetitle.setText(item.getTitle());
 			}
 		}
-	}
-
-	private List<Map<String, Object>> buildArray(List<Feed> feeds){
-		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>(
-				feeds.size());
-		for (Feed feed : feeds) {
-			Map<String, Object> map = new HashMap<String, Object>();
-			map.put(FEED, feed);
-			map.put(ICON, R.drawable.downloaded_done_bm);
-			list.add(map);
-		}
-		return list;
 	}
 
 	@Override
@@ -119,7 +99,7 @@ public class ACast extends ListActivity {
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
 		Intent i = new Intent(this, FeedItemList.class);
-		long feedId = ((Feed) adapter.getItem(position).get(FEED)).getId();
+		long feedId = adapter.getItemId(position);
 		i.putExtra(KEY, feedId);
 		startActivityForResult(i, 0);
 	}
@@ -132,14 +112,14 @@ public class ACast extends ListActivity {
 		}else if(UPDATE_ID == item.getItemId()){
 			int pos = getSelectedItemPosition();
 			if(pos >= 0){
-				long feedId = ((Feed) adapter.getItem(pos).get(FEED)).getId();
+				long feedId = adapter.getItemId(pos);
 				editFeed(feedId);
 			}
 			return true;
 		}else if(DELETE_ID == item.getItemId()){
 			int pos = getSelectedItemPosition();
 			if(pos >= 0){
-				long feedId = ((Feed) adapter.getItem(pos).get(FEED)).getId();
+				long feedId = adapter.getItemId(pos);
 				deleteFeed(feedId);
 			}
 			return true;
@@ -169,10 +149,15 @@ public class ACast extends ListActivity {
 	private void refreshFeeds(){
 		List<Feed> feeds = mDbHelper.fetchAllFeedsLight();
 		for (Feed feed : feeds) {
-			long rowId = feed.getId();
-			String uri = feed.getUri();
-			feed = new RssUtil().parse(uri);
-			mDbHelper.updateFeed(rowId, feed);
+			try {
+				long rowId = feed.getId();
+				String uri = feed.getUri();
+				feed = new RssUtil().parse(uri);
+				mDbHelper.updateFeed(rowId, feed);
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage(), e);
+				Util.showDialog(this, e.getMessage());
+			}
 		}
 	}
 
@@ -188,5 +173,75 @@ public class ACast extends ListActivity {
 		mDbHelper.close();
 		super.onDestroy();
 	}
+
+	private class FeedAdapter extends BaseAdapter {
+		
+		private LayoutInflater mInflater;
+		private List<Feed> feeds;
+		private Bitmap defaultIcon;
+		
+		public FeedAdapter(Context cxt, List<Feed> feeds){
+			this.feeds = feeds;
+			mInflater = LayoutInflater.from(cxt);
+			defaultIcon = BitmapFactory.decodeResource(cxt.getResources(),
+					R.drawable.question);
+		}
+
+        @Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+            // A ViewHolder keeps references to children views to avoid unneccessary calls
+            // to findViewById() on each row.
+            ViewHolder holder;
+
+            // When convertView is not null, we can reuse it directly, there is no need
+            // to reinflate it. We only inflate a new View when the convertView supplied
+            // by ListView is null.
+            if (convertView == null) {
+                convertView = mInflater.inflate(/* R.layout.list_item_icon_text */ android.R.layout.activity_list_item, null);
+
+                // Creates a ViewHolder and store references to the two children views
+                // we want to bind data to.
+                holder = new ViewHolder();
+                holder.text = (TextView) convertView.findViewById(/*R.id.text*/ android.R.id.text1);
+                holder.icon = (ImageView) convertView.findViewById(/*R.id.icon*/ android.R.id.icon);
+
+                convertView.setTag(holder);
+            } else {
+                // Get the ViewHolder back to get fast access to the TextView
+                // and the ImageView.
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            // Bind the data efficiently with the holder.
+            
+            holder.text.setText(feeds.get(position).getTitle());
+            String icon = feeds.get(position).getIcon();
+            holder.icon.setImageBitmap(icon != null ? BitmapFactory
+					.decodeFile(icon) : defaultIcon);
+
+            return convertView;
+		}
+		
+		@Override
+		public int getCount() {
+			return feeds.size();
+		}
+
+		@Override
+		public Object getItem(int position) {
+			return feeds.get(position);
+		}
+
+		@Override
+		public long getItemId(int position) {
+			return feeds.get(position).getId();
+		}
+
+	}
+
+    private static class ViewHolder {
+        TextView text;
+        ImageView icon;
+    }
 
 }
