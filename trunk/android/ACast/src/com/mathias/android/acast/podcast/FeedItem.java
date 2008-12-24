@@ -23,6 +23,12 @@ public class FeedItem implements Serializable {
 	
 	private boolean downloaded;
 	
+	private String link;
+	
+	private String pubdate;
+	
+	private String category;
+	
 	private String description;
 	
 	public FeedItem(){
@@ -30,7 +36,8 @@ public class FeedItem implements Serializable {
 
 	public FeedItem(long id, long feedId, String title, String mp3uri,
 			String mp3file, long size, int bookmark, boolean completed,
-			boolean downloaded, String description) {
+			boolean downloaded, String link, String pubdate, String category,
+			String description) {
 		this.id = id;
 		this.feedId = feedId;
 		this.title = title;
@@ -40,6 +47,9 @@ public class FeedItem implements Serializable {
 		this.bookmark = bookmark;
 		this.completed = completed;
 		this.downloaded = downloaded;
+		this.link = link;
+		this.pubdate = pubdate;
+		this.category = category;
 		this.description = description;
 	}
 
@@ -121,6 +131,30 @@ public class FeedItem implements Serializable {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getLink() {
+		return link;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
+	}
+
+	public String getPubdate() {
+		return pubdate;
+	}
+
+	public void setPubdate(String pubdate) {
+		this.pubdate = pubdate;
+	}
+
+	public String getCategory() {
+		return category;
+	}
+
+	public void setCategory(String category) {
+		this.category = category;
 	}
 
 }

@@ -6,9 +6,11 @@
 	<!-- feed_edit -->
 	<string name="url">URL:</string>
 	<string name="add">Add</string>
-	<string name="nofeeds">No feeds!</string>
 	<!-- feeds_list -->
-	<string name="resume">Resume</string>
+	<string name="nofeeds">No feed available! Add a feed by pressing the
+		menu button and select \'Add feed\', enter URL to podcast and press
+		\'Add\' button. Podcasts can for example be found at podcastalley.com
+	</string>
 	<string name="noresume">No feed item to resume!</string>
 	<!-- feed_list -->
 	<string name="nofeeditems">No feed items!</string>

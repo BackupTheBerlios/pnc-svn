@@ -67,17 +67,17 @@ public class Player extends Activity implements ServiceConnection {
 					: null);
 		}
 
-        String desc = item != null && item.getDescription() != null ? item
-				.getDescription() : "";
-        TextView description = (TextView) findViewById(R.id.description);
-        description.setText(Html.fromHtml(desc, Util.NULLIMAGEGETTER, null));
-
 		TextView title = (TextView) findViewById(R.id.title);
 
 		duration = (TextView) findViewById(R.id.duration);
 
 		if(item != null){
-			title.setText(item.getTitle());
+			String desc = item != null && item.getDescription() != null ? item
+					.getDescription() : "";
+	        TextView description = (TextView) findViewById(R.id.description);
+	        description.setText(Html.fromHtml(desc, Util.NULLIMAGEGETTER, null));
+
+	        title.setText(item.getTitle());
 		}else{
 			title.setText("No item!");
 		}
@@ -105,9 +105,11 @@ public class Player extends Activity implements ServiceConnection {
 											.getCurrentPosition());
 							binder.pause();
 							playpause.setImageResource(R.drawable.play);
+							//playpause.setImageResource(android.R.drawable.ic_media_play);
 						}else{
 							binder.play();
 							playpause.setImageResource(R.drawable.pause);
+							//playpause.setImageResource(android.R.drawable.ic_media_pause);
 						}
 					}
 				}catch(Exception e){
@@ -202,7 +204,7 @@ public class Player extends Activity implements ServiceConnection {
 		public void handleMessage(Message notused) {
 			try {
 				int pos;
-				if(!tracking && binder != null){
+				if(!tracking && binder != null && mIsBound){
 					pos = binder.getCurrentPosition();
 					seekbar.setProgress(pos);
 				}else{
@@ -232,8 +234,8 @@ public class Player extends Activity implements ServiceConnection {
 		Log.d(TAG, "onPause");
 		super.onPause(); // called after onSaveInstanceState, calls onStop
 		if(mIsBound){
-			unbindService(this);
 			mIsBound = false;
+			unbindService(this);
 		}
 	}
 	
@@ -257,14 +259,16 @@ public class Player extends Activity implements ServiceConnection {
 			if(binder != null){
 				if(!binder.isPlaying()){
 					if(item.isDownloaded()){
-						binder.playFeedItem(item.getId(), item.getMp3file(), false);
+						binder.playItem(item.getId(), item.getMp3file(), false);
 					}else{
-						binder.playFeedItem(item.getId(), item.getMp3uri(), true);
+						binder.playItem(item.getId(), item.getMp3uri(), true);
 					}
 					binder.setCurrentPosition(item.getBookmark());
 					playpause.setImageResource(R.drawable.pause);
+					//playpause.setImageResource(android.R.drawable.ic_media_pause);
 				}else{
 					playpause.setImageResource(R.drawable.play);
+					//playpause.setImageResource(android.R.drawable.ic_media_play);
 				}
 				seekbar.setMax(binder.getDuration());
 			}
@@ -306,16 +310,20 @@ public class Player extends Activity implements ServiceConnection {
 							.getLocator().equals(item.getMp3uri())))) {
 				Log.e(TAG, "Already playing: " + item.getMp3uri());
 			} else {
+				mDbHandler.updateFeedItem(binder.getExternalId(),
+						ACastDbAdapter.FEEDITEM_BOOKMARK, binder
+								.getCurrentPosition());
 				if (item.isDownloaded()) {
-					binder.playFeedItem(item.getId(), item.getMp3file(),
+					binder.playItem(item.getId(), item.getMp3file(),
 							false);
 				} else {
-					binder.playFeedItem(item.getId(), item.getMp3uri(),
+					binder.playItem(item.getId(), item.getMp3uri(),
 							true);
 				}
 				binder.setCurrentPosition(item.getBookmark());
 			}
 			playpause.setImageResource(R.drawable.pause);
+			//playpause.setImageResource(android.R.drawable.ic_media_pause);
 			seekbar.setMax(binder.getDuration());
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -327,19 +335,23 @@ public class Player extends Activity implements ServiceConnection {
 		public void onCompletion() throws RemoteException {
 			if (item != null && mDbHandler != null) {
 				int currentPosition = binder.getCurrentPosition();
-				item.setBookmark(currentPosition);
 				if (currentPosition + 100 >= binder.getDuration()) {
 					item.setCompleted(true);
+					item.setBookmark(0);
+				}else{
+					item.setBookmark(currentPosition);
 				}
 				mDbHandler.updateFeedItem(item);
 			}
+			Player.this.finish();
 		}
 	};
 
-    @Override
+	@Override
 	public void onServiceDisconnected(ComponentName name) {
 		Log.e(TAG, "onServiceDisconnected: "+name);
 		binder = null;
+		mIsBound = false;
 	}
 
 }

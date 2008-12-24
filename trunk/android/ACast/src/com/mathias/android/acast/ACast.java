@@ -16,7 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.widget.BaseAdapter;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -32,12 +32,14 @@ public class ACast extends ListActivity {
 	private static final String TAG = ACast.class.getSimpleName();
 
 	public static final String KEY = "key";
+	public static final String FEED = "feed";
 	public static final String FEEDITEM = "feeditem";
 
-	private static final int INSERT_ID = Menu.FIRST;
+	private static final int INSERT_ID = Menu.FIRST + 0;
 	private static final int UPDATE_ID = Menu.FIRST + 1;
 	private static final int DELETE_ID = Menu.FIRST + 2;
 	private static final int REFRESH_ID = Menu.FIRST + 3;
+	private static final int INFO_ID = Menu.FIRST + 4;
 
 	private ACastDbAdapter mDbHelper;
 	
@@ -53,7 +55,7 @@ public class ACast extends ListActivity {
 		mDbHelper.open();
 		fillData();
 
-		Button resume = (Button) findViewById(R.id.resume);
+		ImageButton resume = (ImageButton) findViewById(R.id.resume);
 		resume.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -89,9 +91,10 @@ public class ACast extends ListActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
 		menu.add(0, INSERT_ID, 0, R.string.addfeed);
-		menu.add(0, UPDATE_ID, 0, R.string.editfeed);
+		//menu.add(0, UPDATE_ID, 0, R.string.editfeed);
 		menu.add(0, DELETE_ID, 0, R.string.removefeed);
 		menu.add(0, REFRESH_ID, 0, R.string.refreshfeeds);
+		menu.add(0, INFO_ID, 0, R.string.info);
 		return true;
 	}
 
@@ -126,6 +129,13 @@ public class ACast extends ListActivity {
 		}else if(REFRESH_ID == item.getItemId()){
 			refreshFeeds();
 			return true;
+		}else if(INFO_ID == item.getItemId()){
+			int pos = getSelectedItemPosition();
+			if(pos >= 0){
+				long feedId = adapter.getItemId(pos);
+				infoFeed(feedId);
+			}
+			return true;
 		}
 		return super.onMenuItemSelected(featureId, item);
 	}
@@ -159,6 +169,13 @@ public class ACast extends ListActivity {
 				Util.showDialog(this, e.getMessage());
 			}
 		}
+	}
+
+	private void infoFeed(long id) {
+		Intent i = new Intent(this, FeedInfo.class);
+		Feed feed = mDbHelper.fetchFeed(id);
+		i.putExtra(ACast.FEED, feed);
+		startActivityForResult(i, 0);
 	}
 
 	@Override

@@ -4,8 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
@@ -26,7 +26,7 @@ public class FeedEdit extends Activity {
 		mDbHelper.open();
 		
 		final EditText urlText = (EditText) findViewById(R.id.url);
-		Button confirm = (Button) findViewById(R.id.add);
+		ImageButton confirm = (ImageButton) findViewById(R.id.add);
 
 		urlText.setText("http://");
 

@@ -110,7 +110,7 @@ public class MediaService extends Service {
 			}
 		}
 		@Override
-		public void playFeedItem(long externalid, String locator, boolean stream) throws RemoteException {
+		public void playItem(long externalid, String locator, boolean stream) throws RemoteException {
 			this.externalid = externalid;
 			this.locator = locator;
 			this.stream = stream;
@@ -118,6 +118,7 @@ public class MediaService extends Service {
 			if(mp != null){
 				mp.reset();
 				mp.release();
+				mp = null;
 			}
 			if(stream){
 				String uri = locator.replace(' ', '+');
@@ -148,8 +149,12 @@ public class MediaService extends Service {
 
 			mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
 				@Override
-				public void onCompletion(MediaPlayer mp) {
+				public void onCompletion(MediaPlayer mediaplayer) {
 					broadcastOnCompletion();
+//					if(mediaplayer != null){
+//						mediaplayer.release();
+//						mediaplayer = null;
+//					}
 					stopSelf();
 				}
 			});

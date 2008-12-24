@@ -3,7 +3,7 @@ package com.mathias.android.acast.common.services.media;
 import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
 
 interface IMediaService {
-  void playFeedItem(long externalid, String locator, boolean stream);
+  void playItem(long externalid, String locator, boolean stream);
   void play();
   void pause();
   void stop();

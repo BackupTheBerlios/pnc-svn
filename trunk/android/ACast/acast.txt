@@ -21,7 +21,7 @@ ACast
 - (not used) AlarmManager, Context.getSystemService(Context.ALARM_SERVICE)
 - Remove notification on pause and stop
 - Draw main icon
-End service and remove notification when song is complete
+- End service and remove notification when song is complete
 Bug: Fix threaded mediaplayer bug which does not stop playback sometimes
 rotate with gravity or keyboard?
 All Download progress screen
@@ -37,9 +37,10 @@ Play/Pause button, Big buttons, black and white?
 Feed list icon, download main feed icon if exists 
 Feed and feeditem extended information Dialog (or show everything in listitem)
 Queue downloads, show download queue and current progress. notification on completion/queue empty
-
-
-
+Increase size of start icon...
+MediaPlayer thread is started and never really released
+Edit feed does not work. Remove?
+ContentProvider, MIME () assosiaction, should trigger intent for acast. Update android manifest.
 
 
 

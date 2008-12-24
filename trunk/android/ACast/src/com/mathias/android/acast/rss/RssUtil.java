@@ -53,10 +53,10 @@ public class RssUtil implements ContentHandler {
 	}
 
 	@Override
-	public void characters(char[] buff, int start, int end) throws SAXException {
+	public void characters(char[] ch, int start, int length) throws SAXException {
 		StringBuilder sb = new StringBuilder();
-		for (int i = start; i < end; i++) {
-			char c = buff[i];
+		for (int i = start; i < length; i++) {
+			char c = ch[i];
 			if('\'' != c){
 				sb.append(c);
 			}
@@ -73,21 +73,21 @@ public class RssUtil implements ContentHandler {
 	}
 	
 	@Override
-	public void startElement(String arg0, String name, String arg2,
-			Attributes attr) throws SAXException {
-		parent.put(level, name);
+	public void startElement(String uri, String localName, String qName,
+			Attributes atts) throws SAXException {
+		parent.put(level, localName);
 		switch(level){
 		case 3:
-			if("enclosure".equalsIgnoreCase(name)){
-				for (int i = 0; i < attr.getLength(); i++) {
-					String localName = attr.getLocalName(i);
-					String value = attr.getValue(i);
-					if("url".equalsIgnoreCase(localName)){
+			if("enclosure".equalsIgnoreCase(localName)){
+				for (int i = 0; i < atts.getLength(); i++) {
+					String attsLocalName = atts.getLocalName(i);
+					String value = atts.getValue(i);
+					if("url".equalsIgnoreCase(attsLocalName)){
 						currentFeedItem.setMp3uri(value);
 						File file = buildFile(value);
 						currentFeedItem.setMp3file(file.getAbsolutePath());
 						currentFeedItem.setDownloaded(file.exists());
-					}else if("length".equalsIgnoreCase(localName)){
+					}else if("length".equalsIgnoreCase(attsLocalName)){
 						currentFeedItem.setSize(Long.parseLong(value));
 					}
 				}
@@ -99,18 +99,29 @@ public class RssUtil implements ContentHandler {
 	}
 
 	@Override
-	public void endElement(String arg0, String name, String arg2)
+	public void endElement(String uri, String localName, String qName)
 			throws SAXException {
 		level--;
 		String p = parent.get(level-1);
 		switch(level){
 		case 2:
 			if("channel".equalsIgnoreCase(p)){
-				if("title".equalsIgnoreCase(name)){
+				if("title".equalsIgnoreCase(localName)){
 					feed.setTitle(characters);
-				}else if("description".equalsIgnoreCase(name)){
+				}else if(isEmpty(uri) && "link".equalsIgnoreCase(localName)){
+					feed.setLink(characters);
+				}else if("pubDate".equalsIgnoreCase(localName)){
+					feed.setPubdate(characters);
+				}else if("category".equalsIgnoreCase(localName)){
+					String category = feed.getCategory();
+					if(!isEmpty(category)){
+						feed.setCategory(category + ", " + characters);
+					}else if(!isEmpty(characters)){
+						feed.setCategory("Category: "+characters);
+					}
+				}else if("description".equalsIgnoreCase(localName)){
 					feed.setDescription(characters);
-				}else if("item".equalsIgnoreCase(name)){
+				}else if("item".equalsIgnoreCase(localName)){
 					feed.addItem(currentFeedItem);
 					currentFeedItem = new FeedItem();
 				}
@@ -118,7 +129,7 @@ public class RssUtil implements ContentHandler {
 			break;
 		case 3:
 			if("image".equalsIgnoreCase(p)){
-				if("url".equalsIgnoreCase(name)){
+				if("url".equalsIgnoreCase(localName)){
 					try {
 						File file = buildFile(characters);
 						Util.downloadFile(0, characters, file, null);
@@ -129,9 +140,20 @@ public class RssUtil implements ContentHandler {
 					}
 				}
 			}else if("item".equalsIgnoreCase(p)){
-				if("title".equalsIgnoreCase(name)){
+				if("title".equalsIgnoreCase(localName)){
 					currentFeedItem.setTitle(characters);
-				}else if("description".equalsIgnoreCase(name)){
+				}else if("link".equalsIgnoreCase(localName)){
+					currentFeedItem.setLink(characters);
+				}else if("pubDate".equalsIgnoreCase(localName)){
+					currentFeedItem.setPubdate(characters);
+				}else if("category".equalsIgnoreCase(localName)){
+					String category = currentFeedItem.getCategory();
+					if(!isEmpty(category)){
+						currentFeedItem.setCategory(category + ", " + characters);
+					}else if(!isEmpty(characters)){
+						currentFeedItem.setCategory("Category: "+characters);
+					}
+				}else if("description".equalsIgnoreCase(localName)){
 					currentFeedItem.setDescription(characters);
 				}
 			}
@@ -141,38 +163,38 @@ public class RssUtil implements ContentHandler {
 	}
 	
 	@Override
-	public void startPrefixMapping(String arg0, String arg1)
+	public void startPrefixMapping(String prefix, String uri)
 			throws SAXException {
 		//atom, http://www.w3.org/2005/Atom
-		Log.d(TAG, "startPrefixMapping() "+arg0+" "+arg1);
+		Log.d(TAG, "startPrefixMapping() "+prefix+" "+uri);
 	}
 
 	@Override
-	public void endPrefixMapping(String arg0) throws SAXException {
-		Log.d(TAG, "endPrefixMapping() "+arg0);
+	public void endPrefixMapping(String prefix) throws SAXException {
+		Log.d(TAG, "endPrefixMapping() "+prefix);
 	}
 
 	@Override
-	public void ignorableWhitespace(char[] buff, int start, int end)
+	public void ignorableWhitespace(char[] ch, int start, int length)
 			throws SAXException {
-		String str = new String(buff).substring(start, end);
-		Log.d(TAG, "ignorableWhitespace() "+str+" "+start+" "+end);
+		String str = new String(ch).substring(start, length);
+		Log.d(TAG, "ignorableWhitespace() "+str+" "+start+" "+length);
 	}
 
 	@Override
-	public void processingInstruction(String arg0, String arg1)
+	public void processingInstruction(String target, String data)
 			throws SAXException {
-		Log.d(TAG, "processingInstruction() "+arg0+" "+arg1);
+		Log.d(TAG, "processingInstruction() "+target+" "+data);
 	}
 
 	@Override
-	public void setDocumentLocator(Locator arg0) {
-		Log.d(TAG, "setDocumentLocator() "+arg0);
+	public void setDocumentLocator(Locator locator) {
+		Log.d(TAG, "setDocumentLocator() "+locator);
 	}
 
 	@Override
-	public void skippedEntity(String arg0) throws SAXException {
-		Log.d(TAG, "skippedEntity() "+arg0);
+	public void skippedEntity(String name) throws SAXException {
+		Log.d(TAG, "skippedEntity() "+name);
 	}
 	
 	private File buildFile(String uri){
@@ -182,4 +204,7 @@ public class RssUtil implements ContentHandler {
 		return new File(file);
 	}
 
+	private static boolean isEmpty(String str){
+		return str == null || str.length() == 0;
+	}
 }

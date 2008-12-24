@@ -1,55 +1,61 @@
 package com.mathias.android.acast;
 
+import java.security.GuardedObject;
+
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.mathias.android.acast.common.Util;
-import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Feed;
 
-public class FeedItemInfo extends Activity {
+public class FeedInfo extends Activity {
 
-	private static final String TAG = FeedItemInfo.class.getSimpleName();
+	private static final String TAG = FeedInfo.class.getSimpleName();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.feeditem_info);
+		setContentView(R.layout.feed_info);
 
-		FeedItem item = (FeedItem) (savedInstanceState != null ? savedInstanceState
-				.getSerializable(ACast.FEEDITEM) : null);
+		Feed item = (Feed) (savedInstanceState != null ? savedInstanceState
+				.getSerializable(ACast.FEED) : null);
 		if (item == null) {
 			Bundle extras = getIntent().getExtras();
-			item = (FeedItem) (extras != null ? extras.getSerializable(ACast.FEEDITEM)
+			item = (Feed) (extras != null ? extras.getSerializable(ACast.FEED)
 					: null);
 		}
 		
 		if(item == null){
-			Log.e(TAG, "No feed item found!");
+			Log.e(TAG, "No feed found!");
 			return;
+		}
+
+		String iconVal = item.getIcon();
+		ImageView icon = (ImageView) findViewById(R.id.icon);
+		if(iconVal != null){
+			Bitmap bitmap = BitmapFactory.decodeFile(iconVal);
+			icon.setImageBitmap(bitmap);
+		}else{
+			icon.setVisibility(View.GONE);
 		}
 
 		TextView title = (TextView) findViewById(R.id.title);
 		title.setText(item.getTitle());
 
 		TextView uri = (TextView) findViewById(R.id.uri);
-		uri.setText(item.getMp3uri());
-
-		int bookmarkVal = item.getBookmark();
-		TextView bookmark = (TextView) findViewById(R.id.bookmark);
-		if(bookmarkVal > 0){
-			bookmark.setText(getString(R.string.bookmark)+Util.convertDuration(bookmarkVal));
-		}else{
-			bookmark.setVisibility(View.GONE);
-		}
+		uri.setText(item.getUri());
 
 		String linkVal = item.getLink();
 		TextView link = (TextView) findViewById(R.id.link);
-		if(linkVal != null && !linkVal.equalsIgnoreCase(item.getMp3uri())){
+		if(linkVal != null && !linkVal.equalsIgnoreCase(item.getUri())){
 			link.setText(linkVal);
 		}else{
 			link.setVisibility(View.GONE);
