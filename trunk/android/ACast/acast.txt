@@ -41,7 +41,15 @@ Increase size of start icon...
 MediaPlayer thread is started and never really released
 Edit feed does not work. Remove?
 ContentProvider, MIME () assosiaction, should trigger intent for acast. Update android manifest.
-
+<intent-filter>
+	<action android:name="android.intent.action.VIEW" />
+	<action android:name="android.intent.action.BROWSABLE" />
+	<category android:name="android.intent.category.DEFAULT" />
+	<data android:mimeType="audio/x-scpls" />
+	<data android:mimeType="audio/x-mpegurl" />
+</intent-filter>
+Username/password protected RSS
+Change notification icon to main(RSS) icon
 
 
 

@@ -273,6 +273,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
+		unbindService(this);
 		super.onDestroy();
 	}
 
