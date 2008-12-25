@@ -49,7 +49,9 @@ ContentProvider, MIME () assosiaction, should trigger intent for acast. Update a
 	<data android:mimeType="audio/x-mpegurl" />
 </intent-filter>
 Username/password protected RSS
-Change notification icon to main(RSS) icon
+Change notification icon to main(RSS) icon (to same as main icon?)
+Add icon to menu items
+pause mp on start to avoid short sound before first setPosition
 
 
 
