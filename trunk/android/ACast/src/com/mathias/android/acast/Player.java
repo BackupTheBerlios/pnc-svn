@@ -48,8 +48,6 @@ public class Player extends Activity implements ServiceConnection {
 
 	private ACastDbAdapter mDbHandler;
 
-    private boolean mIsBound = false;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate");
@@ -88,8 +86,6 @@ public class Player extends Activity implements ServiceConnection {
 		if(!bindService(i, this, BIND_AUTO_CREATE)){
 			Log.w(TAG, "Could not connect to media service!");
 			Util.showDialog(this, "Could not connect to media service!");
-		}else{
-			mIsBound = true;
 		}
 
 		// PAUSE
@@ -201,10 +197,10 @@ public class Player extends Activity implements ServiceConnection {
 	
 	private Handler progressHandler = new Handler(){
 		@Override
-		public void handleMessage(Message notused) {
+		public void handleMessage(Message not_used) {
 			try {
 				int pos;
-				if(!tracking && binder != null && mIsBound){
+				if(!tracking && binder != null){
 					pos = binder.getCurrentPosition();
 					seekbar.setProgress(pos);
 				}else{
@@ -224,46 +220,37 @@ public class Player extends Activity implements ServiceConnection {
 	};
 
 	@Override
-	protected void onStart() {
-		Log.d(TAG, "onStart");
-		super.onStart();
-	}
-
-	@Override
 	protected void onPause() {
 		Log.d(TAG, "onPause");
-		super.onPause(); // called after onSaveInstanceState, calls onStop
-		if(mIsBound){
-			mIsBound = false;
+		super.onPause();
+		if(binder != null){
 			unbindService(this);
+			binder = null;
 		}
 	}
 	
 	@Override
 	protected void onDestroy() {
-		Log.d(TAG, "onDestroy");
+		Log.d(TAG, "onDestroy: isFinishing="+isFinishing());
 		mDbHandler.close();
 		mDbHandler = null;
 		super.onDestroy();
 	}
-	
-	@Override
-	protected void onStop() {
-		super.onStop(); //called after onPause
-	}
 
 	@Override
 	protected void onResume() {
-		super.onResume(); // called after onCreate
+		Log.d(TAG, "onResume");
+		super.onResume();
 		try {
 			if(binder != null){
 				if(!binder.isPlaying()){
 					if(item.isDownloaded()){
-						binder.playItem(item.getId(), item.getMp3file(), false);
+						binder.initItem(item.getId(), item.getMp3file(), false);
 					}else{
-						binder.playItem(item.getId(), item.getMp3uri(), true);
+						binder.initItem(item.getId(), item.getMp3uri(), true);
 					}
 					binder.setCurrentPosition(item.getBookmark());
+					binder.play();
 					playpause.setImageResource(R.drawable.pause);
 					//playpause.setImageResource(android.R.drawable.ic_media_pause);
 				}else{
@@ -277,21 +264,10 @@ public class Player extends Activity implements ServiceConnection {
 			Util.showDialog(Player.this, e.getMessage()+": "+item.getMp3uri());
 		}
 	}
-	
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		super.onActivityResult(requestCode, resultCode, data);
-	}
-
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		//saveState(); onPause is called after this
-	}
 
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
-		Log.e(TAG, "onServiceConnected: "+name);
+		Log.d(TAG, "onServiceConnected: "+name);
 		binder = IMediaService.Stub.asInterface(service);
 		try {
 			if(item == null){
@@ -308,19 +284,20 @@ public class Player extends Activity implements ServiceConnection {
 					&& ((item.isDownloaded() && binder.getLocator().equals(
 							item.getMp3file())) || (!item.isDownloaded() && binder
 							.getLocator().equals(item.getMp3uri())))) {
-				Log.e(TAG, "Already playing: " + item.getMp3uri());
+				Log.d(TAG, "Already playing: " + item.getMp3uri());
 			} else {
 				mDbHandler.updateFeedItem(binder.getExternalId(),
 						ACastDbAdapter.FEEDITEM_BOOKMARK, binder
 								.getCurrentPosition());
 				if (item.isDownloaded()) {
-					binder.playItem(item.getId(), item.getMp3file(),
+					binder.initItem(item.getId(), item.getMp3file(),
 							false);
 				} else {
-					binder.playItem(item.getId(), item.getMp3uri(),
+					binder.initItem(item.getId(), item.getMp3uri(),
 							true);
 				}
 				binder.setCurrentPosition(item.getBookmark());
+				binder.play();
 			}
 			playpause.setImageResource(R.drawable.pause);
 			//playpause.setImageResource(android.R.drawable.ic_media_pause);
@@ -349,9 +326,7 @@ public class Player extends Activity implements ServiceConnection {
 
 	@Override
 	public void onServiceDisconnected(ComponentName name) {
-		Log.e(TAG, "onServiceDisconnected: "+name);
-		binder = null;
-		mIsBound = false;
+		Log.d(TAG, "onServiceDisconnected: "+name);
 	}
 
 }

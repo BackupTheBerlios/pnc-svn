@@ -146,4 +146,12 @@ public abstract class Util {
 		}
 	}
 
+	public static String buildString(Object ... objs){
+		StringBuilder sb = new StringBuilder();
+		for (Object o : objs) {
+			sb.append(o);
+		}
+		return sb.toString();
+	}
+
 }

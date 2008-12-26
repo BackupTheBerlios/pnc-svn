@@ -1,18 +1,19 @@
 package com.mathias.android.acast;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.app.ListActivity;
-import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -23,67 +24,88 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.mathias.android.acast.common.Util;
+import com.mathias.android.acast.common.services.download.DownloadItem;
 import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
-import com.mathias.android.acast.podcast.Settings;
-import com.mathias.android.acast.rss.RssUtil;
 
-public class FeedItemList extends ListActivity implements ServiceConnection {
+public class DownloadList extends ListActivity implements ServiceConnection {
 
-	private static final String TAG = FeedItemList.class.getSimpleName();
+	private static final String TAG = DownloadList.class.getSimpleName();
 
-	private static final int PLAY_ID = Menu.FIRST;
-	private static final int DOWNLOAD_ID = Menu.FIRST + 1;
-	private static final int DELETE_ID = Menu.FIRST + 2;
-	private static final int REFRESH_ID = Menu.FIRST + 3;
-	private static final int INFO_ID = Menu.FIRST + 4;
+	private static final long UPDATE_DELAY = 5000;
 
-	private Long mFeedId;
+	private static final int CANCEL_ID = Menu.FIRST;
+	private static final int CANCELALL_ID = Menu.FIRST + 1;
+	private static final int REFRESH_ID = Menu.FIRST + 2;
+	private static final int INFO_ID = Menu.FIRST + 3;
 
 	private ACastDbAdapter mDbHelper;
-	
-	private FeedItemAdapter adapter;
-	
-	private ProgressDialog pd;
-	
+
+	private DownloadAdapter adapter;
+
 	private Integer currPos;
 
 	private IDownloadService binder;
 	
+	private Feed feed;
+	
+	private Map<Long, FeedItem> feeditems = new HashMap<Long, FeedItem>();
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.feeditem_list);
+		setContentView(R.layout.download_list);
+
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
-		mFeedId = savedInstanceState != null ? savedInstanceState
-				.getLong(ACast.KEY) : null;
-		if (mFeedId == null) {
+
+		feed = (Feed) (savedInstanceState != null ? savedInstanceState
+				.getSerializable(ACast.FEED) : null);
+		if (feed == null) {
 			Bundle extras = getIntent().getExtras();
-			mFeedId = extras != null ? extras.getLong(ACast.KEY)
-					: null;
+			feed = (Feed) (extras != null ? extras.getSerializable(ACast.FEED)
+					: null);
 		}
-		populateFields();
+
+		Intent i = new Intent(this, DownloadService.class);
+		bindService(i, this, BIND_AUTO_CREATE);
+
+		// start progress handler loop
+		progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
 	}
 
-	private void populateFields() {
-		if (mFeedId != null && mDbHelper != null) {
-			Feed feed = mDbHelper.fetchFeed(mFeedId);
-			adapter = new FeedItemAdapter(this, feed.getItems());
-			setListAdapter(adapter);
+	private Handler progressHandler = new Handler(){
+		@Override
+		public void handleMessage(Message not_used) {
+			Log.d(TAG, "handleMessage! not_used="+not_used);
+			populateFields();
+			sendEmptyMessageDelayed(0, UPDATE_DELAY);
 		}
-	}
-	
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putLong(ACast.KEY, mFeedId);
+	};
+
+	private void populateFields() {
+		if(binder != null){
+			try {
+				List downloads = binder.getDownloads();
+				Log.d(TAG, "downloads.length="+downloads.size());
+				for (Object object : downloads) {
+					DownloadItem item = (DownloadItem) object;
+					Log.d(TAG, item.toString());
+				}
+				adapter = new DownloadAdapter(this, downloads);
+				setListAdapter(adapter);
+			} catch (RemoteException e) {
+				Log.e(TAG, e.getMessage(), e);
+				Util.showDialog(this, e.getClass().getSimpleName(), e.getMessage());
+			}
+		}
 	}
 
 	@Override
@@ -95,15 +117,13 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
-		MenuItem item = menu.add(0, PLAY_ID, 0, R.string.playitem);
-		item.setIcon(android.R.drawable.ic_media_play);
-		item = menu.add(0, DOWNLOAD_ID, 0, R.string.downloaditem);
-		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(0, DELETE_ID, 0, R.string.deleteitem);
-		item.setIcon(android.R.drawable.ic_menu_delete);
-		item = menu.add(0, REFRESH_ID, 0, R.string.refreshfeed);
+		MenuItem item = menu.add(Menu.NONE, CANCEL_ID, Menu.NONE, R.string.cancel);
+		item.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		item = menu.add(Menu.NONE, CANCELALL_ID, Menu.NONE, R.string.cancelall);
+		item.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refresh);
 		item.setIcon(android.R.drawable.ic_menu_rotate);
-		item = menu.add(0, INFO_ID, 0, R.string.info);
+		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
 		item.setIcon(android.R.drawable.ic_menu_info_details);
 		return true;
 	}
@@ -121,104 +141,43 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 			pos = currPos;
 			currPos = null;
 		}
-		if(pos >= 0 && PLAY_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			playItem(item);
+		if(pos >= 0 && CANCEL_ID == menuitem.getItemId()){
+			cancelAndRemove(adapter.getItemId(pos));
 			return true;
-		}else if(pos >= 0 && DOWNLOAD_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			downloadItem(item);
-			return true;
-		}else if(pos >= 0 && DELETE_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			deleteItem(item);
+		}else if(CANCELALL_ID == menuitem.getItemId()){
+			cancelAndRemoveAll();
 			return true;
 		}else if(REFRESH_ID == menuitem.getItemId()){
-			refreshFeed();
+			populateFields();
 			return true;
-		}else if(INFO_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			infoItem(item);
+		}else if(pos >= 0 && INFO_ID == menuitem.getItemId()){
+			DownloadItem item = adapter.getItem(pos);
+			infoItem(feeditems.get(item.getExternalId()));
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, menuitem);
 	}
-
+	
 	private void infoItem(FeedItem item){
 		Intent i = new Intent(this, FeedItemInfo.class);
 		i.putExtra(ACast.FEEDITEM, item);
 		startActivityForResult(i, 0);
 	}
 
-	private void playItem(FeedItem item){
-		mDbHelper.updateSettings(new Settings(0, item.getId()));
-		Intent i = new Intent(this, Player.class);
-		i.putExtra(ACast.FEEDITEM, item);
-		startActivityForResult(i, 0);
-	}
-
-	private void downloadItem(FeedItem item){
-		String file = item.getMp3file();
-		if(item.isDownloaded()){
-			Util.showDialog(this, "Already downloaded: "+file);
-			return;
-		}
-
-		String srcuri = item.getMp3uri().replace(' ', '+');
-		Intent i = new Intent(this, DownloadService.class);
-		i.putExtra(DownloadService.EXTERNALID, item.getId());
-		i.putExtra(DownloadService.SRCURI, srcuri);
-		i.putExtra(DownloadService.DESTFILE, item.getMp3file());
-		startService(i);
-		if(!bindService(i, this, BIND_AUTO_CREATE)) {
-			Util.showDialog(this, "Could not start download!");
-			return;
-		}
-
-		pd = new ProgressDialog(this);
-		pd.setTitle("Downloading");
-		pd.setMessage(item.getMp3uri());
-		pd.setButton("Background", new OnClickListener(){
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				pd.dismiss();
-			}
-		});
-		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		pd.setButton2("Cancel", new OnClickListener(){
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				if(binder != null){
-					try {
-						binder.cancelAndRemoveCurrent();
-					} catch (RemoteException e) {
-					}
-				}
-			}
-		});
-		pd.setMax((int)item.getSize());
-		pd.show();
-	}
-
-	private void deleteItem(FeedItem item){
-		if(item != null && item.getMp3file() != null){
-			new File(item.getMp3file()).delete();
-			item.setDownloaded(false);
-			mDbHelper.updateFeedItem(item);
-			populateFields();
-		}
-	}
-
-	private void refreshFeed(){
-		Feed feed = mDbHelper.fetchFeed(mFeedId);
+	private void cancelAndRemove(long externalId){
 		try {
-			feed = new RssUtil().parse(feed.getUri());
-			mDbHelper.updateFeed(mFeedId, feed);
+			binder.cancelAndRemove(externalId);
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
-			Util.showDialog(this, e.getMessage());
 		}
-		populateFields();
+	}
+	
+	private void cancelAndRemoveAll(){
+		try {
+			binder.cancelAndRemoveAll();
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	@Override
@@ -236,6 +195,17 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		binder = IDownloadService.Stub.asInterface(service);
 		try {
 			binder.registerCallback(downloadCallback);
+
+			if(feed != null){
+				Feed feed2 = mDbHelper.fetchFeed(feed.getId());
+				for (FeedItem item : feed2.getItems()) {
+					if(!new File(item.getMp3file()).exists()){
+						feeditems.put(item.getId(), item);
+						binder.download(item.getId(), item.getMp3uri(), item.getMp3file());
+					}
+				}
+				feed = null;
+			}
 		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
@@ -255,7 +225,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	private final IDownloadServiceCallback downloadCallback = new IDownloadServiceCallback.Stub() {
 		@Override
 		public void onCompleted(long externalid) throws RemoteException {
-			pd.dismiss();
+			Log.d(TAG, "onCompleted: externalid="+externalid);
 			if(mDbHelper != null){
 				mDbHelper.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
 			}
@@ -263,37 +233,43 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		}
 		@Override
 		public void onException(long externalid, String exception) throws RemoteException {
-			pd.dismiss();
-			Util.showDialog(FeedItemList.this, "Download failed: "+exception);
-			populateFields();
+			Log.d(TAG, "onException: externalid="+externalid+" exception="+exception);
+			Util.showDialog(DownloadList.this, "Download failed: "+exception);
 		}
 		@Override
 		public void onProgress(long externalid, long diff) throws RemoteException {
-			pd.incrementProgressBy((int)diff);
+//			Log.d(TAG, "onProgress: externalid="+externalid+" diff="+diff);
 		}
 	};
 
-	private static class FeedItemAdapter extends BaseAdapter {
+	private class DownloadAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
-		private List<FeedItem> items;
+		private List<DownloadItem> items;
 
-		public FeedItemAdapter(Context cxt, List<FeedItem> items){
+		public DownloadAdapter(Context cxt, List<DownloadItem> items){
 			this.items = items;
 			mInflater = LayoutInflater.from(cxt);
 		}
-
+		public DownloadItem getByExternalId(long externalId){
+			for (DownloadItem item : items) {
+				if(externalId == item.getExternalId()){
+					return item;
+				}
+			}
+			return null;
+		}
 		@Override
 		public int getCount() {
 			return items.size();
 		}
 		@Override
-		public FeedItem getItem(int position) {
+		public DownloadItem getItem(int position) {
 			return items.get(position);
 		}
 		@Override
 		public long getItemId(int position) {
-			return getItem(position).getId();
+			return getItem(position).getExternalId();
 		}
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
@@ -305,14 +281,15 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
             // to reinflate it. We only inflate a new View when the convertView supplied
             // by ListView is null.
             if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.feed_row, null);
+                convertView = mInflater.inflate(R.layout.download_row, null);
 
                 // Creates a ViewHolder and store references to the two children views
                 // we want to bind data to.
                 holder = new ViewHolder();
-                holder.icon = (ImageView) convertView.findViewById(R.id.feedrowicon);
-                holder.text = (TextView) convertView.findViewById(R.id.feedrowtext);
-                holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
+                holder.icon = (ImageView) convertView.findViewById(R.id.icon);
+                holder.text = (TextView) convertView.findViewById(R.id.text);
+                holder.text2 = (TextView) convertView.findViewById(R.id.text2);
+                holder.progressbar = (ProgressBar) convertView.findViewById(R.id.progressbar);
 
                 convertView.setTag(holder);
             } else {
@@ -322,9 +299,19 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
             }
 
             // Bind the data efficiently with the holder.
+            Log.d(TAG, "getView; position="+position+" items="+items.size());
+            DownloadItem downloadItem = items.get(position);
+            FeedItem item = feeditems.get(downloadItem.getExternalId());
+            if(item == null) {
+            	return null;
+            }
+            holder.text.setText(item.getTitle());
+            holder.text2.setText(item.getAuthor());
+            holder.progressbar.setMax((int)item.getSize());
+            holder.progressbar.setProgress((int)downloadItem.getProgress());
 
-            FeedItem item = items.get(position);
-			if(item.isDownloaded()){
+            boolean downloaded = downloadItem.getProgress() >= item.getSize();
+			if(downloaded){
 				if(item.isCompleted()){
 					if(item.getBookmark() > 0){
 			            holder.icon.setImageResource(R.drawable.downloaded_done_bm);
@@ -354,19 +341,16 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 				}
 			}
 
-            holder.text.setText(item.getTitle());
-            String author = item.getAuthor();
-            holder.text2.setText((author != null ? author : ""));
-
             return convertView;
 		}
 
-		private static class ViewHolder {
-	        ImageView icon;
-	        TextView text;
-	        TextView text2;
-	    }
-
 	}
+
+    private static class ViewHolder {
+        ImageView icon;
+        TextView text;
+        TextView text2;
+        ProgressBar progressbar;
+    }
 
 }

@@ -119,6 +119,9 @@ public class RssUtil implements ContentHandler {
 					}else if(!isEmpty(characters)){
 						feed.setCategory("Category: "+characters);
 					}
+				}else if("author".equalsIgnoreCase(localName)){
+					//itunes:owner, itunes:author
+					feed.setAuthor(characters);
 				}else if("description".equalsIgnoreCase(localName)){
 					feed.setDescription(characters);
 				}else if("item".equalsIgnoreCase(localName)){
@@ -153,6 +156,11 @@ public class RssUtil implements ContentHandler {
 					}else if(!isEmpty(characters)){
 						currentFeedItem.setCategory("Category: "+characters);
 					}
+				}else if("author".equalsIgnoreCase(localName)){
+					//itunes:owner, itunes:author
+					currentFeedItem.setAuthor(characters);
+				}else if("comments".equalsIgnoreCase(localName)){
+					currentFeedItem.setComments(characters);
 				}else if("description".equalsIgnoreCase(localName)){
 					currentFeedItem.setDescription(characters);
 				}

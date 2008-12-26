@@ -1,5 +1,32 @@
 ACast
 -----
+Play/Pause button, Bigger buttons, black and white? Use styled ic_media_play/pause?
+Bug: Downloads can not handle screen timeout, when screen locks audio stops
+Refresh feed should not clear -downloads-/bookmark/completed
+Bug: info for feed item is not shown when opening player with notifiction
+ContentProvider, MIME (text/xml) assosiaction, should trigger intent for acast. Update android manifest.
+<intent-filter>
+	<action android:name="android.intent.action.VIEW" />
+	<action android:name="android.intent.action.BROWSABLE" />
+	<category android:name="android.intent.category.DEFAULT" />
+	<data android:mimeType="audio/x-scpls" />
+	<data android:mimeType="audio/x-mpegurl" />
+</intent-filter>
+
+LOW: Bug: MediaPlayer thread is started and never really released?
+LOW: rotate with gravity or keyboard?
+LOW: All Download progress screen. Queue downloads, show download queue and current progress. notification on completion/queue empty
+LOW: show kb/s for download progress window
+LOW: Username/password protected RSS
+LOW: Use default media player with broadcast sender.
+
+- LOW: Download all feed items in sequence (if not already downloaded)
+- Change notification icon to main(RSS) icon (to same as main icon?)
+- Add icon to menu items
+- On remove feed, remove physical files
+- Pause mp on start to avoid short sound before first setPosition
+- Bigger letters in feed list.
+- Bug: Fix threaded mediaplayer bug which does not stop playback sometimes. 
 - Individual bookmark
 - Illegal character in path at index 37: http://192.168.254.125/audio/music/14 - Nowhere.mp3
 - fetch size from rss xml
@@ -22,60 +49,11 @@ ACast
 - Remove notification on pause and stop
 - Draw main icon
 - End service and remove notification when song is complete
-Bug: Fix threaded mediaplayer bug which does not stop playback sometimes
-rotate with gravity or keyboard?
-All Download progress screen
-Download all feed items in sequence (if not already downloaded)
-Bug: Player, change screen mode, media restarts from last save point
-Fetch icon from RSS and present in feed list, and/or bigger letters in feed list
-downloads can not handle screen timeout, when screen locks audio stops
-show kb/s for download progress window
-create /sdcard/<feed> dirs for mp3s
-Refresh feed should not clear -downloads-/bookmark/completed
-Use default media player with broadcast sender.
-Play/Pause button, Big buttons, black and white?
-Feed list icon, download main feed icon if exists 
-Feed and feeditem extended information Dialog (or show everything in listitem)
-Queue downloads, show download queue and current progress. notification on completion/queue empty
-Increase size of start icon...
-MediaPlayer thread is started and never really released
-Edit feed does not work. Remove?
-ContentProvider, MIME () assosiaction, should trigger intent for acast. Update android manifest.
-<intent-filter>
-	<action android:name="android.intent.action.VIEW" />
-	<action android:name="android.intent.action.BROWSABLE" />
-	<category android:name="android.intent.category.DEFAULT" />
-	<data android:mimeType="audio/x-scpls" />
-	<data android:mimeType="audio/x-mpegurl" />
-</intent-filter>
-Username/password protected RSS
-Change notification icon to main(RSS) icon (to same as main icon?)
-Add icon to menu items
-pause mp on start to avoid short sound before first setPosition
-
-
-
-
-
-detailMessage	"Only the original thread that created a view hierarchy can touch its views." (id=830057026112)	
-
-detailMessage	"column 'lastfeeditemid' does not exist" (id=830056939992)	
-
-
-12-14 12:11:22.226: ERROR/Util(4407): File /sdcard/TWiT 163: MitNicked.mp3 contains a path separator
-12-14 12:11:22.226: ERROR/Util(4407): java.lang.IllegalArgumentException: File /sdcard/TWiT 163: MitNicked.mp3 contains a path separator
-12-14 12:11:22.226: ERROR/Util(4407):     at android.app.ApplicationContext.makeFilename(ApplicationContext.java:1405)
-12-14 12:11:22.226: ERROR/Util(4407):     at android.app.ApplicationContext.openFileOutput(ApplicationContext.java:350)
-12-14 12:11:22.226: ERROR/Util(4407):     at android.content.ContextWrapper.openFileOutput(ContextWrapper.java:146)
-12-14 12:11:22.226: ERROR/Util(4407):     at com.mathias.android.acast.common.Util.downloadFile(Util.java:56)
-12-14 12:11:22.226: ERROR/Util(4407):     at com.mathias.android.acast.FeedItemList$Download.run(FeedItemList.java:146)
-
-
-E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
-E/MediaPlayer(  277): Error (-38,0)
-E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
-E/MediaPlayer(  277): Error (-38,0)
-E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
-E/MediaPlayer(  277): Error (-38,0)
-E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
-E/MediaPlayer(  277): Error (-38,0)
+- Fetch icon from RSS and present in feed list 
+- Bug: Player, change screen mode, media restarts from last save point
+- create /sdcard/<feed> dirs for mp3s
+- Feed and feeditem extended information Dialog (or show everything in listitem)
+- Increase size of start icon...
+- Edit feed does not work. Remove?
+- detailMessage	"Only the original thread that created a view hierarchy can touch its views." (id=830057026112); use handler
+- E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer

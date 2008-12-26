@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.IBinder;
+import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
@@ -22,6 +23,8 @@ public class MediaService extends Service {
 	
 	private static final String TAG = MediaService.class.getSimpleName();
 
+	private static final int NOTIFICATION_ID = R.string.playing;
+
 	private MediaPlayer mp;
 
     private NotificationManager mNM;
@@ -31,7 +34,10 @@ public class MediaService extends Service {
     private class MediaPlayerThread extends Thread {
 		@Override
 		public void run() {
+			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
+			Log.d(TAG, "Starting MediaPlayerThread");
 			mp.start();
+			Log.d(TAG, "Exiting MediaPlayerThread");
 		}
 	}
 
@@ -66,7 +72,7 @@ public class MediaService extends Service {
 
 		@Override
 		public void pause() throws RemoteException {
-	        mNM.cancel(R.string.remote_service_started);
+	        mNM.cancel(NOTIFICATION_ID);
 			if(mp != null){
 				mp.pause();
 			}
@@ -74,7 +80,7 @@ public class MediaService extends Service {
 		@Override
 		public void play() throws RemoteException {
 			showNotification();
-			if(mp != null){
+			if(mp != null && !mp.isPlaying()){
 				new MediaPlayerThread().start();
 			}
 		}
@@ -86,7 +92,7 @@ public class MediaService extends Service {
 		}
 		@Override
 		public void stop() throws RemoteException {
-	        mNM.cancel(R.string.remote_service_started);
+	        mNM.cancel(NOTIFICATION_ID);
 			stopSelf();
 		}
 		@Override
@@ -110,7 +116,7 @@ public class MediaService extends Service {
 			}
 		}
 		@Override
-		public void playItem(long externalid, String locator, boolean stream) throws RemoteException {
+		public void initItem(long externalid, String locator, boolean stream) throws RemoteException {
 			this.externalid = externalid;
 			this.locator = locator;
 			this.stream = stream;
@@ -122,15 +128,14 @@ public class MediaService extends Service {
 			}
 			if(stream){
 				String uri = locator.replace(' ', '+');
-				Log.d(TAG, "Playing from URI: "+uri);
+				Log.d(TAG, "Initializing from URI: "+uri);
 				mp = MediaPlayer.create(MediaService.this, Uri.parse(uri));
 				if(mp == null){
 					Util.showDialog(MediaService.this, "Could not create media player for: "+uri);
 					return;
 				}
-				new MediaPlayerThread().start();
 			}else{
-				Log.d(TAG, "Playing from file: "+locator);
+				Log.d(TAG, "Initializing from file: "+locator);
 				mp = new MediaPlayer();
 				try {
 					File f = new File(locator);
@@ -140,7 +145,6 @@ public class MediaService extends Service {
 					}
 					mp.setDataSource(MediaService.this, Uri.fromFile(f));
 					mp.prepare();
-					new MediaPlayerThread().start();
 				} catch (Exception e) {
 					Log.e(TAG, locator, e);
 					Util.showDialog(MediaService.this, e.getMessage()+": "+locator);
@@ -210,8 +214,8 @@ public class MediaService extends Service {
 
 	@Override
 	public void onDestroy() {
-		Log.e(TAG, "onDestroy");
-        mNM.cancel(R.string.remote_service_started);
+		Log.d(TAG, "onDestroy");
+        mNM.cancel(NOTIFICATION_ID);
 		if(mp != null){
 			mp.release();
 			mp = null;
@@ -220,18 +224,28 @@ public class MediaService extends Service {
 	}
 
 	private void showNotification() {
-		Notification notification = new Notification(R.drawable.downloaded,
-				getText(R.string.remote_service_started), System
-						.currentTimeMillis());
+		String filename = "";
+		try {
+			String locator = binder.getLocator();
+			if(locator != null){
+				filename = new File(locator).getName();
+			}
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		String ticker = filename;
+		CharSequence title = getText(R.string.playing);
+		String text = filename;
+
+		Notification notification = new Notification(R.drawable.icon, ticker,
+				System.currentTimeMillis());
 
 		Intent i = new Intent(this, Player.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
-		notification.setLatestEventInfo(this,
-				getText(R.string.remote_service_started),
-				getText(R.string.remote_service_started), contentIntent);
+		notification.setLatestEventInfo(this, title, text, contentIntent);
 
-		mNM.notify(R.string.remote_service_started, notification);
+		mNM.notify(NOTIFICATION_ID, notification);
 	}
 
 }

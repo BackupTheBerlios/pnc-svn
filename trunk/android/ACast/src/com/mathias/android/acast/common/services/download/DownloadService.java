@@ -1,6 +1,11 @@
 package com.mathias.android.acast.common.services.download;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -10,6 +15,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
@@ -31,7 +37,7 @@ public class DownloadService extends Service implements ProgressListener {
 	public static final String SRCURI = "SRCURI";
 	
 	public static final String DESTFILE = "DESTFILE";
-	
+
 	private RemoteCallbackList<IDownloadServiceCallback> mCallbacks = new RemoteCallbackList<IDownloadServiceCallback>();
 	
 	private ExecutorService executor;
@@ -39,6 +45,8 @@ public class DownloadService extends Service implements ProgressListener {
 	private boolean continueDownload = true;
 	
 	private String lastDestFile;
+	
+	private Map<Long, DownloadItem> items = new HashMap<Long, DownloadItem>();
 
 	@Override
 	public void onCreate() {
@@ -60,32 +68,31 @@ public class DownloadService extends Service implements ProgressListener {
 			if(externalid == null || srcuri == null || destfile == null){
 				throw new RuntimeException("Parmaterer null: "+externalid +" "+srcuri +" "+destfile);
 			}
-			executor.execute(new DownloadTread(externalid, srcuri, destfile));
+			DownloadItem item = new DownloadItem(externalid, srcuri, destfile, 0);
+			items.put(externalid, item);
+			executor.execute(new DownloadTread(item));
 			Log.d(TAG, "executed: "+externalid +" "+srcuri +" "+destfile);
 		}
 	}
 	
 	private class DownloadTread implements Runnable {
-		
-		private long externalId;
 
-		private String srcuri;
+		private DownloadItem item;
 
-		private String destfile;
-		
-		public DownloadTread(long externalId, String srcuri, String destfile) {
-			this.externalId = externalId;
-			this.srcuri = srcuri;
-			this.destfile = destfile;
+		public DownloadTread(DownloadItem item) {
+			this.item = item;
 		}
 
 		@Override
 		public void run() {
+			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
 			Message msg = new Message();
-			msg.arg1 = (int)externalId;
+			msg.arg1 = (int)item.getExternalId();
 			try {
-				Util.downloadFile(externalId, srcuri, new File(
-						destfile), DownloadService.this);
+				File f = new File(item.getDestfile());
+				Log.d(TAG, "Downloading file: "+f.getName());
+				Util.downloadFile(item.getExternalId(), item.getSrcuri(), f, DownloadService.this);
+				Log.d(TAG, "Done downloading file: "+f.getName());
 				msg.what = 0;
 				handler.sendMessage(msg);
 			} catch (Exception e) {
@@ -102,6 +109,9 @@ public class DownloadService extends Service implements ProgressListener {
 			switch(msg.what){
 			case 0:
 				broadcastCompleted(msg.arg1);
+				DownloadItem remove = items.remove(msg.arg1);
+				String r = (remove != null ? remove.getDestfile() : "remove is null");
+				Log.d(TAG, "broadcastCompleted: "+r);
 				break;
 			case 1:
 				String s = msg.obj.toString();
@@ -109,6 +119,9 @@ public class DownloadService extends Service implements ProgressListener {
 					s = ((Exception)msg.obj).getMessage();
 				}
 				broadcastException(msg.arg1, s);
+				remove = items.remove(msg.arg1);
+				r = (remove != null ? remove.getDestfile() : "remove is null");
+				Log.d(TAG, "broadcastException: "+r);
 				break;
 			}
 		}
@@ -118,12 +131,44 @@ public class DownloadService extends Service implements ProgressListener {
 		@Override
 		public void download(long externalid, String srcuri, String destfile)
 				throws RemoteException {
-			executor.execute(new DownloadTread(externalid, srcuri, destfile));
+			Log.d(TAG, "Queing: "+destfile);
+			DownloadItem item = new DownloadItem(externalid, srcuri, destfile, 0);
+			items.put(externalid, item);
+			executor.execute(new DownloadTread(item));
 		}
 		@Override
-		public void cancelAndRemove() throws RemoteException {
+		public void cancelAndRemoveCurrent() throws RemoteException {
 			continueDownload = false;
 			new File(lastDestFile).delete();
+			Iterator<DownloadItem> it = items.values().iterator();
+			while(it.hasNext()){
+				DownloadItem item = it.next();
+				if(item.getDestfile().equalsIgnoreCase(lastDestFile)){
+					it.remove();
+					break;
+				}
+			}
+		}
+		@Override
+		public void cancelAndRemove(long externalid) throws RemoteException {
+			DownloadItem item = items.get(externalid);
+			String destfile = item.getDestfile();
+			if(lastDestFile.equalsIgnoreCase(destfile)){
+				continueDownload = false;
+			}
+			new File(destfile).delete();
+			items.remove(externalid);
+		}
+		@Override
+		public void cancelAndRemoveAll() throws RemoteException {
+			continueDownload = false;
+			new File(lastDestFile).delete();
+			Iterator<DownloadItem> it = items.values().iterator();
+			while(it.hasNext()){
+				DownloadItem item = it.next();
+				new File(item.getDestfile()).delete();
+				it.remove();
+			}
 		}
 		@Override
 		public void registerCallback(IDownloadServiceCallback cb)
@@ -134,6 +179,10 @@ public class DownloadService extends Service implements ProgressListener {
 		public void unregisterCallback(IDownloadServiceCallback cb)
 				throws RemoteException {
 			mCallbacks.unregister(cb);
+		}
+		@Override
+		public List getDownloads() throws RemoteException {
+			return new ArrayList<DownloadItem>(items.values());
 		}
 	};
 
@@ -150,6 +199,10 @@ public class DownloadService extends Service implements ProgressListener {
 
 	@Override
 	public void progressDiff(long externalid, long size) {
+		DownloadItem item = items.get(externalid);
+		if(item != null){
+			item.setProgress(item.getProgress()+size);
+		}
 		broadcastDiff(externalid, size);
 	}
 

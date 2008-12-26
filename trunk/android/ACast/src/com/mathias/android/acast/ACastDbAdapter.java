@@ -25,6 +25,7 @@ public class ACastDbAdapter {
 	public static final String FEED_LINK = "link";
 	public static final String FEED_PUBDATE = "pubdate";
 	public static final String FEED_CATEGORY = "category";
+	public static final String FEED_AUTHOR = "author";
 	public static final String FEED_DESCRIPTION = "description";
 
 	public static final String FEEDITEM_ID = "_id";
@@ -39,6 +40,8 @@ public class ACastDbAdapter {
 	public static final String FEEDITEM_LINK = "link";
 	public static final String FEEDITEM_PUBDATE = "pubdate";
 	public static final String FEEDITEM_CATEGORY = "category";
+	public static final String FEEDITEM_AUTHOR = "author";
+	public static final String FEEDITEM_COMMENTS = "comments";
 	public static final String FEEDITEM_DESCRIPTION = "description";
 
 	public static final String SETTING_ID = "_id";
@@ -58,6 +61,7 @@ public class ACastDbAdapter {
 			+ FEED_LINK+" text, "
 			+ FEED_PUBDATE+" text, "
 			+ FEED_CATEGORY+" text, "
+			+ FEED_AUTHOR+" text, "
 			+ FEED_DESCRIPTION+" text);";
 
 	private static final String DATABASE_CREATE_FEEDITEM = "create table feeditem ("
@@ -73,6 +77,8 @@ public class ACastDbAdapter {
 			+ FEEDITEM_LINK+" text, "
 			+ FEEDITEM_PUBDATE+" text, "
 			+ FEEDITEM_CATEGORY+" text, "
+			+ FEEDITEM_AUTHOR+" text, "
+			+ FEEDITEM_COMMENTS+" text, "
 			+ FEEDITEM_DESCRIPTION+" text);";
 
 	private static final String DATABASE_CREATE_SETTING = "create table setting ("
@@ -80,7 +86,7 @@ public class ACastDbAdapter {
 			+ SETTING_VOLUME+" integer, "
 			+ SETTING_LASTFEEDITEMID+" integer);";
 
-	private static final int DATABASE_VERSION = 29;
+	private static final int DATABASE_VERSION = 30;
 
 	private static final String TAG = ACastDbAdapter.class.getSimpleName();
 	private DatabaseHelper mDbHelper;
@@ -126,7 +132,7 @@ public class ACastDbAdapter {
 	}
 
 	private long createFeed(String title, String uri, String icon, String link,
-			String pubdate, String category, String description) {
+			String pubdate, String category, String author, String description) {
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(FEED_TITLE, title);
 		initialValues.put(FEED_URI, uri);
@@ -134,6 +140,7 @@ public class ACastDbAdapter {
 		initialValues.put(FEED_LINK, link);
 		initialValues.put(FEED_PUBDATE, pubdate);
 		initialValues.put(FEED_CATEGORY, category);
+		initialValues.put(FEED_AUTHOR, author);
 		initialValues.put(FEED_DESCRIPTION, description);
 		return mDb.insert(DATABASE_TABLE_FEED, null, initialValues);
 	}
@@ -145,7 +152,7 @@ public class ACastDbAdapter {
 		}
 		long id = createFeed(feed.getTitle(), feed.getUri(), feed.getIcon(),
 				feed.getLink(), feed.getPubdate(), feed.getCategory(), feed
-						.getDescription());
+						.getAuthor(), feed.getDescription());
 		deleteFeedItems(id);
 		for (FeedItem item : feed.getItems()) {
 			addFeedItem(id, item);
@@ -174,12 +181,12 @@ public class ACastDbAdapter {
 		return names;
 	}
 
-	public List<Feed> fetchAllFeedsLight() {
-		List<Feed> uris = new ArrayList<Feed>();
+	public List<Feed> fetchAllFeeds() {
+		List<Feed> feeds = new ArrayList<Feed>();
 		Cursor c = mDb
 				.query(DATABASE_TABLE_FEED, new String[] { FEED_ID, FEED_TITLE,
 						FEED_URI, FEED_ICON, FEED_LINK, FEED_PUBDATE,
-						FEED_CATEGORY, FEED_DESCRIPTION }, null, null, null,
+						FEED_CATEGORY, FEED_AUTHOR, FEED_DESCRIPTION }, null, null, null,
 						null, null);
 		if(c == null || !c.moveToFirst()){
 			Log.w(TAG, "No feeds!");
@@ -192,19 +199,52 @@ public class ACastDbAdapter {
 				String link = c.getString(c.getColumnIndexOrThrow(FEED_LINK));
 				String pubdate = c.getString(c.getColumnIndexOrThrow(FEED_PUBDATE));
 				String category = c.getString(c.getColumnIndexOrThrow(FEED_CATEGORY));
+				String author = c.getString(c.getColumnIndexOrThrow(FEED_AUTHOR));
 				String description = c.getString(c.getColumnIndexOrThrow(FEED_DESCRIPTION));
-				uris.add(new Feed(id, title, uri, icon, link, pubdate, category, description));
+				Feed feed = new Feed(id, title, uri, icon, link, pubdate, category, author, description);
+				c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
+						FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI,
+						FEEDITEM_MP3FILE, FEEDITEM_SIZE, FEEDITEM_BOOKMARK,
+						FEEDITEM_COMPLETED, FEEDITEM_DOWNLOADED, FEEDITEM_LINK,
+						FEEDITEM_PUBDATE, FEEDITEM_CATEGORY, FEEDITEM_AUTHOR,
+						FEEDITEM_COMMENTS, FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID
+						+ "=" + id, null, null, null, null, null);
+				if(c == null || !c.moveToFirst()) {
+					Log.w(TAG, "No feed items for: "+id);
+				}else{
+					do{
+						long itemId = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_ID));
+						String itemTitle = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
+						String mp3uri = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3URI));
+						String mp3file = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3FILE));
+						long size = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_SIZE));
+						int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
+						short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
+						short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
+						link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
+						pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
+						category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
+						author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
+						String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
+						description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
+						feed.addItem(new FeedItem(itemId, id, itemTitle, mp3uri,
+								mp3file, size, bookmark, completed != 0,
+								downloaded != 0, link, pubdate, category,
+								author, comments, description));
+					}while(c.moveToNext());
+				}
+				feeds.add(feed);
 			}while(c.moveToNext());
 		}
 		Util.closeCursor(c);
-		return uris;
+		return feeds;
 	}
 
 	public Feed fetchFeed(long id) throws SQLException {
 		Feed feed = null;
 		Cursor c = mDb.query(true, DATABASE_TABLE_FEED, new String[] {
 				FEED_TITLE, FEED_URI, FEED_ICON, FEED_LINK, FEED_PUBDATE,
-				FEED_CATEGORY, FEED_DESCRIPTION }, FEED_ID + "=" + id, null,
+				FEED_CATEGORY, FEED_AUTHOR, FEED_DESCRIPTION }, FEED_ID + "=" + id, null,
 				null, null, null, null);
 		if (c == null || !c.moveToFirst()) {
 			Log.w(TAG, "No feed for: "+id);
@@ -215,17 +255,18 @@ public class ACastDbAdapter {
 			String link = c.getString(c.getColumnIndex(FEED_LINK));
 			String pubdate = c.getString(c.getColumnIndex(FEED_PUBDATE));
 			String category = c.getString(c.getColumnIndex(FEED_CATEGORY));
+			String author = c.getString(c.getColumnIndex(FEED_AUTHOR));
 			String description = c.getString(c.getColumnIndex(FEED_DESCRIPTION));
 			Util.closeCursor(c);
-			feed = new Feed(id, title, uri, icon, link, pubdate, category, description);
-			c = mDb.query(true, DATABASE_TABLE_FEEDITEM,
-					new String[] { FEEDITEM_ID, FEEDITEM_TITLE,
-							FEEDITEM_MP3URI, FEEDITEM_MP3FILE, FEEDITEM_SIZE,
-							FEEDITEM_BOOKMARK, FEEDITEM_COMPLETED,
-							FEEDITEM_DOWNLOADED, FEEDITEM_LINK,
-							FEEDITEM_PUBDATE, FEEDITEM_CATEGORY,
-							FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID + "=" + id,
-					null, null, null, null, null);
+			feed = new Feed(id, title, uri, icon, link, pubdate, category,
+					author, description);
+			c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
+					FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI,
+					FEEDITEM_MP3FILE, FEEDITEM_SIZE, FEEDITEM_BOOKMARK,
+					FEEDITEM_COMPLETED, FEEDITEM_DOWNLOADED, FEEDITEM_LINK,
+					FEEDITEM_PUBDATE, FEEDITEM_CATEGORY, FEEDITEM_AUTHOR,
+					FEEDITEM_COMMENTS, FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID
+					+ "=" + id, null, null, null, null, null);
 			if(c == null || !c.moveToFirst()) {
 				Log.w(TAG, "No feed items for: "+id);
 			}else{
@@ -241,11 +282,13 @@ public class ACastDbAdapter {
 					link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
 					pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
 					category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
+					author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
+					String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
 					description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
 					feed.addItem(new FeedItem(itemId, id, itemTitle, mp3uri,
 							mp3file, size, bookmark, completed != 0,
 							downloaded != 0, link, pubdate, category,
-							description));
+							author, comments, description));
 				}while(c.moveToNext());
 			}
 		}
@@ -259,9 +302,10 @@ public class ACastDbAdapter {
 				FEEDITEM_TITLE, FEEDITEM_MP3URI, FEEDITEM_MP3FILE,
 				FEEDITEM_SIZE, FEEDITEM_BOOKMARK, FEEDITEM_COMPLETED,
 				FEEDITEM_DOWNLOADED, FEEDITEM_LINK, FEEDITEM_PUBDATE,
-				FEEDITEM_CATEGORY, FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID
-				+ "=" + feedId + " and " + FEEDITEM_ID + "=" + feedItemId,
-				null, null, null, null, null);
+				FEEDITEM_CATEGORY, FEEDITEM_AUTHOR, FEEDITEM_COMMENTS,
+				FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID + "=" + feedId
+				+ " and " + FEEDITEM_ID + "=" + feedItemId, null, null, null,
+				null, null);
 		if (c == null || !c.moveToFirst()) {
 			Log.w(TAG, "No feed item for: "+feedId+" "+feedItemId);
 		}else{
@@ -275,10 +319,12 @@ public class ACastDbAdapter {
 			String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
 			String pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
 			String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
+			String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
+			String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
 			String description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
 			item = new FeedItem(feedItemId, feedId, title, mp3uri, mp3file,
 					size, bookmark, completed != 0, downloaded != 0, link,
-					pubdate, category, description);
+					pubdate, category, author, comments, description);
 		}
 		Util.closeCursor(c);
 		return item;
@@ -290,8 +336,9 @@ public class ACastDbAdapter {
 				FEEDITEM_ID, FEEDITEM_FEEDID, FEEDITEM_TITLE, FEEDITEM_MP3URI,
 				FEEDITEM_MP3FILE, FEEDITEM_SIZE, FEEDITEM_BOOKMARK,
 				FEEDITEM_COMPLETED, FEEDITEM_DOWNLOADED, FEEDITEM_LINK,
-				FEEDITEM_PUBDATE, FEEDITEM_CATEGORY, FEEDITEM_DESCRIPTION },
-				FEEDITEM_ID + "=" + feedItemId, null, null, null, null, null);
+				FEEDITEM_PUBDATE, FEEDITEM_CATEGORY, FEEDITEM_AUTHOR,
+				FEEDITEM_COMMENTS, FEEDITEM_DESCRIPTION }, FEEDITEM_ID + "="
+				+ feedItemId, null, null, null, null, null);
 		if (c == null || !c.moveToFirst()) {
 			Log.w(TAG, "No feed item for: "+feedItemId);
 		}else{
@@ -306,10 +353,12 @@ public class ACastDbAdapter {
 			String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
 			String pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
 			String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
+			String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
+			String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
 			String description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
 			item = new FeedItem(feedItemId, feedId, title, mp3uri, mp3file,
 					size, bookmark, completed != 0, downloaded != 0, link,
-					pubdate, category, description);
+					pubdate, category, author, comments, description);
 		}
 		Util.closeCursor(c);
 		return item;
@@ -322,7 +371,7 @@ public class ACastDbAdapter {
 		}
 		updateFeed(id, feed.getTitle(), feed.getUri(), feed.getIcon(), feed
 				.getLink(), feed.getPubdate(), feed.getCategory(), feed
-				.getDescription());
+				.getAuthor(), feed.getDescription());
 		deleteFeedItems(id);
 		for (FeedItem item : feed.getItems()) {
 			addFeedItem(id, item);
@@ -331,7 +380,7 @@ public class ACastDbAdapter {
 	}
 
 	public boolean updateFeed(long id, String title, String uri, String icon,
-			String link, String pubdate, String category, String description) {
+			String link, String pubdate, String category, String author, String description) {
 		ContentValues args = new ContentValues();
 		args.put(FEED_TITLE, title);
 		args.put(FEED_URI, uri);
@@ -339,6 +388,7 @@ public class ACastDbAdapter {
 		args.put(FEED_LINK, link);
 		args.put(FEED_PUBDATE, pubdate);
 		args.put(FEED_CATEGORY, category);
+		args.put(FEED_AUTHOR, author);
 		args.put(FEED_DESCRIPTION, description);
 		return mDb.update(DATABASE_TABLE_FEED, args, FEED_ID + "=" + id,
 				null) > 0;
@@ -361,6 +411,8 @@ public class ACastDbAdapter {
 		args.put(FEEDITEM_LINK, item.getLink());
 		args.put(FEEDITEM_PUBDATE, item.getPubdate());
 		args.put(FEEDITEM_CATEGORY, item.getCategory());
+		args.put(FEEDITEM_AUTHOR, item.getAuthor());
+		args.put(FEEDITEM_COMMENTS, item.getComments());
 		args.put(FEEDITEM_DESCRIPTION, item.getDescription());
 		return mDb.update(DATABASE_TABLE_FEEDITEM, args, FEEDITEM_ID + "="
 				+ item.getId(), null) > 0;
@@ -415,6 +467,8 @@ public class ACastDbAdapter {
 		initialValues.put(FEEDITEM_LINK, item.getLink());
 		initialValues.put(FEEDITEM_PUBDATE, item.getPubdate());
 		initialValues.put(FEEDITEM_CATEGORY, item.getCategory());
+		initialValues.put(FEEDITEM_AUTHOR, item.getAuthor());
+		initialValues.put(FEEDITEM_COMMENTS, item.getComments());
 		initialValues.put(FEEDITEM_DESCRIPTION, item.getDescription());
 		return mDb.insert(DATABASE_TABLE_FEEDITEM, null, initialValues);
 	}

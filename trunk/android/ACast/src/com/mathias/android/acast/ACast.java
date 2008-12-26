@@ -1,5 +1,6 @@
 package com.mathias.android.acast;
 
+import java.io.File;
 import java.util.List;
 
 import android.app.ListActivity;
@@ -40,9 +41,10 @@ public class ACast extends ListActivity {
 	private static final int DELETE_ID = Menu.FIRST + 2;
 	private static final int REFRESH_ID = Menu.FIRST + 3;
 	private static final int INFO_ID = Menu.FIRST + 4;
+	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
 
 	private ACastDbAdapter mDbHelper;
-	
+
 	private FeedAdapter adapter;
 	
 	private Settings settings;
@@ -73,7 +75,7 @@ public class ACast extends ListActivity {
 	}
 
 	private void fillData() {
-		List<Feed> feeds = mDbHelper.fetchAllFeedsLight();
+		List<Feed> feeds = mDbHelper.fetchAllFeeds();
 		adapter = new FeedAdapter(this, feeds);
 		setListAdapter(adapter);
 
@@ -90,11 +92,18 @@ public class ACast extends ListActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
-		menu.add(0, INSERT_ID, 0, R.string.addfeed);
-		//menu.add(0, UPDATE_ID, 0, R.string.editfeed);
-		menu.add(0, DELETE_ID, 0, R.string.removefeed);
-		menu.add(0, REFRESH_ID, 0, R.string.refreshfeeds);
-		menu.add(0, INFO_ID, 0, R.string.info);
+		MenuItem item = menu.add(Menu.NONE, INSERT_ID, Menu.NONE, R.string.addfeed);
+		item.setIcon(android.R.drawable.ic_menu_add);
+		//item = menu.add(Menu.NONE, UPDATE_ID, Menu.NONE, R.string.editfeed);
+		//item.setIcon(android.R.drawable.ic_input_edit);
+		item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.removefeed);
+		item.setIcon(android.R.drawable.ic_menu_delete);
+		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refreshfeeds);
+		item.setIcon(android.R.drawable.ic_menu_rotate);
+		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
+		item.setIcon(android.R.drawable.ic_menu_info_details);
+		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
+		item.setIcon(android.R.drawable.stat_sys_download);
 		return true;
 	}
 
@@ -102,38 +111,37 @@ public class ACast extends ListActivity {
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
 		Intent i = new Intent(this, FeedItemList.class);
-		long feedId = adapter.getItemId(position);
-		i.putExtra(KEY, feedId);
+		i.putExtra(KEY, adapter.getItemId(position));
 		startActivityForResult(i, 0);
 	}
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		int pos = getSelectedItemPosition();
 		if(INSERT_ID == item.getItemId()){
 			createFeed();
 			return true;
 		}else if(UPDATE_ID == item.getItemId()){
-			int pos = getSelectedItemPosition();
 			if(pos >= 0){
-				long feedId = adapter.getItemId(pos);
-				editFeed(feedId);
+				editFeed(adapter.getItemId(pos));
 			}
 			return true;
 		}else if(DELETE_ID == item.getItemId()){
-			int pos = getSelectedItemPosition();
 			if(pos >= 0){
-				long feedId = adapter.getItemId(pos);
-				deleteFeed(feedId);
+				deleteFeed(adapter.getItem(pos));
 			}
 			return true;
 		}else if(REFRESH_ID == item.getItemId()){
 			refreshFeeds();
 			return true;
 		}else if(INFO_ID == item.getItemId()){
-			int pos = getSelectedItemPosition();
 			if(pos >= 0){
-				long feedId = adapter.getItemId(pos);
-				infoFeed(feedId);
+				infoFeed(adapter.getItem(pos));
+			}
+			return true;
+		}else if(DOWNLOADALL_ID == item.getItemId()){
+			if(pos >= 0){
+				downloadAll(adapter.getItem(pos));
 			}
 			return true;
 		}
@@ -151,13 +159,17 @@ public class ACast extends ListActivity {
 		startActivityForResult(i, 0);
 	}
 
-	private void deleteFeed(long id) {
-		mDbHelper.deleteFeed(id);
+	private void deleteFeed(Feed feed) {
+		for(FeedItem item : feed.getItems()){
+			boolean deleted = new File(item.getMp3file()).delete();
+			Log.d(TAG, "File deleted="+deleted+" file="+item.getMp3file());
+		}
+		mDbHelper.deleteFeed(feed.getId());
 		fillData();
 	}
 
 	private void refreshFeeds(){
-		List<Feed> feeds = mDbHelper.fetchAllFeedsLight();
+		List<Feed> feeds = mDbHelper.fetchAllFeeds();
 		for (Feed feed : feeds) {
 			try {
 				long rowId = feed.getId();
@@ -171,9 +183,14 @@ public class ACast extends ListActivity {
 		}
 	}
 
-	private void infoFeed(long id) {
+	private void infoFeed(Feed feed) {
 		Intent i = new Intent(this, FeedInfo.class);
-		Feed feed = mDbHelper.fetchFeed(id);
+		i.putExtra(ACast.FEED, feed);
+		startActivityForResult(i, 0);
+	}
+
+	private void downloadAll(Feed feed) {
+		Intent i = new Intent(this, DownloadList.class);
 		i.putExtra(ACast.FEED, feed);
 		startActivityForResult(i, 0);
 	}
@@ -191,7 +208,7 @@ public class ACast extends ListActivity {
 		super.onDestroy();
 	}
 
-	private class FeedAdapter extends BaseAdapter {
+	private static class FeedAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
 		private List<Feed> feeds;
@@ -214,13 +231,14 @@ public class ACast extends ListActivity {
             // to reinflate it. We only inflate a new View when the convertView supplied
             // by ListView is null.
             if (convertView == null) {
-                convertView = mInflater.inflate(/* R.layout.list_item_icon_text */ android.R.layout.activity_list_item, null);
+                convertView = mInflater.inflate(R.layout.feed_row, null);
 
                 // Creates a ViewHolder and store references to the two children views
                 // we want to bind data to.
                 holder = new ViewHolder();
-                holder.text = (TextView) convertView.findViewById(/*R.id.text*/ android.R.id.text1);
-                holder.icon = (ImageView) convertView.findViewById(/*R.id.icon*/ android.R.id.icon);
+                holder.icon = (ImageView) convertView.findViewById(R.id.feedrowicon);
+                holder.text = (TextView) convertView.findViewById(R.id.feedrowtext);
+                holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
 
                 convertView.setTag(holder);
             } else {
@@ -231,10 +249,12 @@ public class ACast extends ListActivity {
 
             // Bind the data efficiently with the holder.
             
-            holder.text.setText(feeds.get(position).getTitle());
             String icon = feeds.get(position).getIcon();
             holder.icon.setImageBitmap(icon != null ? BitmapFactory
 					.decodeFile(icon) : defaultIcon);
+            holder.text.setText(feeds.get(position).getTitle());
+            String author = feeds.get(position).getAuthor();
+            holder.text2.setText((author != null ? author : ""));
 
             return convertView;
 		}
@@ -245,7 +265,7 @@ public class ACast extends ListActivity {
 		}
 
 		@Override
-		public Object getItem(int position) {
+		public Feed getItem(int position) {
 			return feeds.get(position);
 		}
 
@@ -254,11 +274,12 @@ public class ACast extends ListActivity {
 			return feeds.get(position).getId();
 		}
 
-	}
+	    private static class ViewHolder {
+	        ImageView icon;
+	        TextView text;
+	        TextView text2;
+	    }
 
-    private static class ViewHolder {
-        TextView text;
-        ImageView icon;
-    }
+	}
 
 }

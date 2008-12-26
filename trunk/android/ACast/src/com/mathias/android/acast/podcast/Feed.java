@@ -21,6 +21,8 @@ public class Feed implements Serializable {
 	
 	private String category;
 	
+	private String author;
+	
 	private String description;
 	
 	private List<FeedItem> items = new ArrayList<FeedItem>();
@@ -29,7 +31,7 @@ public class Feed implements Serializable {
 	}
 
 	public Feed(long id, String title, String uri, String icon, String link,
-			String pubdate, String category, String description) {
+			String pubdate, String category, String author, String description) {
 		this.id = id;
 		this.title = title;
 		this.uri = uri;
@@ -37,6 +39,7 @@ public class Feed implements Serializable {
 		this.link = link;
 		this.pubdate = pubdate;
 		this.category = category;
+		this.author = author;
 		this.description = description;
 	}
 
@@ -110,6 +113,14 @@ public class Feed implements Serializable {
 
 	public void setCategory(String category) {
 		this.category = category;
+	}
+
+	public String getAuthor() {
+		return author;
+	}
+
+	public void setAuthor(String author) {
+		this.author = author;
 	}
 
 }

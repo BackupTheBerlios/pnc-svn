@@ -1,7 +1,5 @@
 package com.mathias.android.acast;
 
-import java.security.GuardedObject;
-
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

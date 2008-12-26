@@ -20,8 +20,9 @@
 	<string name="addfeed">Add feed</string>
 	<string name="editfeed">Edit feed</string>
 	<string name="removefeed">Remove feed</string>
-	<string name="refreshfeeds">Refresh feeds</string>
-	<!-- feed_list menu items -->
+	<string name="refreshfeeds">Refresh all feeds</string>
+	<string name="downloadall">Download all</string>
+	<!-- feeditem_list menu items -->
 	<string name="playitem">Play item</string>
 	<string name="downloaditem">Download item</string>
 	<string name="deleteitem">Delete item</string>
@@ -34,5 +35,9 @@
 	<string name="stop">Stop</string>
 	<!-- player -->
 	<!-- media service -->
-	<string name="remote_service_started">remote service started</string>
+	<string name="playing">Playing</string>
+	<!-- download_list -->
+	<string name="cancel">Cancel</string>
+	<string name="cancelall">Cancel all</string>
+	<string name="refresh">Refresh</string>
 </resources>
