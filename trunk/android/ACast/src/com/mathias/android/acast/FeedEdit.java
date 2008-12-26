@@ -50,6 +50,7 @@ public class FeedEdit extends Activity {
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
+		mDbHelper = null;
 		super.onDestroy();
 	}
 

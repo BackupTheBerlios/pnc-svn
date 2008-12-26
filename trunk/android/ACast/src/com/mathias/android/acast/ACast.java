@@ -205,6 +205,7 @@ public class ACast extends ListActivity {
 	protected void onDestroy() {
 		Log.d(TAG, "onDestroy");
 		mDbHelper.close();
+		mDbHelper = null;
 		super.onDestroy();
 	}
 
