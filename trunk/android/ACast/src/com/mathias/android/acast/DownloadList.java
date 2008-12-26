@@ -39,7 +39,7 @@ public class DownloadList extends ListActivity implements ServiceConnection {
 
 	private static final String TAG = DownloadList.class.getSimpleName();
 
-	private static final long UPDATE_DELAY = 5000;
+	private static final long UPDATE_DELAY = 3000;
 
 	private static final int CANCEL_ID = Menu.FIRST;
 	private static final int CANCELALL_ID = Menu.FIRST + 1;
@@ -57,6 +57,8 @@ public class DownloadList extends ListActivity implements ServiceConnection {
 	private Feed feed;
 	
 	private Map<Long, FeedItem> feeditems = new HashMap<Long, FeedItem>();
+	
+	private boolean visible = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -85,33 +87,38 @@ public class DownloadList extends ListActivity implements ServiceConnection {
 		@Override
 		public void handleMessage(Message not_used) {
 			Log.d(TAG, "handleMessage! not_used="+not_used);
-			populateFields();
-			sendEmptyMessageDelayed(0, UPDATE_DELAY);
-		}
-	};
-
-	private void populateFields() {
-		if(binder != null){
-			try {
-				List downloads = binder.getDownloads();
-				Log.d(TAG, "downloads.length="+downloads.size());
-				for (Object object : downloads) {
-					DownloadItem item = (DownloadItem) object;
-					Log.d(TAG, item.toString());
+			if(binder != null){
+				try {
+					List downloads = binder.getDownloads();
+					Log.d(TAG, "downloads.length="+downloads.size());
+					for (Object object : downloads) {
+						DownloadItem item = (DownloadItem) object;
+						Log.d(TAG, item.toString());
+					}
+					adapter = new DownloadAdapter(DownloadList.this, downloads);
+					setListAdapter(adapter);
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+					Util.showDialog(DownloadList.this, e.getClass().getSimpleName(), e.getMessage());
 				}
-				adapter = new DownloadAdapter(this, downloads);
-				setListAdapter(adapter);
-			} catch (RemoteException e) {
-				Log.e(TAG, e.getMessage(), e);
-				Util.showDialog(this, e.getClass().getSimpleName(), e.getMessage());
+			}
+			if(visible){
+				sendEmptyMessageDelayed(0, UPDATE_DELAY);
 			}
 		}
-	}
+	};
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		populateFields();
+		visible = true;
+		progressHandler.sendEmptyMessage(0);
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		visible = false;
 	}
 
 	@Override
@@ -148,7 +155,7 @@ public class DownloadList extends ListActivity implements ServiceConnection {
 			cancelAndRemoveAll();
 			return true;
 		}else if(REFRESH_ID == menuitem.getItemId()){
-			populateFields();
+			progressHandler.sendEmptyMessage(0);
 			return true;
 		}else if(pos >= 0 && INFO_ID == menuitem.getItemId()){
 			DownloadItem item = adapter.getItem(pos);
@@ -229,7 +236,7 @@ public class DownloadList extends ListActivity implements ServiceConnection {
 			if(mDbHelper != null){
 				mDbHelper.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
 			}
-			populateFields();
+			progressHandler.sendEmptyMessage(0);
 		}
 		@Override
 		public void onException(long externalid, String exception) throws RemoteException {
