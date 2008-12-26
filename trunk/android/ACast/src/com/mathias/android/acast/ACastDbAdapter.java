@@ -202,36 +202,9 @@ public class ACastDbAdapter {
 				String author = c.getString(c.getColumnIndexOrThrow(FEED_AUTHOR));
 				String description = c.getString(c.getColumnIndexOrThrow(FEED_DESCRIPTION));
 				Feed feed = new Feed(id, title, uri, icon, link, pubdate, category, author, description);
-				c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
-						FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI,
-						FEEDITEM_MP3FILE, FEEDITEM_SIZE, FEEDITEM_BOOKMARK,
-						FEEDITEM_COMPLETED, FEEDITEM_DOWNLOADED, FEEDITEM_LINK,
-						FEEDITEM_PUBDATE, FEEDITEM_CATEGORY, FEEDITEM_AUTHOR,
-						FEEDITEM_COMMENTS, FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID
-						+ "=" + id, null, null, null, null, null);
-				if(c == null || !c.moveToFirst()) {
-					Log.w(TAG, "No feed items for: "+id);
-				}else{
-					do{
-						long itemId = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_ID));
-						String itemTitle = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
-						String mp3uri = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3URI));
-						String mp3file = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3FILE));
-						long size = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_SIZE));
-						int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
-						short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
-						short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
-						link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
-						pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
-						category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
-						author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
-						String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
-						description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
-						feed.addItem(new FeedItem(itemId, id, itemTitle, mp3uri,
-								mp3file, size, bookmark, completed != 0,
-								downloaded != 0, link, pubdate, category,
-								author, comments, description));
-					}while(c.moveToNext());
+				List<FeedItem> items = fetchAllFeedItems(id);
+				for (FeedItem item : items) {
+					feed.addItem(item);
 				}
 				feeds.add(feed);
 			}while(c.moveToNext());
@@ -257,43 +230,52 @@ public class ACastDbAdapter {
 			String category = c.getString(c.getColumnIndex(FEED_CATEGORY));
 			String author = c.getString(c.getColumnIndex(FEED_AUTHOR));
 			String description = c.getString(c.getColumnIndex(FEED_DESCRIPTION));
-			Util.closeCursor(c);
 			feed = new Feed(id, title, uri, icon, link, pubdate, category,
 					author, description);
-			c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
-					FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI,
-					FEEDITEM_MP3FILE, FEEDITEM_SIZE, FEEDITEM_BOOKMARK,
-					FEEDITEM_COMPLETED, FEEDITEM_DOWNLOADED, FEEDITEM_LINK,
-					FEEDITEM_PUBDATE, FEEDITEM_CATEGORY, FEEDITEM_AUTHOR,
-					FEEDITEM_COMMENTS, FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID
-					+ "=" + id, null, null, null, null, null);
-			if(c == null || !c.moveToFirst()) {
-				Log.w(TAG, "No feed items for: "+id);
-			}else{
-				do{
-					long itemId = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_ID));
-					String itemTitle = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
-					String mp3uri = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3URI));
-					String mp3file = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3FILE));
-					long size = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_SIZE));
-					int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
-					short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
-					short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
-					link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
-					pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
-					category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
-					author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
-					String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
-					description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
-					feed.addItem(new FeedItem(itemId, id, itemTitle, mp3uri,
-							mp3file, size, bookmark, completed != 0,
-							downloaded != 0, link, pubdate, category,
-							author, comments, description));
-				}while(c.moveToNext());
+			List<FeedItem> items = fetchAllFeedItems(id);
+			for (FeedItem item : items) {
+				feed.addItem(item);
 			}
 		}
 		Util.closeCursor(c);
 		return feed;
+	}
+
+	public List<FeedItem> fetchAllFeedItems(long feedId) throws SQLException {
+		List<FeedItem> items = new ArrayList<FeedItem>();
+		Cursor c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
+				FEEDITEM_ID, FEEDITEM_TITLE, FEEDITEM_MP3URI, FEEDITEM_MP3FILE,
+				FEEDITEM_SIZE, FEEDITEM_BOOKMARK, FEEDITEM_COMPLETED,
+				FEEDITEM_DOWNLOADED, FEEDITEM_LINK, FEEDITEM_PUBDATE,
+				FEEDITEM_CATEGORY, FEEDITEM_AUTHOR, FEEDITEM_COMMENTS,
+				FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID + "=" + feedId, null,
+				null, null, null, null);
+		if (c == null || !c.moveToFirst()) {
+			Log.w(TAG, "No feed items for: "+feedId);
+		}else{
+			do{
+				long id = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_ID));
+				String title = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
+				String mp3uri = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3URI));
+				String mp3file = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3FILE));
+				long size = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_SIZE));
+				int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
+				short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
+				short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
+				String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
+				String pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
+				String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
+				String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
+				String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
+				String description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
+				FeedItem item = new FeedItem(id, feedId, title, mp3uri, mp3file,
+						size, bookmark, completed != 0, downloaded != 0, link,
+						pubdate, category, author, comments, description);
+				items.add(item);
+			}while(c.moveToNext());
+		}
+		Util.closeCursor(c);
+		return items;
 	}
 
 	public FeedItem fetchFeedItem(long feedId, long feedItemId) throws SQLException {
