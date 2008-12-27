@@ -9,6 +9,9 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -42,6 +45,7 @@ public class ACast extends ListActivity {
 	private static final int REFRESH_ID = Menu.FIRST + 3;
 	private static final int INFO_ID = Menu.FIRST + 4;
 	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
+	private static final int DOWNLOADMANAGER_ID = Menu.FIRST + 6;
 
 	private ACastDbAdapter mDbHelper;
 
@@ -104,6 +108,8 @@ public class ACast extends ListActivity {
 		item.setIcon(android.R.drawable.ic_menu_info_details);
 		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
 		item.setIcon(android.R.drawable.stat_sys_download);
+		item = menu.add(Menu.NONE, DOWNLOADMANAGER_ID, Menu.NONE, R.string.downloadmanager);
+		item.setIcon(android.R.drawable.stat_sys_download);
 		return true;
 	}
 
@@ -132,7 +138,13 @@ public class ACast extends ListActivity {
 			}
 			return true;
 		}else if(REFRESH_ID == item.getItemId()){
-			refreshFeeds();
+			new Thread(){
+				@Override
+				public void run() {
+					refreshFeeds();
+					handler.sendEmptyMessage(0);
+				}
+			}.start();
 			return true;
 		}else if(INFO_ID == item.getItemId()){
 			if(pos >= 0){
@@ -144,8 +156,23 @@ public class ACast extends ListActivity {
 				downloadAll(adapter.getItem(pos));
 			}
 			return true;
+		}else if(DOWNLOADMANAGER_ID == item.getItemId()){
+			downloadManager();
+			return true;
 		}
 		return super.onMenuItemSelected(featureId, item);
+	}
+	
+	private Handler handler = new Handler(){
+		@Override
+		public void handleMessage(Message msg) {
+			fillData();
+		}
+	};
+
+	private void downloadManager() {
+		Intent i = new Intent(this, DownloadList.class);
+		startActivityForResult(i, 0);
 	}
 
 	private void createFeed() {

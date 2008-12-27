@@ -22,6 +22,7 @@
 	<string name="removefeed">Remove feed</string>
 	<string name="refreshfeeds">Refresh all feeds</string>
 	<string name="downloadall">Download all</string>
+	<string name="downloadmanager">Download manager</string>
 	<!-- feeditem_list menu items -->
 	<string name="playitem">Play item</string>
 	<string name="downloaditem">Download item</string>

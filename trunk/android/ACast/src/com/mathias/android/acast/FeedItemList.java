@@ -52,7 +52,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	
 	private ProgressDialog pd;
 	
-	private Integer currPos;
+//	private Integer currPos;
 
 	private IDownloadService binder;
 	
@@ -110,17 +110,18 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-		currPos = position;
-		openOptionsMenu();
+//		currPos = position;
+//		openOptionsMenu();
+		playItem(adapter.getItem(position));
 	}
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
 		int pos = getSelectedItemPosition();
-		if(currPos != null){
-			pos = currPos;
-			currPos = null;
-		}
+//		if(currPos != null){
+//			pos = currPos;
+//			currPos = null;
+//		}
 		if(pos >= 0 && PLAY_ID == menuitem.getItemId()){
 			FeedItem item = adapter.getItem(pos);
 			playItem(item);

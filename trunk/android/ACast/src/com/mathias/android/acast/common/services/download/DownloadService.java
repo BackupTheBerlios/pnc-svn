@@ -109,9 +109,9 @@ public class DownloadService extends Service implements ProgressListener {
 			switch(msg.what){
 			case 0:
 				broadcastCompleted(msg.arg1);
-				DownloadItem remove = items.remove(msg.arg1);
-				String r = (remove != null ? remove.getDestfile() : "remove is null");
-				Log.d(TAG, "broadcastCompleted: "+r);
+//				DownloadItem remove = items.remove(msg.arg1);
+//				String r = (remove != null ? remove.getDestfile() : "remove is null");
+//				Log.d(TAG, "broadcastCompleted: "+r);
 				break;
 			case 1:
 				String s = msg.obj.toString();
@@ -119,9 +119,9 @@ public class DownloadService extends Service implements ProgressListener {
 					s = ((Exception)msg.obj).getMessage();
 				}
 				broadcastException(msg.arg1, s);
-				remove = items.remove(msg.arg1);
-				r = (remove != null ? remove.getDestfile() : "remove is null");
-				Log.d(TAG, "broadcastException: "+r);
+//				remove = items.remove(msg.arg1);
+//				r = (remove != null ? remove.getDestfile() : "remove is null");
+//				Log.d(TAG, "broadcastException: "+r);
 				break;
 			}
 		}
@@ -157,7 +157,7 @@ public class DownloadService extends Service implements ProgressListener {
 				continueDownload = false;
 			}
 			new File(destfile).delete();
-			items.remove(externalid);
+//			items.remove(externalid);
 		}
 		@Override
 		public void cancelAndRemoveAll() throws RemoteException {

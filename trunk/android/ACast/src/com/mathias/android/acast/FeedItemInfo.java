@@ -1,5 +1,7 @@
 package com.mathias.android.acast;
 
+import java.io.File;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.text.Html;
@@ -70,6 +72,11 @@ public class FeedItemInfo extends Activity {
 		}else{
 			category.setVisibility(View.GONE);
 		}
+
+		long fileSize = new File(item.getMp3file()).length();
+		String sizeVal = "Size: "+fileSize+"/"+item.getSize();
+		TextView size = (TextView) findViewById(R.id.size);
+		size.setText(sizeVal);
 
 		String descVal = item.getDescription();
         TextView description = (TextView) findViewById(R.id.description);

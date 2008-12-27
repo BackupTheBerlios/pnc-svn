@@ -1,9 +1,10 @@
 ACast
 -----
-Play/Pause button, Bigger buttons, black and white? Use styled ic_media_play/pause?
+bug: show error when feed can not be added
 Bug: Downloads can not handle screen timeout, when screen locks audio stops
-Refresh feed should not clear -downloads-/bookmark/completed
 Bug: info for feed item is not shown when opening player with notifiction
+Refresh feed should not clear -downloads-/bookmark/completed
+Play/Pause button, Bigger buttons, black and white? Use styled ic_media_play/pause?
 ContentProvider, MIME (text/xml) assosiaction, should trigger intent for acast. Update android manifest.
 <intent-filter>
 	<action android:name="android.intent.action.VIEW" />
@@ -12,7 +13,11 @@ ContentProvider, MIME (text/xml) assosiaction, should trigger intent for acast. 
 	<data android:mimeType="audio/x-scpls" />
 	<data android:mimeType="audio/x-mpegurl" />
 </intent-filter>
+What happens if feed already exist? Show dialog...
+Downloads not visible. How to go to file download page? Main page menu item.
+Show activity name in title
 
+LOW: Show info on right side of screen during landscape mode?
 LOW: Bug: MediaPlayer thread is started and never really released?
 LOW: rotate with gravity or keyboard?
 LOW: All Download progress screen. Queue downloads, show download queue and current progress. notification on completion/queue empty
@@ -20,6 +25,9 @@ LOW: show kb/s for download progress window
 LOW: Username/password protected RSS
 LOW: Use default media player with broadcast sender.
 
+- Show file size and actual file size
+- thread RSS parsing and html get to awoid wait/force kill dialog.
+- When lock screen and enable screen, Player controls are not working. 
 - LOW: Download all feed items in sequence (if not already downloaded)
 - Change notification icon to main(RSS) icon (to same as main icon?)
 - Add icon to menu items

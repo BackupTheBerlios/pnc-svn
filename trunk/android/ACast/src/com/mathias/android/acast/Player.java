@@ -50,7 +50,7 @@ public class Player extends Activity implements ServiceConnection {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		Log.d(TAG, "onCreate");
+		Log.d(TAG, "onCreate "+getTaskId());
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.player);
 		
@@ -221,17 +221,23 @@ public class Player extends Activity implements ServiceConnection {
 
 	@Override
 	protected void onPause() {
-		Log.d(TAG, "onPause");
+		Log.d(TAG, "onPause "+getTaskId());
 		super.onPause();
-		if(binder != null){
-			unbindService(this);
-			binder = null;
-		}
+	}
+	
+	@Override
+	protected void onStop() {
+		Log.d(TAG, "onStop "+getTaskId());
+		super.onStop();
 	}
 	
 	@Override
 	protected void onDestroy() {
-		Log.d(TAG, "onDestroy: isFinishing="+isFinishing());
+		Log.d(TAG, "onDestroy: isFinishing="+isFinishing()+" taskid"+getTaskId());
+		if(binder != null){
+			unbindService(this);
+			binder = null;
+		}
 		mDbHandler.close();
 		mDbHandler = null;
 		super.onDestroy();
@@ -239,25 +245,27 @@ public class Player extends Activity implements ServiceConnection {
 
 	@Override
 	protected void onResume() {
-		Log.d(TAG, "onResume");
+		Log.d(TAG, "onResume "+getTaskId());
 		super.onResume();
 		try {
 			if(binder != null){
 				if(!binder.isPlaying()){
-					if(item.isDownloaded()){
-						binder.initItem(item.getId(), item.getMp3file(), false);
-					}else{
-						binder.initItem(item.getId(), item.getMp3uri(), true);
-					}
-					binder.setCurrentPosition(item.getBookmark());
-					binder.play();
-					playpause.setImageResource(R.drawable.pause);
-					//playpause.setImageResource(android.R.drawable.ic_media_pause);
-				}else{
+//					if(item.isDownloaded()){
+//						binder.initItem(item.getId(), item.getMp3file(), false);
+//					}else{
+//						binder.initItem(item.getId(), item.getMp3uri(), true);
+//					}
+//					binder.setCurrentPosition(item.getBookmark());
+//					binder.play();
 					playpause.setImageResource(R.drawable.play);
 					//playpause.setImageResource(android.R.drawable.ic_media_play);
+				}else{
+					playpause.setImageResource(R.drawable.pause);
+					//playpause.setImageResource(android.R.drawable.ic_media_pause);
 				}
 				seekbar.setMax(binder.getDuration());
+			}else{
+				Log.w(TAG, "binder is null");
 			}
 		} catch (Exception e) {
 			Log.e(TAG, item.getMp3file(), e);
@@ -267,7 +275,7 @@ public class Player extends Activity implements ServiceConnection {
 
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
-		Log.d(TAG, "onServiceConnected: "+name);
+		Log.d(TAG, "onServiceConnected: "+getTaskId()+" "+name);
 		binder = IMediaService.Stub.asInterface(service);
 		try {
 			if(item == null){
@@ -326,7 +334,7 @@ public class Player extends Activity implements ServiceConnection {
 
 	@Override
 	public void onServiceDisconnected(ComponentName name) {
-		Log.d(TAG, "onServiceDisconnected: "+name);
+		Log.d(TAG, "onServiceDisconnected: "+getTaskId()+" "+name);
 	}
 
 }

@@ -9,7 +9,11 @@ import android.app.Service;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
 import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
@@ -30,25 +34,37 @@ public class MediaService extends Service {
     private NotificationManager mNM;
     
     final RemoteCallbackList<IMediaServiceCallback> mCallbacks = new RemoteCallbackList<IMediaServiceCallback>();
-    
-    private class MediaPlayerThread extends Thread {
-		@Override
-		public void run() {
-			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
-			Log.d(TAG, "Starting MediaPlayerThread");
-			mp.start();
-			Log.d(TAG, "Exiting MediaPlayerThread");
-		}
-	}
+
+	public Handler mediahandler;
 
     @Override
 	public void onCreate() {
+    	
+    	new Thread(){
+    		@Override
+    		public void run() {
+    			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
+
+    			Looper.prepare();
+    			
+    			mediahandler = new Handler(){
+    				@Override
+    				public void handleMessage(Message msg) {
+    					Log.d(TAG, "Starting MediaPlayerThread");
+    					if(mp != null){
+        					mp.start();
+    					}
+    					Log.d(TAG, "Exiting MediaPlayerThread");
+    				}
+    			};
+    			
+    			Looper.loop();
+    		}
+    	}.start();
+    	
     	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
-        // Display a notification about us starting.
 		showNotification();
-
-		// setForeground(true);
 	}
 
 	@Override
@@ -81,7 +97,7 @@ public class MediaService extends Service {
 		public void play() throws RemoteException {
 			showNotification();
 			if(mp != null && !mp.isPlaying()){
-				new MediaPlayerThread().start();
+				mediahandler.sendEmptyMessage(0);
 			}
 		}
 		@Override
