@@ -8,9 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -46,6 +47,7 @@ public class ACast extends ListActivity {
 	private static final int INFO_ID = Menu.FIRST + 4;
 	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
 	private static final int DOWNLOADMANAGER_ID = Menu.FIRST + 6;
+	private static final int SETTINGS_ID = Menu.FIRST + 7;
 
 	private ACastDbAdapter mDbHelper;
 
@@ -110,6 +112,8 @@ public class ACast extends ListActivity {
 		item.setIcon(android.R.drawable.stat_sys_download);
 		item = menu.add(Menu.NONE, DOWNLOADMANAGER_ID, Menu.NONE, R.string.downloadmanager);
 		item.setIcon(android.R.drawable.stat_sys_download);
+		item = menu.add(Menu.NONE, SETTINGS_ID, Menu.NONE, R.string.settings);
+		item.setIcon(android.R.drawable.stat_sys_download);
 		return true;
 	}
 
@@ -157,7 +161,10 @@ public class ACast extends ListActivity {
 			}
 			return true;
 		}else if(DOWNLOADMANAGER_ID == item.getItemId()){
-			downloadManager();
+			showDownloadManager();
+			return true;
+		}else if(SETTINGS_ID == item.getItemId()){
+			showSettings();
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, item);
@@ -170,7 +177,12 @@ public class ACast extends ListActivity {
 		}
 	};
 
-	private void downloadManager() {
+	private void showSettings() {
+		Intent i = new Intent(this, SettingsEdit.class);
+		startActivityForResult(i, 0);
+	}
+
+	private void showDownloadManager() {
 		Intent i = new Intent(this, DownloadList.class);
 		startActivityForResult(i, 0);
 	}
@@ -217,9 +229,14 @@ public class ACast extends ListActivity {
 	}
 
 	private void downloadAll(Feed feed) {
-		Intent i = new Intent(this, DownloadList.class);
-		i.putExtra(ACast.FEED, feed);
-		startActivityForResult(i, 0);
+		WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		WifiInfo info = wifiManager.getConnectionInfo();
+		boolean connected = info != null && info.getSSID() != null;
+		if(!settings.isOnlyWifiDownload() || connected){
+			Intent i = new Intent(this, DownloadList.class);
+			i.putExtra(ACast.FEED, feed);
+			startActivityForResult(i, 0);
+		}
 	}
 
 	@Override
@@ -236,7 +253,7 @@ public class ACast extends ListActivity {
 		super.onDestroy();
 	}
 
-	private static class FeedAdapter extends BaseAdapter {
+	private class FeedAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
 		private List<Feed> feeds;
@@ -269,6 +286,7 @@ public class ACast extends ListActivity {
                 holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
 
                 convertView.setTag(holder);
+
             } else {
                 // Get the ViewHolder back to get fast access to the TextView
                 // and the ImageView.
@@ -283,6 +301,15 @@ public class ACast extends ListActivity {
             holder.text.setText(feeds.get(position).getTitle());
             String author = feeds.get(position).getAuthor();
             holder.text2.setText((author != null ? author : ""));
+
+//    		OnLongClickListener listener = new OnLongClickListener(){
+//    			@Override
+//    			public boolean onLongClick(View v) {
+//    				ACast.this.openOptionsMenu();
+//    				return true;
+//    			}
+//    		};
+//    		parent.setOnLongClickListener(listener);
 
             return convertView;
 		}
@@ -302,12 +329,12 @@ public class ACast extends ListActivity {
 			return feeds.get(position).getId();
 		}
 
-	    private static class ViewHolder {
-	        ImageView icon;
-	        TextView text;
-	        TextView text2;
-	    }
-
 	}
+
+    private static class ViewHolder {
+        ImageView icon;
+        TextView text;
+        TextView text2;
+    }
 
 }

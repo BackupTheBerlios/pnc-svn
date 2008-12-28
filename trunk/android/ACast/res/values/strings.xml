@@ -12,6 +12,7 @@
 		\'Add\' button. Podcasts can for example be found at podcastalley.com
 	</string>
 	<string name="noresume">No feed item to resume!</string>
+	<string name="settings">Settings</string>
 	<!-- feed_list -->
 	<string name="nofeeditems">No feed items!</string>
 	<!-- feeditem_info -->

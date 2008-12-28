@@ -18,6 +18,7 @@
         <activity android:name=".FeedInfo"/>
         <activity android:name=".FeedItemInfo"/>
         <activity android:name=".DownloadList"/>
+        <activity android:name=".SettingsEdit"/>
         <service android:name=".common.services.media.MediaService"/>
         <service android:name=".common.services.download.DownloadService"/>
     </application>

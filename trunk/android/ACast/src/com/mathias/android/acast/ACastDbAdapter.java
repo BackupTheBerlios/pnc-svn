@@ -153,9 +153,16 @@ public class ACastDbAdapter {
 		long id = createFeed(feed.getTitle(), feed.getUri(), feed.getIcon(),
 				feed.getLink(), feed.getPubdate(), feed.getCategory(), feed
 						.getAuthor(), feed.getDescription());
+		if(id == -1){
+			Log.w(TAG, "Could not insert feed!");
+			return false;
+		}
 		deleteFeedItems(id);
 		for (FeedItem item : feed.getItems()) {
-			addFeedItem(id, item);
+			if(addFeedItem(id, item) == -1){
+				Log.w(TAG, "Could not insert feed item!");
+				return false;
+			}
 		}
 		return true;
 	}
@@ -356,7 +363,10 @@ public class ACastDbAdapter {
 				.getAuthor(), feed.getDescription());
 		deleteFeedItems(id);
 		for (FeedItem item : feed.getItems()) {
-			addFeedItem(id, item);
+			if(addFeedItem(id, item) == -1){
+				Log.w(TAG, "Could not update/add feed item!");
+				return false;
+			}
 		}
 		return true;
 	}

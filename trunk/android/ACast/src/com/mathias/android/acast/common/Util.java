@@ -11,6 +11,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.database.Cursor;
@@ -19,6 +20,7 @@ import android.graphics.ColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.Html.ImageGetter;
 import android.util.Log;
+import android.view.Window;
 
 public abstract class Util {
 
@@ -59,6 +61,21 @@ public abstract class Util {
 		builder.setPositiveButton(android.R.string.ok, null);
 		builder.setCancelable(true);
 		builder.show();
+	}
+	
+	public static void requestProgressBar(Activity act){
+		act.requestWindowFeature(Window.FEATURE_PROGRESS);
+		act.setProgressBarIndeterminateVisibility(false);
+	}
+	
+	public static void showProgressBar(Activity act){
+//		act.getWindow().setFeatureInt(Window.FEATURE_PROGRESS, 0);
+		act.setProgressBarIndeterminateVisibility(true);
+	}
+	
+	public static void hideProgressBar(Activity act){
+//		act.getWindow().setFeatureInt(Window.FEATURE_PROGRESS, 10000);
+		act.setProgressBarIndeterminateVisibility(false);
 	}
 	
 	public interface ProgressListener{

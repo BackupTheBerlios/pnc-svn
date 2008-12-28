@@ -88,7 +88,7 @@ public class RssUtil implements ContentHandler {
 						currentFeedItem.setMp3file(file.getAbsolutePath());
 						currentFeedItem.setDownloaded(file.exists());
 					}else if("length".equalsIgnoreCase(attsLocalName)){
-						currentFeedItem.setSize(Long.parseLong(value));
+						currentFeedItem.setSize(Long.parseLong(value.trim()));
 					}
 				}
 			}
@@ -209,6 +209,8 @@ public class RssUtil implements ContentHandler {
 		String file = File.separator + "sdcard" + File.separator + "acast"
 				+ File.separator + feed.getTitle() + File.separator
 				+ new File(uri).getName();
+		file = file.replaceAll("|", "");
+		file = file.replaceAll(":", "");
 		return new File(file);
 	}
 

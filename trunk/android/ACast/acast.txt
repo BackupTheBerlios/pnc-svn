@@ -16,6 +16,24 @@ ContentProvider, MIME (text/xml) assosiaction, should trigger intent for acast. 
 What happens if feed already exist? Show dialog...
 Downloads not visible. How to go to file download page? Main page menu item.
 Show activity name in title
+Settings dialog: auto delete, auto refresh all feeds at spec time (hourly, daily, week, month), auto download. Only download through wifi. Resume partly downloaded.
+select podcasts from podgrove.com, podcastalley.com?
+Other podcatchers: Dogg Catcher, NPE, Podcaster?, PodWeasel
+Import through OPML
+On multidownload, press (drag?) to activate/setcurrent download of podcast.
+Longpress to open menu for feed/feeditem
+Pause when incoming call, resume afterwards.
+Support video
+Pause/play with button on headset
+Show partial downloads
+System tool to prevent phone from sleeping?
+Remove from queue
+Download complete notification, whole queue or each download?
+Show if streaming when playing
+Use toast more
+Show if new podcasts are available in feed list.
+Show if any podcasts is ongoing in feed list.
+Multiple Player activites
 
 LOW: Show info on right side of screen during landscape mode?
 LOW: Bug: MediaPlayer thread is started and never really released?

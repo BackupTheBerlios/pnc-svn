@@ -17,15 +17,17 @@
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
  
-		<ImageButton android:id="@+id/playpause" 
-			android:src="@drawable/pause" 
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
+		<ImageButton android:id="@+id/playpause"
+			android:gravity="center"
+			android:layout_gravity="center"
+			android:src="@drawable/pause"
+			android:layout_width="130sp"
+			android:layout_height="130sp" />
 	
 		<ImageButton android:id="@+id/stop" 
-			android:src="@drawable/stop" 
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
+			android:src="@drawable/stop"
+			android:layout_width="130sp"
+			android:layout_height="130sp" />
 	</LinearLayout>
 
 	<LinearLayout android:orientation="horizontal" 
@@ -34,19 +36,20 @@
  
 		<ImageButton android:id="@+id/rewind" 
 			android:src="@drawable/rewind" 
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
+			android:layout_width="130sp"
+			android:layout_height="130sp" />
 	
 		<ImageButton android:id="@+id/forward" 
 			android:src="@drawable/forward" 
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
+			android:layout_width="130sp"
+			android:layout_height="130sp" />
 
 	</LinearLayout>
 	
 	<SeekBar android:id="@+id/seekbar" 
 		android:layout_width="fill_parent"
-		android:layout_height="wrap_content" />
+		android:scaleType="fitXY" 
+		android:layout_height="40sp" />
 
 	<ScrollView 
 	    android:layout_width="fill_parent"

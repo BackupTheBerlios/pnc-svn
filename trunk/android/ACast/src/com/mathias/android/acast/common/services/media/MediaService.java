@@ -39,7 +39,7 @@ public class MediaService extends Service {
 
     @Override
 	public void onCreate() {
-    	
+
     	new Thread(){
     		@Override
     		public void run() {
