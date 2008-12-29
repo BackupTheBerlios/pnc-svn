@@ -11,6 +11,8 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.text.Html;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
@@ -195,6 +197,22 @@ public class Player extends Activity implements ServiceConnection {
 		progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
 	}
 	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		MenuItem item = menu.add(0, 0, 0, R.string.info);
+		item.setIcon(android.R.drawable.ic_menu_info_details);
+		return true;
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem mitem) {
+		Intent i = new Intent(this, FeedItemInfo.class);
+		i.putExtra(ACast.FEEDITEM, item);
+		startActivity(i);
+		return true;
+	}
+
 	private Handler progressHandler = new Handler(){
 		@Override
 		public void handleMessage(Message not_used) {

@@ -7,35 +7,53 @@ import java.util.List;
 import android.app.ListActivity;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+
+import com.mathias.android.acast.podcast.Settings;
 
 public class SettingsEdit extends ListActivity {
 
-	private static final List<SettingsItem> settings = new ArrayList<SettingsItem>();
+	private static final String TAG = SettingsEdit.class.getSimpleName();
 
+	private static final List<SettingsItem> items = new ArrayList<SettingsItem>();
+	
 	static {
-		settings.add(new SettingsItem(0, "Only Wifi download", "Only automatic download through Wifi", true));
-		settings.add(new SettingsItem(0, "Only Wifi stream", "Only stream audio through Wifi", true));
-		settings.add(new SettingsItem(0, "Auto delete", "Downloaded items are automatically deleted during feed refresh", true));
-		settings.add(new SettingsItem(0, "Auto refresh", "Auto refresh all feeds at spec time (hourly, daily, week, month)", true));
-		settings.add(new SettingsItem(0, "Auto download", "Download all feeds during auto refresh", true));
-		settings.add(new SettingsItem(0, "Resume partly downloaded", "Resume partly downloaded files", true));
-		Collections.sort(settings);
+		items.add(new SettingsItem(Settings.ONLYWIFIDOWNLOAD, "Only Wifi download", "Only automatic download through Wifi"));
+		items.add(new SettingsItem(Settings.ONLYWIFISTREAM, "Only Wifi stream", "Only stream audio through Wifi"));
+		items.add(new SettingsItem(Settings.AUTODELETE, "Auto delete", "Downloaded items are automatically deleted during feed refresh"));
+		items.add(new SettingsItem(Settings.AUTOREFRESH, "Auto refresh", "Auto refresh all feeds at spec time (hourly, daily, week, month)"));
+		items.add(new SettingsItem(Settings.AUTODOWNLOAD, "Auto download", "Download all feeds during auto refresh"));
+		items.add(new SettingsItem(Settings.RESUMEPARTLYDOWNLOADED, "Resume partly downloaded", "Resume partly downloaded files"));
+		items.add(new SettingsItem(Settings.AUTODELETECOMPLETED, "Auto delete after played", "Auto delete on completion played"));
+		items.add(new SettingsItem(Settings.AUTOPLAYNEXT, "Auto-play next", "Auto-play next unplayed Episode when an Episode has finished playing."));
+		Collections.sort(items);
 	}
+
+	private ACastDbAdapter mDbHelper;
+	
+	private Settings settings;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.settings_edit);
 		setListAdapter(new SettingsAdapter(this));
+		
+		mDbHelper = new ACastDbAdapter(this);
+		mDbHelper.open();
+		
+		settings = mDbHelper.fetchSettings();
 	}
 
-	private static class SettingsAdapter extends BaseAdapter {
+	private class SettingsAdapter extends BaseAdapter {
 		private LayoutInflater mInflater;
 
 		public SettingsAdapter(Context cxt){
@@ -43,18 +61,18 @@ public class SettingsEdit extends ListActivity {
 		}
 		@Override
 		public int getCount() {
-			return settings.size();
+			return items.size();
 		}
 		@Override
 		public Object getItem(int position) {
-			return settings.get(position);
+			return items.get(position);
 		}
 		@Override
 		public long getItemId(int position) {
-			return settings.get(position).id;
+			return items.get(position).id;
 		}
 		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
+		public View getView(final int position, View convertView, ViewGroup parent) {
             // A ViewHolder keeps references to children views to avoid unneccessary calls
             // to findViewById() on each row.
             ViewHolder holder;
@@ -70,6 +88,15 @@ public class SettingsEdit extends ListActivity {
                 holder.title = (TextView) convertView.findViewById(R.id.title);
                 holder.description = (TextView) convertView.findViewById(R.id.description);
                 holder.selected = (CheckBox) convertView.findViewById(R.id.selected);
+                holder.selected.setOnCheckedChangeListener(new OnCheckedChangeListener(){
+					@Override
+					public void onCheckedChanged(CompoundButton buttonView,
+							boolean isChecked) {
+						Log.d(TAG, "onCheckedChanged: "+position);
+						settings.setFlag(getItemId(position), isChecked);
+						mDbHelper.updateSettings(settings);
+					}
+                });
 
                 convertView.setTag(holder);
             } else {
@@ -80,32 +107,30 @@ public class SettingsEdit extends ListActivity {
 
             // Bind the data efficiently with the holder.
             
-            holder.title.setText(settings.get(position).title);
-            holder.description.setText(settings.get(position).description);
-            holder.selected.setChecked(settings.get(position).selected);
+            holder.title.setText(items.get(position).title);
+            holder.description.setText(items.get(position).description);
+            holder.selected.setChecked(settings.getFlag(getItemId(position)));
 
             return convertView;
 		}
 		
-	    private static class ViewHolder {
-	        TextView title;
-	        TextView description;
-	        CheckBox selected;
-	    }
-
 	}
 
+    private static class ViewHolder {
+        TextView title;
+        TextView description;
+        CheckBox selected;
+    }
+
 	private static class SettingsItem implements Comparable<SettingsItem> {
-		private int id;
+		private long id;
 		private String title;
 		private String description;
-		private boolean selected;
 
-		public SettingsItem(int id, String title, String description, boolean selected){
+		public SettingsItem(long id, String title, String description){
 			this.id = id;
 			this.title = title;
 			this.description = description;
-			this.selected = selected;
 		}
 
 		@Override

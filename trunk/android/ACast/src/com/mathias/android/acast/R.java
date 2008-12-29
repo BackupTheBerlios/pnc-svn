@@ -75,10 +75,11 @@ public final class R {
         public static final int feedadd_row=0x7f030006;
         public static final int feeditem_info=0x7f030007;
         public static final int feeditem_list=0x7f030008;
-        public static final int player=0x7f030009;
-        public static final int settings_edit=0x7f03000a;
-        public static final int settings_row=0x7f03000b;
-        public static final int videoplayer=0x7f03000c;
+        public static final int feeditem_row=0x7f030009;
+        public static final int player=0x7f03000a;
+        public static final int settings_edit=0x7f03000b;
+        public static final int settings_row=0x7f03000c;
+        public static final int videoplayer=0x7f03000d;
     }
     public static final class string {
         public static final int add=0x7f040003;

@@ -108,15 +108,15 @@ public class RssUtil implements ContentHandler {
 			if("channel".equalsIgnoreCase(p)){
 				if("title".equalsIgnoreCase(localName)){
 					feed.setTitle(characters);
-				}else if(isEmpty(uri) && "link".equalsIgnoreCase(localName)){
+				}else if(Util.isEmpty(uri) && "link".equalsIgnoreCase(localName)){
 					feed.setLink(characters);
 				}else if("pubDate".equalsIgnoreCase(localName)){
 					feed.setPubdate(characters);
 				}else if("category".equalsIgnoreCase(localName)){
 					String category = feed.getCategory();
-					if(!isEmpty(category)){
+					if(!Util.isEmpty(category)){
 						feed.setCategory(category + ", " + characters);
-					}else if(!isEmpty(characters)){
+					}else if(!Util.isEmpty(characters)){
 						feed.setCategory("Category: "+characters);
 					}
 				}else if("author".equalsIgnoreCase(localName)){
@@ -151,9 +151,9 @@ public class RssUtil implements ContentHandler {
 					currentFeedItem.setPubdate(characters);
 				}else if("category".equalsIgnoreCase(localName)){
 					String category = currentFeedItem.getCategory();
-					if(!isEmpty(category)){
+					if(!Util.isEmpty(category)){
 						currentFeedItem.setCategory(category + ", " + characters);
-					}else if(!isEmpty(characters)){
+					}else if(!Util.isEmpty(characters)){
 						currentFeedItem.setCategory("Category: "+characters);
 					}
 				}else if("author".equalsIgnoreCase(localName)){
@@ -209,12 +209,7 @@ public class RssUtil implements ContentHandler {
 		String file = File.separator + "sdcard" + File.separator + "acast"
 				+ File.separator + feed.getTitle() + File.separator
 				+ new File(uri).getName();
-		file = file.replaceAll("|", "");
-		file = file.replaceAll(":", "");
-		return new File(file);
+		return new File(Util.escapeFilename(file));
 	}
 
-	private static boolean isEmpty(String str){
-		return str == null || str.length() == 0;
-	}
 }

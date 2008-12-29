@@ -38,12 +38,6 @@ public class FeedAdd extends ListActivity {
 
 	private static final String TAG = FeedAdd.class.getSimpleName();
 
-	private static final int PARSERSS = 0;
-	private static final int SEARCHPODGROVE = 1;
-	private static final int SEARCHDIGITALPODCAST = 2;
-	private static final int TOP50PODCASTALLEY = 3;
-	private static final int IMPORTOPML = 4;
-
     private ACastDbAdapter mDbHelper;
 	
 	private SearchItemAdapter adapter;
@@ -52,7 +46,7 @@ public class FeedAdd extends ListActivity {
 
     private ProgressDialog progressDialog;
 
-	private Handler parsehandler;
+    private ParseThread parsethread;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -66,82 +60,8 @@ public class FeedAdd extends ListActivity {
 		adapter = new SearchItemAdapter(this);
 		setListAdapter(adapter);
 
-    	new Thread(){
-    		@Override
-    		public void run() {
-    			Looper.prepare();
-    			
-    			parsehandler = new Handler(){
-    				@Override
-    				public void handleMessage(Message msg) {
-						String resultstr = null;
-    					switch(msg.what){
-    					case PARSERSS:{
-    						// obj is String uri
-    						try {
-    							if(msg.obj != null){
-        							Feed feed = new RssUtil().parse(msg.obj.toString());
-        							mDbHelper.createFeed(feed);
-        							resultstr = "Added "+feed.getTitle();
-    							}else{
-        							resultstr = "Could not add feed";
-    							}
-    						} catch (Exception e) {
-    							Log.e(TAG, e.getMessage(), e);
-    							resultstr = e.getMessage();
-    						}
-							handler.sendMessage(handler.obtainMessage(0, resultstr));
-    						break;
-    					}
-    					case SEARCHPODGROVE:{
-    						// obj is String search
-							items = PodGroveUtil.parse(msg.obj.toString());
-							resultstr = "PodGrove found "+items.size()+" results";
-							Log.d(TAG, resultstr);
-							handler.sendMessage(handler.obtainMessage(0, resultstr));
-    						break;
-    					}
-    					case SEARCHDIGITALPODCAST:{
-    						// obj is String search
-							items = DigitalPodcastUtil
-									.parse(msg.obj.toString());
-							resultstr = "DigitalPodcast found "+items.size()+" results";
-							Log.d(TAG, resultstr);
-							handler.sendMessage(handler.obtainMessage(0, resultstr));
-    						break;
-    					}
-    					case TOP50PODCASTALLEY:{
-							try {
-								items = new PodcastAlleyUtil().parseTop50();
-								resultstr = "PodcastAlley Top 50; "+items.size()+" results";
-								Log.d(TAG, resultstr);
-								handler.sendMessage(handler.obtainMessage(0, resultstr));
-							} catch (Exception e) {
-    							Log.e(TAG, e.getMessage(), e);
-    							resultstr = e.getMessage();
-							}
-    						break;
-    					}
-    					case IMPORTOPML:{
-    						// obj is URI
-							try {
-								items = new OpmlUtil().parse(msg.obj.toString());
-								resultstr = "Import OPML found "+items.size()+" results";
-								Log.d(TAG, resultstr);
-								handler.sendMessage(handler.obtainMessage(0, resultstr));
-							} catch (Exception e) {
-    							Log.e(TAG, e.getMessage(), e);
-    							resultstr = e.getMessage();
-							}
-    						break;
-    					}
-    					}
-    				}
-    			};
-    			
-    			Looper.loop();
-    		}
-    	}.start();
+		parsethread = new ParseThread();
+		parsethread.start();
 
 		final EditText text = (EditText) findViewById(R.id.text);
 
@@ -153,10 +73,9 @@ public class FeedAdd extends ListActivity {
 				if(!uri.startsWith("http://")){
 					Toast.makeText(FeedAdd.this,
 							"You might want to add \'http://\' to RSS URL",
-							Toast.LENGTH_LONG);
-					//Util.showDialog(FeedEdit.this, "You might want to add \'http://\' to URL");
+							Toast.LENGTH_SHORT).show();
 				}
-				parsehandler.sendMessage(parsehandler.obtainMessage(PARSERSS, uri));
+				parsethread.parseRss(uri);
                 showDialog(0);
 			}
 		});
@@ -166,7 +85,7 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				String searchstr = text.getText().toString();
-				parsehandler.sendMessage(parsehandler.obtainMessage(SEARCHPODGROVE, searchstr));
+				parsethread.searchPodgrove(searchstr);
                 showDialog(0);
 			}
 		});
@@ -176,7 +95,7 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				String searchstr = text.getText().toString();
-				parsehandler.sendMessage(parsehandler.obtainMessage(SEARCHDIGITALPODCAST, searchstr));
+				parsethread.searchDigitalPodcast(searchstr);
                 showDialog(0);
 			}
 		});
@@ -185,7 +104,7 @@ public class FeedAdd extends ListActivity {
 		top50podcastalley.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				parsehandler.sendMessage(parsehandler.obtainMessage(TOP50PODCASTALLEY));
+				parsethread.top50PodcastAlley();
                 showDialog(0);
 			}
 		});
@@ -195,13 +114,13 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				String uristr = text.getText().toString();
-				parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTOPML, uristr));
+				parsethread.importOpml(uristr);
                 showDialog(0);
 			}
 		});
 
 	}
-	
+
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		progressDialog = new ProgressDialog(this);
@@ -219,29 +138,132 @@ public class FeedAdd extends ListActivity {
 		Util.showConfirmationDialog(this, msg, new OnClickListener(){
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				parsehandler.sendMessage(parsehandler.obtainMessage(PARSERSS, item.getUri()));
+				parsethread.parseRss(item.getUri());
 		        showDialog(0);
 			}
 		});
 	}
-
-	private Handler handler = new Handler(){
-		@Override
-		public void handleMessage(Message msg) {
-			progressDialog.hide();
-			Log.d(TAG, "adapter.notifyDataSetChanged()");
-			adapter.notifyDataSetChanged();
-			if(msg.obj != null){
-				Toast.makeText(FeedAdd.this, msg.obj.toString(), Toast.LENGTH_LONG);
-			}
-		}
-	};
 
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
 		mDbHelper = null;
 		super.onDestroy();
+	}
+	
+	private MyHandler handler = new MyHandler();
+
+	private class MyHandler {
+
+		public void hideProgessAndUpdateResultList(String msg) {
+			handler.sendMessage(handler.obtainMessage(0, msg));
+		}
+
+		private Handler handler = new Handler() {
+			@Override
+			public void handleMessage(Message msg) {
+				progressDialog.hide();
+				Log.d(TAG, "adapter.notifyDataSetChanged()");
+				adapter.notifyDataSetChanged();
+				if (msg.obj != null) {
+					Toast.makeText(FeedAdd.this, msg.obj.toString(),
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		};
+	}
+
+	private class ParseThread extends Thread {
+
+		private static final int PARSERSS = 0;
+		private static final int SEARCHPODGROVE = 1;
+		private static final int SEARCHDIGITALPODCAST = 2;
+		private static final int TOP50PODCASTALLEY = 3;
+		private static final int IMPORTOPML = 4;
+
+		private Handler parsehandler;
+		
+		public void parseRss(String uri){
+			parsehandler.sendMessage(parsehandler.obtainMessage(PARSERSS, uri));
+		}
+		public void searchPodgrove(String searchstr){
+			parsehandler.sendMessage(parsehandler.obtainMessage(SEARCHPODGROVE, searchstr));
+		}
+
+		public void top50PodcastAlley(){
+			parsehandler.sendMessage(parsehandler.obtainMessage(TOP50PODCASTALLEY));
+		}
+
+		public void searchDigitalPodcast(String searchstr){
+			parsehandler.sendMessage(parsehandler.obtainMessage(SEARCHDIGITALPODCAST, searchstr));
+		}
+
+		public void importOpml(String uristr){
+			parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTOPML, uristr));
+		}
+
+		@Override
+		public void run() {
+			Looper.prepare();
+			
+			parsehandler = new Handler(){
+				@Override
+				public void handleMessage(Message msg) {
+					String resultstr = null;
+					if(PARSERSS == msg.what){
+						// obj is String uri
+						try {
+							if(msg.obj != null){
+    							Feed feed = new RssUtil().parse(msg.obj.toString());
+    							mDbHelper.createFeed(feed);
+    							resultstr = "Added "+feed.getTitle();
+							}else{
+    							resultstr = "Could not add feed";
+							}
+						} catch (Exception e) {
+							Log.e(TAG, e.getMessage(), e);
+							resultstr = e.getMessage();
+						}
+						handler.hideProgessAndUpdateResultList(resultstr);
+					}else if(SEARCHPODGROVE == msg.what){
+						// obj is String search
+						items = PodGroveUtil.parse(msg.obj.toString());
+						resultstr = "PodGrove found "+items.size()+" results";
+						Log.d(TAG, resultstr);
+						handler.hideProgessAndUpdateResultList(resultstr);
+					}else if(SEARCHDIGITALPODCAST == msg.what){
+						// obj is String search
+						items = DigitalPodcastUtil
+								.parse(msg.obj.toString());
+						resultstr = "DigitalPodcast found "+items.size()+" results";
+						Log.d(TAG, resultstr);
+						handler.hideProgessAndUpdateResultList(resultstr);
+					}else if(TOP50PODCASTALLEY == msg.what){
+						try {
+							items = new PodcastAlleyUtil().parseTop50();
+							Log.d(TAG, "PodcastAlley Top 50; "+items.size()+" results");
+						} catch (Exception e) {
+							Log.e(TAG, e.getMessage(), e);
+							resultstr = e.getMessage();
+						}
+						handler.hideProgessAndUpdateResultList(resultstr);
+					}else if(IMPORTOPML == msg.what){
+						// obj is URI
+						try {
+							items = new OpmlUtil().parse(msg.obj.toString());
+							resultstr = "Import OPML found "+items.size()+" results";
+							Log.d(TAG, resultstr);
+						} catch (Exception e) {
+							Log.e(TAG, e.getMessage(), e);
+							resultstr = e.getMessage();
+						}
+						handler.hideProgessAndUpdateResultList(resultstr);
+					}
+				}
+			};
+			
+			Looper.loop();
+		}
 	}
 
 	private class SearchItemAdapter extends BaseAdapter {

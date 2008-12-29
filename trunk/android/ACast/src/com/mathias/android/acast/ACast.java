@@ -5,6 +5,7 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,6 +21,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -55,12 +57,28 @@ public class ACast extends ListActivity {
 	
 	private Settings settings;
 
+	private Bitmap defaultIcon;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.feed_list);
+
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
+		
+		defaultIcon = BitmapFactory.decodeResource(getResources(),
+				R.drawable.question);
+
+		getListView().setLongClickable(true);
+		getListView().setOnLongClickListener(new OnLongClickListener(){
+			@Override
+			public boolean onLongClick(View v) {
+				Log.d(TAG, "onLongClick pressed!");
+				return false;
+			}
+		});
+
 		fillData();
 
 		ImageButton resume = (ImageButton) findViewById(R.id.resume);
@@ -198,13 +216,18 @@ public class ACast extends ListActivity {
 		startActivityForResult(i, 0);
 	}
 
-	private void deleteFeed(Feed feed) {
-		for(FeedItem item : feed.getItems()){
-			boolean deleted = new File(item.getMp3file()).delete();
-			Log.d(TAG, "File deleted="+deleted+" file="+item.getMp3file());
-		}
-		mDbHelper.deleteFeed(feed.getId());
-		fillData();
+	private void deleteFeed(final Feed feed) {
+		Util.showConfirmationDialog(this, "Are you sure?", new DialogInterface.OnClickListener(){
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				for(FeedItem item : feed.getItems()){
+					boolean deleted = new File(item.getMp3file()).delete();
+					Log.d(TAG, "File deleted="+deleted+" file="+item.getMp3file());
+				}
+				mDbHelper.deleteFeed(feed.getId());
+				fillData();
+			}
+		});
 	}
 
 	private void refreshFeeds(){
@@ -257,13 +280,10 @@ public class ACast extends ListActivity {
 		
 		private LayoutInflater mInflater;
 		private List<Feed> feeds;
-		private Bitmap defaultIcon;
 		
 		public FeedAdapter(Context cxt, List<Feed> feeds){
 			this.feeds = feeds;
 			mInflater = LayoutInflater.from(cxt);
-			defaultIcon = BitmapFactory.decodeResource(cxt.getResources(),
-					R.drawable.question);
 		}
 
         @Override
@@ -301,15 +321,6 @@ public class ACast extends ListActivity {
             holder.text.setText(feeds.get(position).getTitle());
             String author = feeds.get(position).getAuthor();
             holder.text2.setText((author != null ? author : ""));
-
-//    		OnLongClickListener listener = new OnLongClickListener(){
-//    			@Override
-//    			public boolean onLongClick(View v) {
-//    				ACast.this.openOptionsMenu();
-//    				return true;
-//    			}
-//    		};
-//    		parent.setOnLongClickListener(listener);
 
             return convertView;
 		}

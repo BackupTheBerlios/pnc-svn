@@ -11,6 +11,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.DialogInterface.OnClickListener;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -58,6 +60,8 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	
 	private Settings settings;
 	
+	private Bitmap defaultIcon;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -75,13 +79,28 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		if(settings == null){
 			settings = new Settings(0, mFeedId, (long)0);
 		}
+
+		defaultIcon = BitmapFactory.decodeResource(getResources(),
+				R.drawable.question);
+
 		populateFields();
 	}
 
 	private void populateFields() {
 		if (mFeedId != null && mDbHelper != null) {
 			Feed feed = mDbHelper.fetchFeed(mFeedId);
-			adapter = new FeedItemAdapter(this, feed.getItems());
+
+	        String iconStr = feed.getIcon();
+	        ImageView icon = (ImageView) findViewById(R.id.feedrowicon);
+	        icon.setImageBitmap(iconStr != null ? BitmapFactory
+					.decodeFile(iconStr) : defaultIcon);
+	        TextView text = (TextView) findViewById(R.id.feedrowtext);
+	        text.setText(feed.getTitle());
+	        String author = feed.getAuthor();
+	        TextView text2 = (TextView) findViewById(R.id.feedrowtext2);
+	        text2.setText((author != null ? author : ""));
+
+	        adapter = new FeedItemAdapter(this, feed.getItems());
 			setListAdapter(adapter);
 		}
 	}
@@ -208,12 +227,17 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		pd.show();
 	}
 
-	private void deleteItem(FeedItem item){
+	private void deleteItem(final FeedItem item){
 		if(item != null && item.getMp3file() != null){
-			new File(item.getMp3file()).delete();
-			item.setDownloaded(false);
-			mDbHelper.updateFeedItem(item);
-			populateFields();
+			Util.showConfirmationDialog(this, "Are you sure?", new OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					new File(item.getMp3file()).delete();
+					item.setDownloaded(false);
+					mDbHelper.updateFeedItem(item);
+					populateFields();
+				}
+			});
 		}
 	}
 
@@ -291,17 +315,22 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 			this.items = items;
 			mInflater = LayoutInflater.from(cxt);
 		}
-
 		@Override
 		public int getCount() {
 			return items.size();
 		}
 		@Override
 		public FeedItem getItem(int position) {
+			if(position == -1){
+				return null;
+			}
 			return items.get(position);
 		}
 		@Override
 		public long getItemId(int position) {
+			if(position == -1){
+				return -1;
+			}
 			return getItem(position).getId();
 		}
 		@Override
@@ -314,7 +343,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
             // to reinflate it. We only inflate a new View when the convertView supplied
             // by ListView is null.
             if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.feed_row, null);
+                convertView = mInflater.inflate(R.layout.feeditem_row, null);
 
                 // Creates a ViewHolder and store references to the two children views
                 // we want to bind data to.

@@ -199,4 +199,21 @@ public abstract class Util {
 		return str.indexOf(exp, from);
 	}
 
+	public static String escapeFilename(String filename){
+		// Valid for NTFS? @  &  ^  '  ,  {  }  [  ]  $  =  !  -  #  (  )  %  +  ~  _  .
+		// Invalid for FAT: space \  /  ?  :  "  *  <  >  | 
+		filename = filename.replaceAll("?", "");
+		filename = filename.replaceAll("|", "");
+		filename = filename.replaceAll(":", "");
+		filename = filename.replaceAll("&", "");
+		filename = filename.replaceAll("*", "");
+		filename = filename.replaceAll("<", "");
+		filename = filename.replaceAll(">", "");
+		return filename;
+	}
+
+	public static boolean isEmpty(String str){
+		return str == null || str.length() == 0;
+	}
+
 }

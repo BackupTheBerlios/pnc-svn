@@ -2,17 +2,21 @@ package com.mathias.android.acast.podcast;
 
 public class Settings {
 
-	private static final long AUTODOWNLOAD = 1;
+	public static final long AUTODOWNLOAD = 1;
 
-	private static final long AUTOREFRESH = 2;
+	public static final long AUTOREFRESH = 2;
 	
-	private static final long ONLYWIFIDOWNLOAD = 4;
+	public static final long ONLYWIFIDOWNLOAD = 4;
 
-	private static final long ONLYWIFISTREAM = 8;
+	public static final long ONLYWIFISTREAM = 8;
 
-	private static final long AUTODELETE = 16;
+	public static final long AUTODELETE = 16;
 
-	private static final long RESUMEPARTLYDOWNLOADED = 32;
+	public static final long RESUMEPARTLYDOWNLOADED = 32;
+
+	public static final long AUTODELETECOMPLETED = 64;
+
+	public static final long AUTOPLAYNEXT = 128;
 
 	private Integer volume;
 	
@@ -50,76 +54,80 @@ public class Settings {
 		this.flags = flags;
 	}
 
+	public boolean getFlag(long id) {
+		return (flags & id) == id;
+	}
+
+	public void setFlag(long id, boolean value) {
+		if(value){
+			flags |= id;
+		}else{
+			flags &= ~id;
+		}
+	}
+
 	public boolean isAutodownload(){
-		return (flags & AUTODOWNLOAD) == AUTODOWNLOAD;
+		return getFlag(AUTODOWNLOAD);
 	}
 	
 	public void setAutodownload(boolean value){
-		if(value){
-			flags |= AUTODOWNLOAD;
-		}else{
-			flags &= ~AUTODOWNLOAD;
-		}
+		setFlag(AUTODOWNLOAD, value);
 	}
 
 	public boolean isAutorefresh(){
-		return (flags & AUTOREFRESH) == AUTOREFRESH;
+		return getFlag(AUTOREFRESH);
 	}
 	
 	public void setAutorefresh(boolean value){
-		if(value){
-			flags |= AUTOREFRESH;
-		}else{
-			flags &= ~AUTOREFRESH;
-		}
+		setFlag(AUTOREFRESH, value);
 	}
 
 	public boolean isOnlyWifiDownload(){
-		return (flags & ONLYWIFIDOWNLOAD) == ONLYWIFIDOWNLOAD;
+		return getFlag(ONLYWIFIDOWNLOAD);
 	}
 	
 	public void setOnlyWifiDownload(boolean value){
-		if(value){
-			flags |= ONLYWIFIDOWNLOAD;
-		}else{
-			flags &= ~ONLYWIFIDOWNLOAD;
-		}
+		setFlag(ONLYWIFIDOWNLOAD, value);
 	}
 
 	public boolean isOnlyWifiStream(){
-		return (flags & ONLYWIFISTREAM) == ONLYWIFISTREAM;
+		return getFlag(ONLYWIFISTREAM);
 	}
 	
 	public void setOnlyWifiStream(boolean value){
-		if(value){
-			flags |= ONLYWIFISTREAM;
-		}else{
-			flags &= ~ONLYWIFISTREAM;
-		}
+		setFlag(ONLYWIFISTREAM, value);
 	}
 
 	public boolean isAutoDelete(){
-		return (flags & AUTODELETE) == AUTODELETE;
+		return getFlag(AUTODELETE);
 	}
 	
 	public void setAutoDelete(boolean value){
-		if(value){
-			flags |= AUTODELETE;
-		}else{
-			flags &= ~AUTODELETE;
-		}
+		setFlag(AUTODELETE, value);
 	}
 
 	public boolean isResumePartly(){
-		return (flags & RESUMEPARTLYDOWNLOADED) == RESUMEPARTLYDOWNLOADED;
+		return getFlag(RESUMEPARTLYDOWNLOADED);
 	}
 	
 	public void setResumePartly(boolean value){
-		if(value){
-			flags |= RESUMEPARTLYDOWNLOADED;
-		}else{
-			flags &= ~RESUMEPARTLYDOWNLOADED;
-		}
+		setFlag(RESUMEPARTLYDOWNLOADED, value);
+	}
+
+	public boolean isAutoDeleteCompleted(){
+		return getFlag(AUTODELETECOMPLETED);
+	}
+	
+	public void setAutoDeleteCompleted(boolean value){
+		setFlag(AUTODELETECOMPLETED, value);
+	}
+
+	public boolean isAutoPLayNext(){
+		return getFlag(AUTOPLAYNEXT);
+	}
+	
+	public void setAutoPlayNext(boolean value){
+		setFlag(AUTOPLAYNEXT, value);
 	}
 
 }

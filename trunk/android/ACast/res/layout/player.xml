@@ -14,6 +14,7 @@
 		android:layout_height="wrap_content" />
 
 	<LinearLayout android:orientation="horizontal" 
+		android:gravity="center"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
  
@@ -28,9 +29,11 @@
 			android:src="@drawable/stop"
 			android:layout_width="130sp"
 			android:layout_height="130sp" />
+
 	</LinearLayout>
 
 	<LinearLayout android:orientation="horizontal" 
+		android:gravity="center"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
  
@@ -38,7 +41,7 @@
 			android:src="@drawable/rewind" 
 			android:layout_width="130sp"
 			android:layout_height="130sp" />
-	
+
 		<ImageButton android:id="@+id/forward" 
 			android:src="@drawable/forward" 
 			android:layout_width="130sp"
