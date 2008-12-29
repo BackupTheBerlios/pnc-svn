@@ -281,12 +281,13 @@ public class Player extends Activity implements ServiceConnection {
 			if(item == null){
 				long id = binder.getExternalId();
 				item = mDbHandler.fetchFeedItem(id);
-				TextView title = (TextView) findViewById(R.id.title);
-				title.setText(item.getTitle());
 			}
 			if(item == null){
 				return;
 			}
+			TextView title = (TextView) findViewById(R.id.title);
+			title.setText(item.getTitle());
+
 			binder.registerCallback(mCallback);
 			if (binder.isPlaying()
 					&& ((item.isDownloaded() && binder.getLocator().equals(

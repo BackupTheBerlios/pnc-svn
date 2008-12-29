@@ -26,11 +26,11 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.mathias.android.acast.common.RssUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
-import com.mathias.android.acast.rss.RssUtil;
 
 public class ACast extends ListActivity {
 
@@ -188,12 +188,12 @@ public class ACast extends ListActivity {
 	}
 
 	private void createFeed() {
-		Intent i = new Intent(this, FeedEdit.class);
+		Intent i = new Intent(this, FeedAdd.class);
 		startActivityForResult(i, 0);
 	}
 
 	private void editFeed(long id) {
-		Intent i = new Intent(this, FeedEdit.class);
+		Intent i = new Intent(this, FeedAdd.class);
 		i.putExtra(KEY, id);
 		startActivityForResult(i, 0);
 	}

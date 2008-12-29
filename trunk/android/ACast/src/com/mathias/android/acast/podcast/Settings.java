@@ -20,9 +20,10 @@ public class Settings {
 	
 	private Long flags;
 	
-	public Settings(Integer volume, Long lastFeedItemId){
+	public Settings(Integer volume, Long lastFeedItemId, Long flags){
 		this.volume = volume;
 		this.lastFeedItemId = lastFeedItemId;
+		this.flags = flags;
 	}
 
 	public Integer getVolume() {

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+	<EditText android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:id="@+id/text" 
+		android:scrollbars="vertical" />
+
+	<LinearLayout android:orientation="horizontal"
+		android:gravity="center" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		
+		<LinearLayout android:orientation="vertical" 
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+			
+			<ImageButton android:id="@+id/add" 
+				android:src="@drawable/android:ic_input_add"
+				android:gravity="center"
+				android:layout_width="55sp"
+				android:layout_height="55sp" />
+				
+		  	<TextView android:text="Add item"
+		        android:textSize="10sp"
+				android:layout_width="wrap_content"
+		       	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
+		
+		<LinearLayout android:orientation="vertical" 
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+			
+			<ImageButton android:id="@+id/searchpodgrove" 
+				android:src="@drawable/android:ic_menu_search"
+				android:gravity="center"
+				android:layout_width="55sp"
+				android:layout_height="55sp" />
+	
+		  	<TextView android:text="PodGrove"
+		        android:textSize="10sp"
+				android:layout_width="wrap_content"
+		       	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
+		
+		<LinearLayout android:orientation="vertical" 
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+			
+			<ImageButton android:id="@+id/searchdigitalpodcast" 
+				android:src="@drawable/android:ic_menu_search"
+				android:gravity="center"
+				android:layout_width="55sp"
+				android:layout_height="55sp" />
+	
+		  	<TextView android:text="DigitalPodcast"
+		        android:textSize="10sp"
+				android:layout_width="wrap_content"
+		       	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
+		
+		<LinearLayout android:orientation="vertical" 
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+			
+			<ImageButton android:id="@+id/top50podcastalley" 
+				android:src="@drawable/android:btn_star_big_off"
+				android:gravity="center"
+				android:layout_width="55sp"
+				android:layout_height="55sp" />
+	
+		  	<TextView android:text="PodcastAlley Top 50"
+		        android:textSize="10sp"
+				android:layout_width="wrap_content"
+		       	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
+		
+		<LinearLayout android:orientation="vertical" 
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+			
+			<ImageButton android:id="@+id/importopml" 
+				android:src="@drawable/android:stat_sys_download"
+				android:gravity="center"
+				android:layout_width="55sp"
+				android:layout_height="55sp" />
+	
+		  	<TextView android:text="Import OPML"
+		        android:textSize="10sp"
+				android:layout_width="wrap_content"
+		       	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
+		
+	</LinearLayout>
+		
+	<View
+		android:layout_width="fill_parent"
+		android:layout_height="2dip"
+		android:background="#FFFFFFFF" />
+
+    <ListView android:id="@+id/android:list"
+          android:layout_width="fill_parent"
+        	android:layout_height="wrap_content"/>
+
+  	<TextView android:id="@+id/android:empty"
+			android:layout_width="fill_parent"
+        	android:layout_height="wrap_content"
+        	android:text="@string/noresults"/>
+
+	<ImageButton android:id="@+id/addresult"
+		android:visibility="gone" 
+		android:src="@drawable/android:ic_input_add"
+			android:gravity="center"
+		android:layout_width="55sp"
+		android:layout_height="55sp" />
+
+</LinearLayout>

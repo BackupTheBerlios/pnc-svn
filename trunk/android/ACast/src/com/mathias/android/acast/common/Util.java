@@ -11,16 +11,15 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface.OnClickListener;
 import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.Html.ImageGetter;
 import android.util.Log;
-import android.view.Window;
 
 public abstract class Util {
 
@@ -47,9 +46,19 @@ public abstract class Util {
 
 	public static void showDialog(Context cxt, String msg) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(cxt);
-		builder.setTitle(cxt.getPackageName());
+//		builder.setTitle(cxt.getPackageName());
 		builder.setMessage(msg);
 		builder.setPositiveButton(android.R.string.ok, null);
+		builder.setCancelable(true);
+		builder.show();
+	}
+
+	public static void showConfirmationDialog(Context cxt, String msg, OnClickListener oklistener) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(cxt);
+//		builder.setTitle(cxt.getPackageName());
+		builder.setMessage(msg);
+		builder.setPositiveButton(android.R.string.ok, oklistener);
+		builder.setNegativeButton(android.R.string.cancel, null);
 		builder.setCancelable(true);
 		builder.show();
 	}
@@ -62,22 +71,7 @@ public abstract class Util {
 		builder.setCancelable(true);
 		builder.show();
 	}
-	
-	public static void requestProgressBar(Activity act){
-		act.requestWindowFeature(Window.FEATURE_PROGRESS);
-		act.setProgressBarIndeterminateVisibility(false);
-	}
-	
-	public static void showProgressBar(Activity act){
-//		act.getWindow().setFeatureInt(Window.FEATURE_PROGRESS, 0);
-		act.setProgressBarIndeterminateVisibility(true);
-	}
-	
-	public static void hideProgressBar(Activity act){
-//		act.getWindow().setFeatureInt(Window.FEATURE_PROGRESS, 10000);
-		act.setProgressBarIndeterminateVisibility(false);
-	}
-	
+
 	public interface ProgressListener{
 		void progressDiff(long externalid, long size);
 		boolean continueDownload(long externalid);
@@ -169,6 +163,40 @@ public abstract class Util {
 			sb.append(o);
 		}
 		return sb.toString();
+	}
+
+	public static int indexAfter(String str, int from, String exp) {
+		int i = str.indexOf(exp, from);
+		if(i != -1){
+			return i+exp.length();
+		}
+		return -1;
+	}
+
+	public static int indexAfter(String str, int from, String ... exp) {
+		for (String s : exp) {
+			from = str.indexOf(s, from);
+			if(from == -1){
+				return -1;
+			}
+			from += s.length();
+		}
+		return from;
+	}
+
+	public static int indexAfter(String str, int from, String exp, int count) {
+		for (int i = 0; i < count; i++) {
+			int ret = indexAfter(str, from, exp);
+			if(ret == -1){
+				return -1;
+			}
+			from = ret;
+		}
+		return from;
+	}
+
+	public static int indexBefore(String str, int from, String exp) {
+		return str.indexOf(exp, from);
 	}
 
 }

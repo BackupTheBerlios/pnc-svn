@@ -11,7 +11,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".FeedEdit"/>
+        <activity android:name=".FeedAdd"/>
         <activity android:name=".FeedItemList"/>
         <activity android:name=".VideoPlayer"/>
         <activity android:name=".Player"/>

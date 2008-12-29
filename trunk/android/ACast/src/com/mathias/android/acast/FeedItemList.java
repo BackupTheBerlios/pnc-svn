@@ -25,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.mathias.android.acast.common.RssUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
@@ -32,7 +33,6 @@ import com.mathias.android.acast.common.services.download.IDownloadServiceCallba
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
-import com.mathias.android.acast.rss.RssUtil;
 
 public class FeedItemList extends ListActivity implements ServiceConnection {
 
@@ -56,6 +56,8 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
 	private IDownloadService binder;
 	
+	private Settings settings;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -68,6 +70,10 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 			Bundle extras = getIntent().getExtras();
 			mFeedId = extras != null ? extras.getLong(ACast.KEY)
 					: null;
+		}
+		settings = mDbHelper.fetchSettings();
+		if(settings == null){
+			settings = new Settings(0, mFeedId, (long)0);
 		}
 		populateFields();
 	}
@@ -152,7 +158,8 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	}
 
 	private void playItem(FeedItem item){
-		mDbHelper.updateSettings(new Settings(0, item.getId()));
+		settings.setLastFeedItemId(item.getId());
+		mDbHelper.updateSettings(settings);
 		Intent i = new Intent(this, Player.class);
 		i.putExtra(ACast.FEEDITEM, item);
 		startActivityForResult(i, 0);

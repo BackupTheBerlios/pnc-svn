@@ -1,7 +1,7 @@
 package com.mathias.android.acast.common;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -14,19 +14,18 @@ public abstract class PodGroveUtil {
 	private static final String TAG = PodGroveUtil.class.getSimpleName();
 
 	private static final String KEY = "\"/main/subscribe?newFeed[rss]=";
-	
-	private static final String REPLACETHIS = "REPLACETHIS";
-	
-	private static final String URI = "http://podgrove.com/search/get_results?search_term="
-			+ REPLACETHIS + "&commit=Search";
+
+	private static final String URI = "http://podgrove.com/search/get_results?commit=Search&search_term=";
 
 	private PodGroveUtil() {
 	}
 
-	public static List<RssItem> parse(String searchstr) {
-		List<RssItem> items = new ArrayList<RssItem>();
+	public static List<SearchItem> parse(String searchstr) {
+		Log.d(TAG, "Searching for: "+searchstr);
 
-		String uri = URI.replaceFirst(REPLACETHIS, searchstr);
+		List<SearchItem> items = new ArrayList<SearchItem>();
+
+		String uri = URI+searchstr;
 		InputStream inp = null;
 		try {
 			URLConnection conn = new URL(uri).openConnection();
@@ -57,7 +56,7 @@ public abstract class PodGroveUtil {
 						rsstitle = sb.substring(start+1, end);
 					}
 				}
-				items.add(new RssItem(rsstitle, rssuri));
+				items.add(new SearchItem(rsstitle, "", rssuri));
 			}
 		} catch (IllegalStateException e) {
 			Log.e(TAG, e.getMessage());
@@ -72,22 +71,6 @@ public abstract class PodGroveUtil {
 			}
 		}
 		return items;
-	}
-	
-	@SuppressWarnings("serial")
-	public static class RssItem implements Serializable {
-		public String title;
-		public String uri;
-
-		public RssItem(String title, String uri) {
-			this.title = title;
-			this.uri = uri;
-		}
-
-		@Override
-		public String toString() {
-			return title;
-		}
 	}
 
 }

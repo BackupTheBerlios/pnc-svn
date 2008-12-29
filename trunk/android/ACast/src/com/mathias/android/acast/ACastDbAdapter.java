@@ -14,6 +14,7 @@ import android.util.Log;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.FeedItemHelper;
 import com.mathias.android.acast.podcast.Settings;
 
 public class ACastDbAdapter {
@@ -47,6 +48,7 @@ public class ACastDbAdapter {
 	public static final String SETTING_ID = "_id";
 	public static final String SETTING_VOLUME = "volume";
 	public static final String SETTING_LASTFEEDITEMID = "lastfeeditemid";
+	public static final String SETTING_FLAGS = "flags";
 
 	private static final String DATABASE_NAME = "acast";
 	private static final String DATABASE_TABLE_FEED = "feed";
@@ -68,8 +70,8 @@ public class ACastDbAdapter {
 			+ FEEDITEM_ID+" integer primary key autoincrement, "
 			+ FEEDITEM_FEEDID+" integer not null, "
 			+ FEEDITEM_TITLE+" text not null unique, "
-			+ FEEDITEM_MP3URI+" text not null, "
-			+ FEEDITEM_MP3FILE+" text not null unique, "
+			+ FEEDITEM_MP3URI+" text, "
+			+ FEEDITEM_MP3FILE+" text, "
 			+ FEEDITEM_SIZE+" long not null, "
 			+ FEEDITEM_BOOKMARK+" integer, "
 			+ FEEDITEM_COMPLETED+" boolean, " 
@@ -84,9 +86,10 @@ public class ACastDbAdapter {
 	private static final String DATABASE_CREATE_SETTING = "create table setting ("
 			+ SETTING_ID+" integer primary key autoincrement, "
 			+ SETTING_VOLUME+" integer, "
-			+ SETTING_LASTFEEDITEMID+" integer);";
+			+ SETTING_LASTFEEDITEMID+" integer, "
+			+ SETTING_FLAGS+" integer);";
 
-	private static final int DATABASE_VERSION = 30;
+	private static final int DATABASE_VERSION = 32;
 
 	private static final String TAG = ACastDbAdapter.class.getSimpleName();
 	private DatabaseHelper mDbHelper;
@@ -361,11 +364,20 @@ public class ACastDbAdapter {
 		updateFeed(id, feed.getTitle(), feed.getUri(), feed.getIcon(), feed
 				.getLink(), feed.getPubdate(), feed.getCategory(), feed
 				.getAuthor(), feed.getDescription());
+
+		List<FeedItem> olditems = fetchAllFeedItems(id);
+		List<FeedItem> newitems = feed.getItems();
+		for (FeedItem item : newitems) {
+			FeedItem olditem = FeedItemHelper.getByTitle(olditems, item.getTitle());
+			if(olditem != null){
+				item.setCompleted(olditem.isCompleted());
+				item.setBookmark(olditem.getBookmark());
+			}
+		}
 		deleteFeedItems(id);
-		for (FeedItem item : feed.getItems()) {
+		for (FeedItem item : newitems) {
 			if(addFeedItem(id, item) == -1){
 				Log.w(TAG, "Could not update/add feed item!");
-				return false;
 			}
 		}
 		return true;
@@ -468,8 +480,8 @@ public class ACastDbAdapter {
 	public Settings fetchSettings() {
 		Settings settings = null;
 		Cursor c = mDb.query(true, DATABASE_TABLE_SETTING, new String[] {
-				SETTING_VOLUME, SETTING_LASTFEEDITEMID }, SETTING_ID + "=0",
-				null, null, null, null, null);
+				SETTING_VOLUME, SETTING_LASTFEEDITEMID, SETTING_FLAGS },
+				SETTING_ID + "=0", null, null, null, null, null);
 		if (c == null || !c.moveToFirst()) {
 			Log.w(TAG, "No settings found!");
 		}else{
@@ -481,7 +493,11 @@ public class ACastDbAdapter {
 			if(lastfeeditemid <= 0){
 				lastfeeditemid = null;
 			}
-			settings = new Settings(volume, lastfeeditemid);
+			Long flags = c.getLong(c.getColumnIndexOrThrow(SETTING_FLAGS));
+			if(flags <= 0){
+				flags = null;
+			}
+			settings = new Settings(volume, lastfeeditemid, flags);
 		}
 		Util.closeCursor(c);
 		return settings;
@@ -495,6 +511,7 @@ public class ACastDbAdapter {
 		args.put(SETTING_ID, 0);
 		args.put(SETTING_VOLUME, settings.getVolume());
 		args.put(SETTING_LASTFEEDITEMID, settings.getLastFeedItemId());
+		args.put(SETTING_FLAGS, settings.getFlags());
 		boolean update = mDb.update(DATABASE_TABLE_SETTING, args, SETTING_ID
 				+ "= 0", null) > 0;
 		if (!update) {

@@ -6,6 +6,7 @@
 	<!-- feed_edit -->
 	<string name="url">URL:</string>
 	<string name="add">Add</string>
+	<string name="noresults">No search results available</string>
 	<!-- feeds_list -->
 	<string name="nofeeds">No feed available! Add a feed by pressing the
 		menu button and select \'Add feed\', enter URL to podcast and press

@@ -1,4 +1,4 @@
-package com.mathias.android.acast.rss;
+package com.mathias.android.acast.common;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +19,6 @@ import android.util.Log;
 import android.util.Xml;
 import android.util.Xml.Encoding;
 
-import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 
@@ -42,6 +41,7 @@ public class RssUtil implements ContentHandler {
 	
 	public Feed parse(String uri) throws ClientProtocolException, IOException,
 			IllegalStateException, SAXException {
+		Log.d(TAG, "Parsing: "+uri);
 		feed = new Feed();
 		feed.setUri(uri);
 		DefaultHttpClient client = new DefaultHttpClient();
