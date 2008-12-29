@@ -202,13 +202,14 @@ public abstract class Util {
 	public static String escapeFilename(String filename){
 		// Valid for NTFS? @  &  ^  '  ,  {  }  [  ]  $  =  !  -  #  (  )  %  +  ~  _  .
 		// Invalid for FAT: space \  /  ?  :  "  *  <  >  | 
-		filename = filename.replaceAll("?", "");
 		filename = filename.replaceAll("|", "");
 		filename = filename.replaceAll(":", "");
-		filename = filename.replaceAll("&", "");
-		filename = filename.replaceAll("*", "");
-		filename = filename.replaceAll("<", "");
-		filename = filename.replaceAll(">", "");
+		// TODO verify below...
+		filename = filename.replaceAll("\\?", "");
+		filename = filename.replaceAll("\\&", "");
+		filename = filename.replaceAll("\\*", "");
+		filename = filename.replaceAll("\\<", "");
+		filename = filename.replaceAll("\\>", "");
 		return filename;
 	}
 

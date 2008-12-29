@@ -240,7 +240,7 @@ public class ACast extends ListActivity {
 				mDbHelper.updateFeed(rowId, feed);
 			} catch (Exception e) {
 				Log.e(TAG, e.getMessage(), e);
-				Util.showDialog(this, e.getMessage());
+				//TODO send through handler Util.showDialog(this, e.getMessage());
 			}
 		}
 	}

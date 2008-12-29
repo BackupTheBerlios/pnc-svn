@@ -6,6 +6,9 @@ Download queue not visible after close. How to go to file download page? Main pa
 Remove from queue
 Download complete notification, whole queue or each download?
 Queue system
+list all downloaded together, let user play from list
+Remove information from player, can be shown with menu->information.
+RssUtil broken...
 
 Longpress to open menu for feed/feeditem
 Bug: show error when feed can not be added
@@ -43,6 +46,7 @@ Multiple Player activites, singleinstance? (launchMode="singleInstance" in the m
 Show new items that are newer then old update time.
 Ability to exit the application
 Error by notification from services, download/media
+Text size for feed/feeditem lists
 
 Low: Bug: mediaplayer prepare can not handle streaming mp3 url with redirect, http://podtrac.com/pts/redirect.mp3?http://www.48days.bullakaclients.com/12-17-08.mp3  
 Low: Show info on right side of screen during landscape mode?
