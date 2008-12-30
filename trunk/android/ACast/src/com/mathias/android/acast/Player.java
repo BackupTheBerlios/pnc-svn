@@ -9,7 +9,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
-import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -49,6 +48,8 @@ public class Player extends Activity implements ServiceConnection {
 	private ImageButton playpause;
 
 	private ACastDbAdapter mDbHandler;
+	
+	private int itemDuration;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -72,11 +73,6 @@ public class Player extends Activity implements ServiceConnection {
 		duration = (TextView) findViewById(R.id.duration);
 
 		if(item != null){
-			String desc = item != null && item.getDescription() != null ? item
-					.getDescription() : "";
-	        TextView description = (TextView) findViewById(R.id.description);
-	        description.setText(Html.fromHtml(desc, Util.NULLIMAGEGETTER, null));
-
 	        title.setText(item.getTitle());
 		}else{
 			title.setText("No item!");
@@ -129,6 +125,8 @@ public class Player extends Activity implements ServiceConnection {
 										.getCurrentPosition());
 						binder.stop();
 						finish();
+					}else{
+						Log.d(TAG, "Stop clicked, binder is null");
 					}
 				}catch(Exception e){
 					Log.e(TAG, e.getMessage(), e);
@@ -207,9 +205,8 @@ public class Player extends Activity implements ServiceConnection {
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem mitem) {
-		Intent i = new Intent(this, FeedItemInfo.class);
-		i.putExtra(ACast.FEEDITEM, item);
-		startActivity(i);
+		Util.showDialog(this, Util.fromHtmlNoImages(item.getTitle()), Util
+				.fromHtmlNoImages(item.getDescription()));
 		return true;
 	}
 
@@ -226,7 +223,7 @@ public class Player extends Activity implements ServiceConnection {
 				}
 				String dur = Util.convertDuration(pos);
 				if(binder != null){
-					dur += "/"+Util.convertDuration(binder.getDuration());
+					dur += "/"+Util.convertDuration(itemDuration);
 					duration.setText(dur);
 				}
 			}catch(Exception e){
@@ -245,8 +242,9 @@ public class Player extends Activity implements ServiceConnection {
 	
 	@Override
 	protected void onStop() {
-		Log.d(TAG, "onStop "+getTaskId());
+		Log.d(TAG, "onStop() finishing"+getTaskId());
 		super.onStop();
+		finish();
 	}
 	
 	@Override
@@ -268,20 +266,14 @@ public class Player extends Activity implements ServiceConnection {
 		try {
 			if(binder != null){
 				if(!binder.isPlaying()){
-//					if(item.isDownloaded()){
-//						binder.initItem(item.getId(), item.getMp3file(), false);
-//					}else{
-//						binder.initItem(item.getId(), item.getMp3uri(), true);
-//					}
-//					binder.setCurrentPosition(item.getBookmark());
-//					binder.play();
 					playpause.setImageResource(R.drawable.play);
 					//playpause.setImageResource(android.R.drawable.ic_media_play);
 				}else{
 					playpause.setImageResource(R.drawable.pause);
 					//playpause.setImageResource(android.R.drawable.ic_media_pause);
 				}
-				seekbar.setMax(binder.getDuration());
+				itemDuration = binder.getDuration();
+				seekbar.setMax(itemDuration);
 			}else{
 				Log.w(TAG, "binder is null");
 			}
@@ -328,7 +320,8 @@ public class Player extends Activity implements ServiceConnection {
 			}
 			playpause.setImageResource(R.drawable.pause);
 			//playpause.setImageResource(android.R.drawable.ic_media_pause);
-			seekbar.setMax(binder.getDuration());
+			itemDuration = binder.getDuration();
+			seekbar.setMax(itemDuration);
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
@@ -339,7 +332,7 @@ public class Player extends Activity implements ServiceConnection {
 		public void onCompletion() throws RemoteException {
 			if (item != null && mDbHandler != null) {
 				int currentPosition = binder.getCurrentPosition();
-				if (currentPosition + 100 >= binder.getDuration()) {
+				if (currentPosition + 100 >= itemDuration) {
 					item.setCompleted(true);
 					item.setBookmark(0);
 				}else{

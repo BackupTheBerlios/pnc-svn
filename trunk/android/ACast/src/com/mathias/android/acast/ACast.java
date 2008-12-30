@@ -1,3 +1,107 @@
+//TODO 6: Bug: audio notification triggered player does not stop audio
+//TODO 6: Bug: info for feed item is not shown when opening player with notifiction
+//TODO 6: Download queue not visible after close. How to go to file download page? Main page menu item.
+//TODO 6: Remove from queue
+//TODO 6: Download complete notification, whole queue or each download?
+//TODO 6: Queue system
+//TODO 6: list all downloaded together, let user play from list
+//TODO 5: Longpress to open menu for feed/feeditem
+//TODO 5: Bug: show error when feed can not be added
+//TODO 5: Bug: Downloads can not handle screen timeout, when screen locks audio stops
+//TODO 5: ContentProvider, MIME (text/xml) association, should trigger intent for acast. Update android manifest.
+//      <intent-filter>
+//      	<action android:name="android.intent.action.VIEW" />
+//      	<action android:name="android.intent.action.BROWSABLE" />
+//      	<category android:name="android.intent.category.DEFAULT" />
+//      	<data android:mimeType="audio/x-scpls" />
+//      	<data android:mimeType="audio/x-mpegurl" />
+//      </intent-filter>
+//TODO 5: What happens if feed already exist? Show dialog...
+//TODO 5: Show activity name in title
+//TODO 5: Settings dialog: 
+//       auto delete, 
+//       auto refresh all feeds at spec time (hourly, daily, week, month), 
+//       auto download. 
+//       Only download through wifi. 
+//       Resume partly downloaded. 
+//       Auto delete after playing
+//       Auto-play next unplayed Episode when an Episode has finished playing.
+//TODO 5: Other podcatchers: Dogg Catcher, NPE, Podcaster?, PodWeasel
+//TODO 5: On multidownload, press (drag?) to activate/setcurrent download of podcast.
+//TODO 5: Pause when incoming call, resume afterwards. Pause playback when a call is initiated. 
+//TODO 5: Support video
+//TODO 5: Pause/play with button on headset
+//TODO 5: Show partial downloads
+//TODO 5: System tool to prevent phone from sleeping?
+//TODO 5: Show if streaming when playing
+//TODO 5: Use toast more. Toast.makeText().show()!!
+//TODO 5: Show if new podcasts are available in feed list.
+//TODO 5: Show if any podcasts is ongoing in feed list.
+//TODO 5: Multiple Player activites, singleinstance? (launchMode="singleInstance" in the manifest file)
+//TODO 5: Show new items that are newer then old update time.
+//TODO 5: Ability to exit the application
+//TODO 5: Error by notification from services, download/media
+//TODO 5: Text size for feed/feeditem lists
+//TODO 5: Low: Bug: mediaplayer prepare can not handle streaming mp3 url with redirect, http://podtrac.com/pts/redirect.mp3?http://www.48days.bullakaclients.com/12-17-08.mp3  
+//TODO 5: Low: Show info on right side of screen during landscape mode?
+//TODO 5: Low: Bug: MediaPlayer thread is started and never really released?
+//TODO 5: Low: rotate with gravity or keyboard?
+//TODO 5: Low: All Download progress screen. Queue downloads, show download queue and current progress. notification on completion/queue empty
+//TODO 5: Low: show kb/s for download progress window
+//TODO 5: Low: Username/password protected RSS
+//TODO 5: Low: Use default media player with broadcast sender.
+// Loading on refresh all feeds, show status bar processing circle
+// Remove information from player, can be shown with menu->information.
+// remove feed/feeditem confirmation
+// Import through OPML
+// Select/Search podcasts from podgrove.com, podcastalley.com?, digitalpodcast.com
+// Play/Pause button, Bigger buttons, black and white? Use styled ic_media_play/pause?
+// Refresh feed should not clear -downloads-/bookmark/completed
+// Show file size and actual file size
+// Thread RSS parsing and html get to awoid wait/force kill dialog.
+// When lock screen and enable screen, Player controls are not working. 
+// LOW: Download all feed items in sequence (if not already downloaded)
+// Change notification icon to main(RSS) icon (to same as main icon?)
+// Add icon to menu items
+// On remove feed, remove physical files
+// Pause mp on start to avoid short sound before first setPosition
+// Bigger letters in feed list.
+// Bug: Fix threaded mediaplayer bug which does not stop playback sometimes. 
+// Individual bookmark
+// Illegal character in path at index 37: http://192.168.254.125/audio/music/14 - Nowhere.mp3
+// fetch size from rss xml
+// show duration, seekbar duration update
+// use file size with download progress bar
+// use duration with player progress bar
+// volume slider? No, use hard volume controller
+// Show in (not)downloaded icons if feed item has ever completed
+// http://192.168.254.125/mp3.xml does not work. mount -o bind problem...
+// show if downloaded with icon
+// Show in (not)downloaded icons if feed item has bookmark or not
+// Player, press home, start acast = problem. Prob because of continuing duration progress thread
+// Error when selecting add feed textview and switching to landscape mode
+// resume last item button, show title of feed item
+// store mp3s on sdcard
+// escape chars in title before creating file name
+// play in background, show notification in tray. Service, NotificationManager
+// Use NotificationManager to be able to go back to current playing feed item
+// (not used) AlarmManager, Context.getSystemService(Context.ALARM_SERVICE)
+// Remove notification on pause and stop
+// Draw main icon
+// End service and remove notification when song is complete
+// Fetch icon from RSS and present in feed list 
+// Bug: Player, change screen mode, media restarts from last save point
+// create /sdcard/<feed> dirs for mp3s
+// Feed and feeditem extended information Dialog (or show everything in listitem)
+// Increase size of start icon...
+// Edit feed does not work. Remove?
+// detailMessage	"Only the original thread that created a view hierarchy can touch its views." (id=830057026112); use handler
+// E/MediaPlayer(  277): Attempt to call getDuration without a valid mediaplayer
+
+/** Description
+ * It is also possible to use ACast as a RSS feed reader.
+ */
+
 package com.mathias.android.acast;
 
 import java.io.File;
@@ -13,6 +117,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -20,6 +125,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.BaseAdapter;
@@ -38,22 +144,24 @@ public class ACast extends ListActivity {
 
 	private static final String TAG = ACast.class.getSimpleName();
 
-	public static final String KEY = "key";
 	public static final String FEED = "feed";
+	public static final String FEEDID = "feedid";
 	public static final String FEEDITEM = "feeditem";
+	public static final String FEEDITEMID = "feeditemid";
 
 	private static final int INSERT_ID = Menu.FIRST + 0;
-	private static final int UPDATE_ID = Menu.FIRST + 1;
-	private static final int DELETE_ID = Menu.FIRST + 2;
-	private static final int REFRESH_ID = Menu.FIRST + 3;
-	private static final int INFO_ID = Menu.FIRST + 4;
-	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
-	private static final int DOWNLOADMANAGER_ID = Menu.FIRST + 6;
-	private static final int SETTINGS_ID = Menu.FIRST + 7;
+	private static final int DELETE_ID = Menu.FIRST + 1;
+	private static final int REFRESH_ID = Menu.FIRST + 2;
+	private static final int INFO_ID = Menu.FIRST + 3;
+	private static final int DOWNLOADALL_ID = Menu.FIRST + 4;
+	private static final int DOWNLOADMANAGER_ID = Menu.FIRST + 5;
+	private static final int SETTINGS_ID = Menu.FIRST + 6;
 
 	private ACastDbAdapter mDbHelper;
 
 	private FeedAdapter adapter;
+	
+	private WorkerThread thread;
 	
 	private Settings settings;
 
@@ -62,11 +170,17 @@ public class ACast extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+
 		setContentView(R.layout.feed_list);
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		
+		thread = new WorkerThread();
+		thread.start();
+
 		defaultIcon = BitmapFactory.decodeResource(getResources(),
 				R.drawable.question);
 
@@ -118,11 +232,9 @@ public class ACast extends ListActivity {
 		super.onCreateOptionsMenu(menu);
 		MenuItem item = menu.add(Menu.NONE, INSERT_ID, Menu.NONE, R.string.addfeed);
 		item.setIcon(android.R.drawable.ic_menu_add);
-		//item = menu.add(Menu.NONE, UPDATE_ID, Menu.NONE, R.string.editfeed);
-		//item.setIcon(android.R.drawable.ic_input_edit);
 		item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.removefeed);
 		item.setIcon(android.R.drawable.ic_menu_delete);
-		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refreshfeeds);
+		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refreshall);
 		item.setIcon(android.R.drawable.ic_menu_rotate);
 		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
 		item.setIcon(android.R.drawable.ic_menu_info_details);
@@ -139,61 +251,89 @@ public class ACast extends ListActivity {
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
 		Intent i = new Intent(this, FeedItemList.class);
-		i.putExtra(KEY, adapter.getItemId(position));
+		i.putExtra(FEEDID, adapter.getItemId(position));
 		startActivityForResult(i, 0);
 	}
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		int pos = getSelectedItemPosition();
 		if(INSERT_ID == item.getItemId()){
 			createFeed();
-			return true;
-		}else if(UPDATE_ID == item.getItemId()){
-			if(pos >= 0){
-				editFeed(adapter.getItemId(pos));
-			}
-			return true;
-		}else if(DELETE_ID == item.getItemId()){
-			if(pos >= 0){
-				deleteFeed(adapter.getItem(pos));
-			}
-			return true;
 		}else if(REFRESH_ID == item.getItemId()){
-			new Thread(){
-				@Override
-				public void run() {
-					refreshFeeds();
-					handler.sendEmptyMessage(0);
-				}
-			}.start();
-			return true;
-		}else if(INFO_ID == item.getItemId()){
-			if(pos >= 0){
-				infoFeed(adapter.getItem(pos));
-			}
-			return true;
-		}else if(DOWNLOADALL_ID == item.getItemId()){
-			if(pos >= 0){
-				downloadAll(adapter.getItem(pos));
-			}
-			return true;
+			thread.refreshFeeds();
 		}else if(DOWNLOADMANAGER_ID == item.getItemId()){
 			showDownloadManager();
-			return true;
 		}else if(SETTINGS_ID == item.getItemId()){
 			showSettings();
-			return true;
+		}else{
+			// items which needs position
+			int pos = getSelectedItemPosition();
+			if(pos < 0){
+				Util.showToastShort(this, "No item selected!");
+			}else if(DOWNLOADALL_ID == item.getItemId()){
+				downloadAll(adapter.getItem(pos));
+			}else if(INFO_ID == item.getItemId()){
+				infoFeed(adapter.getItem(pos));
+			}else if(DELETE_ID == item.getItemId()){
+				deleteFeed(adapter.getItem(pos));
+			}
 		}
-		return super.onMenuItemSelected(featureId, item);
+		//return super.onMenuItemSelected(featureId, item);
+		return true;
 	}
-	
-	private Handler handler = new Handler(){
-		@Override
-		public void handleMessage(Message msg) {
-			fillData();
+
+	private class WorkerThread extends Thread {
+
+		private Handler handler;
+
+		private void refreshFeeds(){
+	        setProgressBarIndeterminateVisibility(true);
+			handler.sendEmptyMessage(0);
 		}
-	};
+
+		@Override
+		public void run() {
+			Looper.prepare();
+			
+			handler = new Handler(){
+				@Override
+				public void handleMessage(Message msg) {
+					try {
+						if(msg.what == 0){
+							List<Feed> feeds = mDbHelper.fetchAllFeeds();
+							for (Feed feed : feeds) {
+								long rowId = feed.getId();
+								final String title = feed.getTitle();
+								Log.d(TAG, "Parsing "+title);
+								feed = new RssUtil().parse(feed.getUri());
+								mDbHelper.updateFeed(rowId, feed);
+							}
+							Log.d(TAG, "Done");
+							runOnUiThread(new Runnable(){
+								@Override
+								public void run() {
+									fillData();
+							        setProgressBarIndeterminateVisibility(false);
+							        Util.showToastShort(ACast.this, "Feeds updated");
+								}
+							});
+						}
+					} catch (final Exception e) {
+						Log.e(TAG, e.getMessage(), e);
+						runOnUiThread(new Runnable(){
+							@Override
+							public void run() {
+								Util.showDialog(ACast.this, e.getMessage());
+						        setProgressBarIndeterminateVisibility(false);
+							}
+						});
+					}
+				}
+			};
+				
+			Looper.loop();
+		}
+	}
 
 	private void showSettings() {
 		Intent i = new Intent(this, SettingsEdit.class);
@@ -210,12 +350,6 @@ public class ACast extends ListActivity {
 		startActivityForResult(i, 0);
 	}
 
-	private void editFeed(long id) {
-		Intent i = new Intent(this, FeedAdd.class);
-		i.putExtra(KEY, id);
-		startActivityForResult(i, 0);
-	}
-
 	private void deleteFeed(final Feed feed) {
 		Util.showConfirmationDialog(this, "Are you sure?", new DialogInterface.OnClickListener(){
 			@Override
@@ -228,21 +362,6 @@ public class ACast extends ListActivity {
 				fillData();
 			}
 		});
-	}
-
-	private void refreshFeeds(){
-		List<Feed> feeds = mDbHelper.fetchAllFeeds();
-		for (Feed feed : feeds) {
-			try {
-				long rowId = feed.getId();
-				String uri = feed.getUri();
-				feed = new RssUtil().parse(uri);
-				mDbHelper.updateFeed(rowId, feed);
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage(), e);
-				//TODO send through handler Util.showDialog(this, e.getMessage());
-			}
-		}
 	}
 
 	private void infoFeed(Feed feed) {

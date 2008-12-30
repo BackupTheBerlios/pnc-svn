@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
@@ -88,31 +87,38 @@ public class MediaService extends Service {
 
 		@Override
 		public void pause() throws RemoteException {
+			Log.d(TAG, "pause()");
 	        mNM.cancel(NOTIFICATION_ID);
 			if(mp != null){
+				Log.d(TAG, "mp.pause()");
 				mp.pause();
 			}
 		}
 		@Override
 		public void play() throws RemoteException {
+			Log.d(TAG, "play()");
 			showNotification();
 			if(mp != null && !mp.isPlaying()){
+				Log.d(TAG, "play() send start message");
 				mediahandler.sendEmptyMessage(0);
 			}
 		}
 		@Override
 		public void seek(int msec) throws RemoteException {
+			Log.d(TAG, "seek(msec) mp="+mp);
 			if(mp != null){
 				mp.seekTo(mp.getCurrentPosition()+msec);
 			}
 		}
 		@Override
 		public void stop() throws RemoteException {
-	        mNM.cancel(NOTIFICATION_ID);
+			Log.d(TAG, "stop() mp="+mp);
+			MediaService.this.stop();
 			stopSelf();
 		}
 		@Override
 		public int getCurrentPosition() throws RemoteException {
+			//Log.d(TAG, "getCurrentPosition() mp="+mp);
 			if(mp == null){
 				return 0;
 			}
@@ -120,6 +126,7 @@ public class MediaService extends Service {
 		}
 		@Override
 		public int getDuration() throws RemoteException {
+			Log.d(TAG, "getDuration() mp="+mp);
 			if(mp == null){
 				return 0;
 			}
@@ -127,12 +134,18 @@ public class MediaService extends Service {
 		}
 		@Override
 		public void setCurrentPosition(int position) throws RemoteException {
+			Log.d(TAG, "setCurrentPosition(position) mp="+mp);
 			if(mp != null){
 				mp.seekTo(position);
 			}
 		}
 		@Override
 		public void initItem(long externalid, String locator, boolean stream) throws RemoteException {
+			Log.d(TAG, "initItem, locator="+locator);
+			if(locator == null){
+				return;
+			}
+
 			this.externalid = externalid;
 			this.locator = locator;
 			this.stream = stream;
@@ -171,10 +184,7 @@ public class MediaService extends Service {
 				@Override
 				public void onCompletion(MediaPlayer mediaplayer) {
 					broadcastOnCompletion();
-//					if(mediaplayer != null){
-//						mediaplayer.release();
-//						mediaplayer = null;
-//					}
+			        mNM.cancel(NOTIFICATION_ID);
 					stopSelf();
 				}
 			});
@@ -182,6 +192,7 @@ public class MediaService extends Service {
 		}
 		@Override
 		public boolean isPlaying() throws RemoteException {
+			Log.d(TAG, "isPlaying() mp="+mp);
 			if(mp != null){
 				return mp.isPlaying();
 			}
@@ -202,6 +213,7 @@ public class MediaService extends Service {
 		@Override
 		public void registerCallback(IMediaServiceCallback cb)
 				throws RemoteException {
+			Log.d(TAG, "registerCallback() cb="+cb);
             if (cb != null){
 				mCallbacks.register(cb);
             }
@@ -209,6 +221,7 @@ public class MediaService extends Service {
 		@Override
 		public void unregisterCallback(IMediaServiceCallback cb)
 				throws RemoteException {
+			Log.d(TAG, "unregisterCallback() cb="+cb);
             if (cb != null) {
             	mCallbacks.unregister(cb);
             }
@@ -230,16 +243,22 @@ public class MediaService extends Service {
 
 	@Override
 	public void onDestroy() {
-		Log.d(TAG, "onDestroy");
+		Log.d(TAG, "onDestroy() mp="+mp);
+		stop();
+		mCallbacks.kill();
+	}
+	
+	private void stop(){
         mNM.cancel(NOTIFICATION_ID);
 		if(mp != null){
+			mp.reset();
 			mp.release();
 			mp = null;
 		}
-		mCallbacks.kill();
 	}
 
 	private void showNotification() {
+		Log.d(TAG, "showNotification()");
 		String filename = "";
 		try {
 			String locator = binder.getLocator();

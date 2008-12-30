@@ -34,6 +34,7 @@ public class SettingsEdit extends ListActivity {
 		items.add(new SettingsItem(Settings.RESUMEPARTLYDOWNLOADED, "Resume partly downloaded", "Resume partly downloaded files"));
 		items.add(new SettingsItem(Settings.AUTODELETECOMPLETED, "Auto delete after played", "Auto delete on completion played"));
 		items.add(new SettingsItem(Settings.AUTOPLAYNEXT, "Auto-play next", "Auto-play next unplayed Episode when an Episode has finished playing."));
+		items.add(new SettingsItem(Settings.OPENINFORMATION, "Open information", "Open information as default instead of media player."));
 		Collections.sort(items);
 	}
 

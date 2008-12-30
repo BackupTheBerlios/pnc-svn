@@ -4,8 +4,9 @@ import java.io.File;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.text.Html;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
@@ -15,6 +16,8 @@ import com.mathias.android.acast.podcast.FeedItem;
 public class FeedItemInfo extends Activity {
 
 	private static final String TAG = FeedItemInfo.class.getSimpleName();
+	
+	private FeedItem item;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -22,7 +25,7 @@ public class FeedItemInfo extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.feeditem_info);
 
-		FeedItem item = (FeedItem) (savedInstanceState != null ? savedInstanceState
+		item = (FeedItem) (savedInstanceState != null ? savedInstanceState
 				.getSerializable(ACast.FEEDITEM) : null);
 		if (item == null) {
 			Bundle extras = getIntent().getExtras();
@@ -73,18 +76,37 @@ public class FeedItemInfo extends Activity {
 			category.setVisibility(View.GONE);
 		}
 
-		long fileSize = new File(item.getMp3file()).length();
-		String sizeVal = "Size: "+fileSize+"/"+item.getSize();
-		TextView size = (TextView) findViewById(R.id.size);
-		size.setText(sizeVal);
+		if(item.getMp3file() != null){
+			long fileSize = new File(item.getMp3file()).length();
+			String sizeVal = "Size: "+fileSize+"/"+item.getSize();
+			TextView size = (TextView) findViewById(R.id.size);
+			size.setText(sizeVal);
+		}
 
 		String descVal = item.getDescription();
         TextView description = (TextView) findViewById(R.id.description);
         if(descVal != null){
-            description.setText(Html.fromHtml(descVal, Util.NULLIMAGEGETTER, null));
+            description.setText(Util.fromHtmlNoImages(descVal));
         }else{
             description.setText("No description...");
         }
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		MenuItem item = menu.add(0, 0, 0, R.string.gotolink);
+		item.setIcon(android.R.drawable.ic_menu_set_as);
+		return true;
+	}
+	
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem mitem) {
+		if(item != null && item.getLink() != null){
+			Util.openBrowser(this, item.getLink());
+			return true;
+		}
+		return super.onMenuItemSelected(featureId, mitem);
 	}
 
 }

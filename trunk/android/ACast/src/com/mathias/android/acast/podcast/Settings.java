@@ -3,28 +3,34 @@ package com.mathias.android.acast.podcast;
 public class Settings {
 
 	public static final long AUTODOWNLOAD = 1;
-
 	public static final long AUTOREFRESH = 2;
-	
 	public static final long ONLYWIFIDOWNLOAD = 4;
-
 	public static final long ONLYWIFISTREAM = 8;
-
 	public static final long AUTODELETE = 16;
-
 	public static final long RESUMEPARTLYDOWNLOADED = 32;
-
 	public static final long AUTODELETECOMPLETED = 64;
-
 	public static final long AUTOPLAYNEXT = 128;
+	public static final long OPENINFORMATION = 256;
+	//512
+	//1024
+	//2048
+	//4096
+	//8192
+	//16384
+	//32768
+	//65536
+	//131072
+	//262144
+	//524288
+	//1048576
 
 	private Integer volume;
 	
 	private Long lastFeedItemId;
 	
-	private Long flags;
+	private long flags;
 	
-	public Settings(Integer volume, Long lastFeedItemId, Long flags){
+	public Settings(Integer volume, Long lastFeedItemId, long flags){
 		this.volume = volume;
 		this.lastFeedItemId = lastFeedItemId;
 		this.flags = flags;
@@ -46,11 +52,11 @@ public class Settings {
 		this.lastFeedItemId = lastFeedId;
 	}
 
-	public Long getFlags() {
+	public long getFlags() {
 		return flags;
 	}
 
-	public void setFlags(Long flags) {
+	public void setFlags(long flags) {
 		this.flags = flags;
 	}
 
@@ -122,12 +128,20 @@ public class Settings {
 		setFlag(AUTODELETECOMPLETED, value);
 	}
 
-	public boolean isAutoPLayNext(){
+	public boolean isAutoPlayNext(){
 		return getFlag(AUTOPLAYNEXT);
 	}
 	
 	public void setAutoPlayNext(boolean value){
 		setFlag(AUTOPLAYNEXT, value);
+	}
+
+	public boolean isOpenInformtion(){
+		return getFlag(OPENINFORMATION);
+	}
+	
+	public void setOpenInformtion(boolean value){
+		setFlag(OPENINFORMATION, value);
 	}
 
 }

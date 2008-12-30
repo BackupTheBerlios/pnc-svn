@@ -361,6 +361,7 @@ public class ACastDbAdapter {
 			Log.w(TAG, "Feed is null!");
 			return false;
 		}
+		Log.d(TAG, "updateFeed: "+id);
 		updateFeed(id, feed.getTitle(), feed.getUri(), feed.getIcon(), feed
 				.getLink(), feed.getPubdate(), feed.getCategory(), feed
 				.getAuthor(), feed.getDescription());
@@ -374,8 +375,10 @@ public class ACastDbAdapter {
 				item.setBookmark(olditem.getBookmark());
 			}
 		}
+		Log.d(TAG, "deleteFeedItems: "+id);
 		deleteFeedItems(id);
 		for (FeedItem item : newitems) {
+			Log.d(TAG, "addFeedItem: "+id);
 			if(addFeedItem(id, item) == -1){
 				Log.w(TAG, "Could not update/add feed item!");
 			}
@@ -493,10 +496,7 @@ public class ACastDbAdapter {
 			if(lastfeeditemid <= 0){
 				lastfeeditemid = null;
 			}
-			Long flags = c.getLong(c.getColumnIndexOrThrow(SETTING_FLAGS));
-			if(flags <= 0){
-				flags = null;
-			}
+			long flags = c.getLong(c.getColumnIndexOrThrow(SETTING_FLAGS));
 			settings = new Settings(volume, lastfeeditemid, flags);
 		}
 		Util.closeCursor(c);

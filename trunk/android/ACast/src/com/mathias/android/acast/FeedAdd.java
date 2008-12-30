@@ -3,9 +3,7 @@ package com.mathias.android.acast;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.app.Dialog;
 import android.app.ListActivity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -13,17 +11,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.mathias.android.acast.common.DigitalPodcastUtil;
 import com.mathias.android.acast.common.OpmlUtil;
@@ -44,13 +41,13 @@ public class FeedAdd extends ListActivity {
 
 	private List<SearchItem> items = new ArrayList<SearchItem>();
 
-    private ProgressDialog progressDialog;
-
-    private ParseThread parsethread;
+    private WorkerThread thread;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
 		setContentView(R.layout.feedadd);
 
@@ -60,8 +57,8 @@ public class FeedAdd extends ListActivity {
 		adapter = new SearchItemAdapter(this);
 		setListAdapter(adapter);
 
-		parsethread = new ParseThread();
-		parsethread.start();
+		thread = new WorkerThread();
+		thread.start();
 
 		final EditText text = (EditText) findViewById(R.id.text);
 
@@ -71,11 +68,9 @@ public class FeedAdd extends ListActivity {
 			public void onClick(View v) {
 				String uri = text.getText().toString();
 				if(!uri.startsWith("http://")){
-					Toast.makeText(FeedAdd.this,
-							"You might want to add \'http://\' to RSS URL",
-							Toast.LENGTH_SHORT).show();
+			        Util.showToastShort(FeedAdd.this, "You might want to add \'http://\' to RSS URL");
 				}
-				parsethread.parseRss(uri);
+				thread.parseRss(uri);
                 showDialog(0);
 			}
 		});
@@ -85,7 +80,7 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				String searchstr = text.getText().toString();
-				parsethread.searchPodgrove(searchstr);
+				thread.searchPodgrove(searchstr);
                 showDialog(0);
 			}
 		});
@@ -95,7 +90,7 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				String searchstr = text.getText().toString();
-				parsethread.searchDigitalPodcast(searchstr);
+				thread.searchDigitalPodcast(searchstr);
                 showDialog(0);
 			}
 		});
@@ -104,7 +99,7 @@ public class FeedAdd extends ListActivity {
 		top50podcastalley.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				parsethread.top50PodcastAlley();
+				thread.top50PodcastAlley();
                 showDialog(0);
 			}
 		});
@@ -114,7 +109,7 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				String uristr = text.getText().toString();
-				parsethread.importOpml(uristr);
+				thread.importOpml(uristr);
                 showDialog(0);
 			}
 		});
@@ -122,23 +117,14 @@ public class FeedAdd extends ListActivity {
 	}
 
 	@Override
-	protected Dialog onCreateDialog(int id) {
-		progressDialog = new ProgressDialog(this);
-		progressDialog.setMessage("Please wait while loading...");
-		progressDialog.setIndeterminate(true);
-		progressDialog.setCancelable(false);
-		return progressDialog;
-	}
-	
-	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		final SearchItem item = (SearchItem) adapter.getItem(position);
 		String msg = "Do you want to add "
-			+ Html.fromHtml(item.getTitle(), Util.NULLIMAGEGETTER, null);
+			+ Util.fromHtmlNoImages(item.getTitle());
 		Util.showConfirmationDialog(this, msg, new OnClickListener(){
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				parsethread.parseRss(item.getUri());
+				thread.parseRss(item.getUri());
 		        showDialog(0);
 			}
 		});
@@ -150,30 +136,8 @@ public class FeedAdd extends ListActivity {
 		mDbHelper = null;
 		super.onDestroy();
 	}
-	
-	private MyHandler handler = new MyHandler();
 
-	private class MyHandler {
-
-		public void hideProgessAndUpdateResultList(String msg) {
-			handler.sendMessage(handler.obtainMessage(0, msg));
-		}
-
-		private Handler handler = new Handler() {
-			@Override
-			public void handleMessage(Message msg) {
-				progressDialog.hide();
-				Log.d(TAG, "adapter.notifyDataSetChanged()");
-				adapter.notifyDataSetChanged();
-				if (msg.obj != null) {
-					Toast.makeText(FeedAdd.this, msg.obj.toString(),
-							Toast.LENGTH_LONG).show();
-				}
-			}
-		};
-	}
-
-	private class ParseThread extends Thread {
+	private class WorkerThread extends Thread {
 
 		private static final int PARSERSS = 0;
 		private static final int SEARCHPODGROVE = 1;
@@ -184,22 +148,31 @@ public class FeedAdd extends ListActivity {
 		private Handler parsehandler;
 		
 		public void parseRss(String uri){
+			setProgressBarIndeterminateVisibility(true);
 			parsehandler.sendMessage(parsehandler.obtainMessage(PARSERSS, uri));
 		}
 		public void searchPodgrove(String searchstr){
+			setProgressBarIndeterminateVisibility(true);
 			parsehandler.sendMessage(parsehandler.obtainMessage(SEARCHPODGROVE, searchstr));
 		}
 
 		public void top50PodcastAlley(){
+			setProgressBarIndeterminateVisibility(true);
 			parsehandler.sendMessage(parsehandler.obtainMessage(TOP50PODCASTALLEY));
 		}
 
 		public void searchDigitalPodcast(String searchstr){
+			setProgressBarIndeterminateVisibility(true);
 			parsehandler.sendMessage(parsehandler.obtainMessage(SEARCHDIGITALPODCAST, searchstr));
 		}
 
 		public void importOpml(String uristr){
+			setProgressBarIndeterminateVisibility(true);
 			parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTOPML, uristr));
+		}
+
+		private void hideProgessAndUpdateResultList(String resultstr){
+			runOnUiThread(new HideProgessAndUpdateResultList(resultstr));
 		}
 
 		@Override
@@ -224,20 +197,20 @@ public class FeedAdd extends ListActivity {
 							Log.e(TAG, e.getMessage(), e);
 							resultstr = e.getMessage();
 						}
-						handler.hideProgessAndUpdateResultList(resultstr);
+						hideProgessAndUpdateResultList(resultstr);
 					}else if(SEARCHPODGROVE == msg.what){
 						// obj is String search
 						items = PodGroveUtil.parse(msg.obj.toString());
 						resultstr = "PodGrove found "+items.size()+" results";
 						Log.d(TAG, resultstr);
-						handler.hideProgessAndUpdateResultList(resultstr);
+						hideProgessAndUpdateResultList(resultstr);
 					}else if(SEARCHDIGITALPODCAST == msg.what){
 						// obj is String search
 						items = DigitalPodcastUtil
 								.parse(msg.obj.toString());
 						resultstr = "DigitalPodcast found "+items.size()+" results";
 						Log.d(TAG, resultstr);
-						handler.hideProgessAndUpdateResultList(resultstr);
+						hideProgessAndUpdateResultList(resultstr);
 					}else if(TOP50PODCASTALLEY == msg.what){
 						try {
 							items = new PodcastAlleyUtil().parseTop50();
@@ -246,7 +219,7 @@ public class FeedAdd extends ListActivity {
 							Log.e(TAG, e.getMessage(), e);
 							resultstr = e.getMessage();
 						}
-						handler.hideProgessAndUpdateResultList(resultstr);
+						hideProgessAndUpdateResultList(resultstr);
 					}else if(IMPORTOPML == msg.what){
 						// obj is URI
 						try {
@@ -257,13 +230,30 @@ public class FeedAdd extends ListActivity {
 							Log.e(TAG, e.getMessage(), e);
 							resultstr = e.getMessage();
 						}
-						handler.hideProgessAndUpdateResultList(resultstr);
+						hideProgessAndUpdateResultList(resultstr);
 					}
 				}
 			};
 			
 			Looper.loop();
 		}
+
+		private class HideProgessAndUpdateResultList implements Runnable {
+			private String resultstr;
+			public HideProgessAndUpdateResultList(String resultstr){
+				this.resultstr = resultstr;
+			}
+			@Override
+			public void run() {
+				Log.d(TAG, "adapter.notifyDataSetChanged()");
+				adapter.notifyDataSetChanged();
+				setProgressBarIndeterminateVisibility(false);
+				if (resultstr != null) {
+			        Util.showToastLong(FeedAdd.this, resultstr);
+				}
+			}
+		}
+
 	}
 
 	private class SearchItemAdapter extends BaseAdapter {
@@ -321,9 +311,9 @@ public class FeedAdd extends ListActivity {
             if(item == null){
             	Log.w(TAG, "getView: search item=null for position="+position+" size="+items.size());
             }else{
-                holder.title.setText(Html.fromHtml(item.getTitle(), Util.NULLIMAGEGETTER, null));
-                holder.uri.setText(Html.fromHtml(item.getUri(), Util.NULLIMAGEGETTER, null));
-                holder.description.setText(Html.fromHtml(item.getDescription(), Util.NULLIMAGEGETTER, null));
+                holder.title.setText(Util.fromHtmlNoImages(item.getTitle()));
+                holder.uri.setText(Util.fromHtmlNoImages(item.getUri()));
+                holder.description.setText(Util.fromHtmlNoImages(item.getDescription()));
             }
 
             return convertView;

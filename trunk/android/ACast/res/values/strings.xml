@@ -3,6 +3,7 @@
 	<!-- general -->
 	<string name="hello">ACast</string>
 	<string name="app_name">ACast</string>
+	<string name="gotolink">Open browser</string>
 	<!-- feed_edit -->
 	<string name="url">URL:</string>
 	<string name="add">Add</string>
@@ -22,14 +23,14 @@
 	<string name="addfeed">Add feed</string>
 	<string name="editfeed">Edit feed</string>
 	<string name="removefeed">Remove feed</string>
-	<string name="refreshfeeds">Refresh all feeds</string>
+	<string name="refreshall">Refresh all</string>
 	<string name="downloadall">Download all</string>
 	<string name="downloadmanager">Download manager</string>
 	<!-- feeditem_list menu items -->
 	<string name="playitem">Play item</string>
 	<string name="downloaditem">Download item</string>
 	<string name="deleteitem">Delete item</string>
-	<string name="refreshfeed">Refresh feed</string>
+	<string name="refresh">Refresh</string>
 	<string name="info">Information</string>
 	<!-- videoplayer -->
 	<string name="play">Play</string>
@@ -42,5 +43,4 @@
 	<!-- download_list -->
 	<string name="cancel">Cancel</string>
 	<string name="cancelall">Cancel all</string>
-	<string name="refresh">Refresh</string>
 </resources>

@@ -13,19 +13,23 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.DialogInterface.OnClickListener;
 import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.text.Html;
 import android.text.Html.ImageGetter;
 import android.util.Log;
+import android.widget.Toast;
 
 public abstract class Util {
 
 	private static final String TAG = Util.class.getSimpleName();
 	
-	public static final ImageGetter NULLIMAGEGETTER = new ImageGetter(){
+	private static final ImageGetter NULLIMAGEGETTER = new ImageGetter(){
 		@Override
 		public Drawable getDrawable(String source) {
 			return new Drawable(){
@@ -44,7 +48,7 @@ public abstract class Util {
 	private Util() {
 	}
 
-	public static void showDialog(Context cxt, String msg) {
+	public static void showDialog(Context cxt, CharSequence msg) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(cxt);
 //		builder.setTitle(cxt.getPackageName());
 		builder.setMessage(msg);
@@ -53,7 +57,7 @@ public abstract class Util {
 		builder.show();
 	}
 
-	public static void showConfirmationDialog(Context cxt, String msg, OnClickListener oklistener) {
+	public static void showConfirmationDialog(Context cxt, CharSequence msg, OnClickListener oklistener) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(cxt);
 //		builder.setTitle(cxt.getPackageName());
 		builder.setMessage(msg);
@@ -63,7 +67,7 @@ public abstract class Util {
 		builder.show();
 	}
 
-	public static void showDialog(Context cxt, String title, String msg) {
+	public static void showDialog(Context cxt, CharSequence title, CharSequence msg) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(cxt);
 		builder.setTitle(title);
 		builder.setMessage(msg);
@@ -204,7 +208,7 @@ public abstract class Util {
 		// Invalid for FAT: space \  /  ?  :  "  *  <  >  | 
 		filename = filename.replaceAll("|", "");
 		filename = filename.replaceAll(":", "");
-		// TODO verify below...
+		// TODO 5: verify below...
 		filename = filename.replaceAll("\\?", "");
 		filename = filename.replaceAll("\\&", "");
 		filename = filename.replaceAll("\\*", "");
@@ -215,6 +219,25 @@ public abstract class Util {
 
 	public static boolean isEmpty(String str){
 		return str == null || str.length() == 0;
+	}
+
+	public static void openBrowser(Context cxt, String url){
+		Intent i = new Intent();
+		i.setAction("android.intent.action.VIEW");
+		i.setData(Uri.parse(url));
+		cxt.startActivity(i);
+	}
+	
+	public static void showToastLong(Context cxt, String text){
+		Toast.makeText(cxt, text, Toast.LENGTH_LONG).show();
+	}
+
+	public static void showToastShort(Context cxt, String text){
+		Toast.makeText(cxt, text, Toast.LENGTH_SHORT).show();
+	}
+
+	public static CharSequence fromHtmlNoImages(String source){
+		return Html.fromHtml(source, NULLIMAGEGETTER, null);
 	}
 
 }

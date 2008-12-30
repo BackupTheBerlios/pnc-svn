@@ -14,7 +14,10 @@ import android.content.DialogInterface.OnClickListener;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,6 +25,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -53,27 +57,34 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	private FeedItemAdapter adapter;
 	
 	private ProgressDialog pd;
-	
-//	private Integer currPos;
 
 	private IDownloadService binder;
-	
+
 	private Settings settings;
 	
 	private Bitmap defaultIcon;
+	
+	private WorkerThread thread;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+
 		setContentView(R.layout.feeditem_list);
+
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
+		
+		thread = new WorkerThread();
+		thread.start();
+
 		mFeedId = savedInstanceState != null ? savedInstanceState
-				.getLong(ACast.KEY) : null;
+				.getLong(ACast.FEEDID) : null;
 		if (mFeedId == null) {
 			Bundle extras = getIntent().getExtras();
-			mFeedId = extras != null ? extras.getLong(ACast.KEY)
-					: null;
+			mFeedId = extras != null ? extras.getLong(ACast.FEEDID) : null;
 		}
 		settings = mDbHelper.fetchSettings();
 		if(settings == null){
@@ -108,7 +119,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putLong(ACast.KEY, mFeedId);
+		outState.putLong(ACast.FEEDID, mFeedId);
 	}
 
 	@Override
@@ -126,7 +137,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		item.setIcon(android.R.drawable.stat_sys_download);
 		item = menu.add(0, DELETE_ID, 0, R.string.deleteitem);
 		item.setIcon(android.R.drawable.ic_menu_delete);
-		item = menu.add(0, REFRESH_ID, 0, R.string.refreshfeed);
+		item = menu.add(0, REFRESH_ID, 0, R.string.refresh);
 		item.setIcon(android.R.drawable.ic_menu_rotate);
 		item = menu.add(0, INFO_ID, 0, R.string.info);
 		item.setIcon(android.R.drawable.ic_menu_info_details);
@@ -135,39 +146,39 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-//		currPos = position;
-//		openOptionsMenu();
-		playItem(adapter.getItem(position));
+		FeedItem item = adapter.getItem(position);
+		if(item.getMp3uri() == null){
+			infoItem(item);
+		}else{
+			playItem(item);
+		}
 	}
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
-		int pos = getSelectedItemPosition();
-//		if(currPos != null){
-//			pos = currPos;
-//			currPos = null;
-//		}
-		if(pos >= 0 && PLAY_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			playItem(item);
-			return true;
-		}else if(pos >= 0 && DOWNLOAD_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			downloadItem(item);
-			return true;
-		}else if(pos >= 0 && DELETE_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			deleteItem(item);
-			return true;
-		}else if(REFRESH_ID == menuitem.getItemId()){
-			refreshFeed();
-			return true;
-		}else if(INFO_ID == menuitem.getItemId()){
-			FeedItem item = adapter.getItem(pos);
-			infoItem(item);
-			return true;
+		if(REFRESH_ID == menuitem.getItemId()){
+			thread.refreshFeed();
+		}else{
+			// items which needs position
+			int pos = getSelectedItemPosition();
+			if(pos < 0){
+				Util.showToastShort(this, "No item selected!");
+			}else if(PLAY_ID == menuitem.getItemId()){
+				FeedItem item = adapter.getItem(pos);
+				playItem(item);
+			}else if(DOWNLOAD_ID == menuitem.getItemId()){
+				FeedItem item = adapter.getItem(pos);
+				downloadItem(item);
+			}else if(DELETE_ID == menuitem.getItemId()){
+				FeedItem item = adapter.getItem(pos);
+				deleteItem(item);
+			}else if(INFO_ID == menuitem.getItemId()){
+				FeedItem item = adapter.getItem(pos);
+				infoItem(item);
+			}
 		}
-		return super.onMenuItemSelected(featureId, menuitem);
+		//return super.onMenuItemSelected(featureId, menuitem);
+		return true;
 	}
 
 	private void infoItem(FeedItem item){
@@ -187,7 +198,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	private void downloadItem(FeedItem item){
 		String file = item.getMp3file();
 		if(item.isDownloaded()){
-			Util.showDialog(this, "Already downloaded: "+file);
+			Util.showToastShort(this, "Already downloaded: "+file);
 			return;
 		}
 
@@ -240,17 +251,49 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 			});
 		}
 	}
-
-	private void refreshFeed(){
-		Feed feed = mDbHelper.fetchFeed(mFeedId);
-		try {
-			feed = new RssUtil().parse(feed.getUri());
-			mDbHelper.updateFeed(mFeedId, feed);
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage(), e);
-			Util.showDialog(this, e.getMessage());
+	
+	private class WorkerThread extends Thread {
+		
+		private Handler handler;
+		
+		public void refreshFeed(){
+	        setProgressBarIndeterminateVisibility(true);
+			handler.sendEmptyMessage(0);
 		}
-		populateFields();
+
+		@Override
+		public void run() {
+			Looper.prepare();
+			handler = new Handler(){
+				@Override
+				public void handleMessage(Message msg) {
+					try {
+						Feed feed = mDbHelper.fetchFeed(mFeedId);
+						feed = new RssUtil().parse(feed.getUri());
+						mDbHelper.updateFeed(mFeedId, feed);
+						runOnUiThread(new Runnable(){
+							@Override
+							public void run() {
+								populateFields();
+						        setProgressBarIndeterminateVisibility(false);
+						        Util.showToastShort(FeedItemList.this, "Refreshed");
+							}
+						});
+					} catch (final Exception e) {
+						Log.e(TAG, e.getMessage(), e);
+						runOnUiThread(new Runnable(){
+							@Override
+							public void run() {
+								populateFields();
+						        setProgressBarIndeterminateVisibility(false);
+								Util.showDialog(FeedItemList.this, e.getMessage());
+							}
+						});
+					}
+				}
+			};
+			Looper.loop();
+		}
 	}
 
 	@Override

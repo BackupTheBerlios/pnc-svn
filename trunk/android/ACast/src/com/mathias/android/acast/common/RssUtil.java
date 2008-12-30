@@ -125,6 +125,7 @@ public class RssUtil implements ContentHandler {
 				}else if("description".equalsIgnoreCase(localName)){
 					feed.setDescription(characters);
 				}else if("item".equalsIgnoreCase(localName)){
+					Log.d(TAG, "Adding: "+currentFeedItem.getTitle());
 					feed.addItem(currentFeedItem);
 					currentFeedItem = new FeedItem();
 				}
