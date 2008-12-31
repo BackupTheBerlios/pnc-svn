@@ -94,9 +94,6 @@ public class Player extends Activity implements ServiceConnection {
 				try{
 					if(binder != null){
 						if(binder.isPlaying()){
-							mDbHandler.updateFeedItem(item.getId(),
-									ACastDbAdapter.FEEDITEM_BOOKMARK, binder
-											.getCurrentPosition());
 							binder.pause();
 							playpause.setImageResource(R.drawable.play);
 							//playpause.setImageResource(android.R.drawable.ic_media_play);
@@ -120,9 +117,6 @@ public class Player extends Activity implements ServiceConnection {
 			public void onClick(View v) {
 				try{
 					if(binder != null){
-						mDbHandler.updateFeedItem(item.getId(),
-								ACastDbAdapter.FEEDITEM_BOOKMARK, binder
-										.getCurrentPosition());
 						binder.stop();
 						finish();
 					}else{
@@ -299,15 +293,10 @@ public class Player extends Activity implements ServiceConnection {
 			title.setText(item.getTitle());
 
 			binder.registerCallback(mCallback);
-			if (binder.isPlaying()
-					&& ((item.isDownloaded() && binder.getLocator().equals(
-							item.getMp3file())) || (!item.isDownloaded() && binder
-							.getLocator().equals(item.getMp3uri())))) {
+
+			if (binder.isPlaying() && binder.getExternalId() == item.getId()) {
 				Log.d(TAG, "Already playing: " + item.getMp3uri());
 			} else {
-				mDbHandler.updateFeedItem(binder.getExternalId(),
-						ACastDbAdapter.FEEDITEM_BOOKMARK, binder
-								.getCurrentPosition());
 				if (item.isDownloaded()) {
 					binder.initItem(item.getId(), item.getMp3file(),
 							false);
@@ -330,17 +319,8 @@ public class Player extends Activity implements ServiceConnection {
     private IMediaServiceCallback mCallback = new IMediaServiceCallback.Stub() {
 		@Override
 		public void onCompletion() throws RemoteException {
-			if (item != null && mDbHandler != null) {
-				int currentPosition = binder.getCurrentPosition();
-				if (currentPosition + 100 >= itemDuration) {
-					item.setCompleted(true);
-					item.setBookmark(0);
-				}else{
-					item.setBookmark(currentPosition);
-				}
-				mDbHandler.updateFeedItem(item);
-			}
 			Player.this.finish();
+			//TODO 5: delete file on complete depending on settings
 		}
 	};
 

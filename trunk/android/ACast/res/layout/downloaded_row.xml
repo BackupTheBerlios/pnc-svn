@@ -22,13 +22,13 @@
 		    android:layout_width="fill_parent"
 		    android:layout_height="wrap_content">
 	
-		    <TextView android:id="@+id/text"
+		    <TextView android:id="@+id/title"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
 		        android:textSize="15sp"
 		        android:paddingLeft="6dip" />
 
-		    <TextView android:id="@+id/text2"
+		    <TextView android:id="@+id/author"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
 		        android:textSize="10sp"
@@ -37,11 +37,5 @@
 	    </LinearLayout>
 
     </LinearLayout>
-
-	<ProgressBar android:id="@+id/progressbar"
-		android:layout_width="200px"
-		android:layout_height="wrap_content"
-		android:layout_alignParentLeft="true"
-		style="?android:attr/progressBarStyleHorizontal"/>
 
 </LinearLayout>

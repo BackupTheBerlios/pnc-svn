@@ -71,7 +71,6 @@ public class FeedAdd extends ListActivity {
 			        Util.showToastShort(FeedAdd.this, "You might want to add \'http://\' to RSS URL");
 				}
 				thread.parseRss(uri);
-                showDialog(0);
 			}
 		});
 
@@ -81,7 +80,6 @@ public class FeedAdd extends ListActivity {
 			public void onClick(View v) {
 				String searchstr = text.getText().toString();
 				thread.searchPodgrove(searchstr);
-                showDialog(0);
 			}
 		});
 
@@ -91,7 +89,6 @@ public class FeedAdd extends ListActivity {
 			public void onClick(View v) {
 				String searchstr = text.getText().toString();
 				thread.searchDigitalPodcast(searchstr);
-                showDialog(0);
 			}
 		});
 
@@ -100,7 +97,6 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				thread.top50PodcastAlley();
-                showDialog(0);
 			}
 		});
 
@@ -110,7 +106,6 @@ public class FeedAdd extends ListActivity {
 			public void onClick(View v) {
 				String uristr = text.getText().toString();
 				thread.importOpml(uristr);
-                showDialog(0);
 			}
 		});
 
@@ -125,7 +120,6 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				thread.parseRss(item.getUri());
-		        showDialog(0);
 			}
 		});
 	}

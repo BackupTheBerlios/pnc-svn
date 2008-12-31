@@ -8,6 +8,8 @@ interface IDownloadService {
   void cancelAndRemoveCurrent();
   void cancelAndRemoveAll();
   List getDownloads();
+  long getCurrentDownload();
+  long getProgress();
   void registerCallback(in IDownloadServiceCallback cb);
   void unregisterCallback(in IDownloadServiceCallback cb);
 }

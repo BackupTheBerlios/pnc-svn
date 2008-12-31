@@ -2,24 +2,24 @@ package com.mathias.android.acast.common.services.download;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.mathias.android.acast.ACastDbAdapter;
+import com.mathias.android.acast.DownloadedList;
+import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.Util.ProgressListener;
 
@@ -28,10 +28,12 @@ import com.mathias.android.acast.common.Util.ProgressListener;
  * service will terminate by it self when file is downloaded
  * sends notification when download is complete, no intent/activity will be started
  */
-public class DownloadService extends Service implements ProgressListener {
+public class DownloadService extends Service {
 
 	private static final String TAG = DownloadService.class.getSimpleName();
 	
+	private static final int NOTIFICATION_ID = R.string.downloadmanager;
+
 	public static final String EXTERNALID = "EXTERNALID";
 	
 	public static final String SRCURI = "SRCURI";
@@ -40,135 +42,167 @@ public class DownloadService extends Service implements ProgressListener {
 
 	private RemoteCallbackList<IDownloadServiceCallback> mCallbacks = new RemoteCallbackList<IDownloadServiceCallback>();
 	
-	private ExecutorService executor;
+    private NotificationManager mNM;
+
+	private ACastDbAdapter mDbHelper;
 	
-	private boolean continueDownload = true;
+	private WorkerThread thread;
 	
-	private String lastDestFile;
-	
-	private Map<Long, DownloadItem> items = new HashMap<Long, DownloadItem>();
+	private LinkedBlockingQueue<DownloadItem> queue = new LinkedBlockingQueue<DownloadItem>();
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		Log.d(TAG, "onCreate");
-		executor = Executors.newSingleThreadExecutor();
-	}
 
-	@Override
-	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);
-		Log.d(TAG, "onStart" );
+    	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+		mDbHelper = new ACastDbAdapter(this);
+		mDbHelper.open();
 		
-		Bundle extras = intent.getExtras();
-		if(extras != null){
-			Long externalid = (Long)extras.get(EXTERNALID);
-			String srcuri = (String)extras.get(SRCURI);
-			String destfile = lastDestFile = (String)extras.get(DESTFILE);
-			if(externalid == null || srcuri == null || destfile == null){
-				throw new RuntimeException("Parmaterer null: "+externalid +" "+srcuri +" "+destfile);
-			}
-			DownloadItem item = new DownloadItem(externalid, srcuri, destfile, 0);
-			items.put(externalid, item);
-			executor.execute(new DownloadTread(item));
-			Log.d(TAG, "executed: "+externalid +" "+srcuri +" "+destfile);
-		}
+		thread = new WorkerThread();
+		thread.start();
 	}
-	
-	private class DownloadTread implements Runnable {
 
-		private DownloadItem item;
+	private class WorkerThread extends Thread implements ProgressListener {
 
-		public DownloadTread(DownloadItem item) {
-			this.item = item;
+		private DownloadItem currentItem;
+
+		public void download(DownloadItem item){
+			Log.d(TAG, "Queing: "+item.getDestfile());
+			queue.offer(item);
 		}
-
-		@Override
-		public void run() {
-			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
-			Message msg = new Message();
-			msg.arg1 = (int)item.getExternalId();
-			try {
-				File f = new File(item.getDestfile());
-				Log.d(TAG, "Downloading file: "+f.getName());
-				Util.downloadFile(item.getExternalId(), item.getSrcuri(), f, DownloadService.this);
-				Log.d(TAG, "Done downloading file: "+f.getName());
-				msg.what = 0;
-				handler.sendMessage(msg);
-			} catch (Exception e) {
-				msg.what = 1;
-				msg.obj = e;
-				handler.sendMessage(msg);
+		
+		/**
+		 * Cancel and remove current downloading item if exists and start next
+		 * item.
+		 */
+		public void cancelAndRemoveCurrent(){
+			if(currentItem != null){
+				new File(currentItem.getDestfile()).delete();
+				currentItem = null;
 			}
 		}
-	}
-	
-	private Handler handler = new Handler(){
-		@Override
-		public void handleMessage(Message msg) {
-			switch(msg.what){
-			case 0:
-				broadcastCompleted(msg.arg1);
-//				DownloadItem remove = items.remove(msg.arg1);
-//				String r = (remove != null ? remove.getDestfile() : "remove is null");
-//				Log.d(TAG, "broadcastCompleted: "+r);
-				break;
-			case 1:
-				String s = msg.obj.toString();
-				if(msg.obj instanceof Exception){
-					s = ((Exception)msg.obj).getMessage();
-				}
-				broadcastException(msg.arg1, s);
-//				remove = items.remove(msg.arg1);
-//				r = (remove != null ? remove.getDestfile() : "remove is null");
-//				Log.d(TAG, "broadcastException: "+r);
-				break;
-			}
-		}
-	};
-	
-	private final IDownloadService.Stub binder = new IDownloadService.Stub(){
-		@Override
-		public void download(long externalid, String srcuri, String destfile)
-				throws RemoteException {
-			Log.d(TAG, "Queing: "+destfile);
-			DownloadItem item = new DownloadItem(externalid, srcuri, destfile, 0);
-			items.put(externalid, item);
-			executor.execute(new DownloadTread(item));
-		}
-		@Override
-		public void cancelAndRemoveCurrent() throws RemoteException {
-			continueDownload = false;
-			new File(lastDestFile).delete();
-			Iterator<DownloadItem> it = items.values().iterator();
-			while(it.hasNext()){
+		
+		public void cancelAndRemove(long externalid){
+			for (Iterator<DownloadItem> it = queue.iterator(); it.hasNext();) {
 				DownloadItem item = it.next();
-				if(item.getDestfile().equalsIgnoreCase(lastDestFile)){
+				if(item.getExternalId() == externalid){
+					new File(item.getDestfile()).delete();
 					it.remove();
 					break;
 				}
 			}
 		}
+		
+		public void cancelAndRemoveAll(){
+			for (Iterator<DownloadItem> it = queue.iterator(); it.hasNext();) {
+				new File(it.next().getDestfile()).delete();
+				it.remove();
+			}
+			cancelAndRemoveCurrent();
+		}
+		
+		public List<DownloadItem> getQueue(){
+			List<DownloadItem> res = new ArrayList<DownloadItem>();
+			for (Iterator<DownloadItem> it = queue.iterator(); it.hasNext();) {
+				res.add(it.next());
+			}
+			return res;
+		}
+		
+		public DownloadItem getCurrentDownload(){
+			return currentItem;
+		}
+
+		@Override
+		public void progressDiff(long externalid, long size) {
+			if(currentItem != null && currentItem.getExternalId() == externalid){
+				currentItem.setProgress(currentItem.getProgress()+size);
+			}
+	        final int N = mCallbacks.beginBroadcast();
+			for (int i = 0; i < N; i++) {
+				try {
+					mCallbacks.getBroadcastItem(i).onProgress(externalid, size);
+				} catch (RemoteException e) {
+				}
+			}
+			mCallbacks.finishBroadcast();		
+		}
+
+		@Override
+		public boolean continueDownload(long externalid) {
+			return currentItem != null;
+		}
+
+		@Override
+		public void run() {
+			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
+			while(true){
+				try {
+					currentItem = queue.take();
+					Log.d(TAG, "Got item from queue: "+currentItem);
+					if(currentItem != null){
+						final int externalId = (int) currentItem.getExternalId();
+						try {
+							File f = new File(currentItem.getDestfile());
+							Log.d(TAG, "Downloading file: "+f.getName());
+							Util.downloadFile(externalId, currentItem.getSrcuri(), f, WorkerThread.this);
+							Log.d(TAG, "Done downloading file: "+f.getName());
+	
+							if(mDbHelper != null){
+								mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
+							}
+
+							showNotification();
+	
+							final int N = mCallbacks.beginBroadcast();
+							for (int i = 0; i < N; i++) {
+								try {
+									mCallbacks.getBroadcastItem(i)
+											.onCompleted(externalId);
+								} catch (RemoteException e) {
+								}
+							}
+							mCallbacks.finishBroadcast();
+						} catch (Exception e) {
+							Log.e(TAG, e.getMessage());
+					        final int N = mCallbacks.beginBroadcast();
+							for (int i = 0; i < N; i++) {
+								try {
+									mCallbacks.getBroadcastItem(i)
+											.onException(externalId,
+													e.getMessage());
+								} catch (RemoteException e1) {
+								}
+							}
+							mCallbacks.finishBroadcast();		
+						}
+					}
+				} catch (InterruptedException e2) {
+					Log.e(TAG, e2.getMessage(), e2);
+				}
+			}
+		}
+	}
+
+	private final IDownloadService.Stub binder = new IDownloadService.Stub(){
+		@Override
+		public void download(long externalid, String srcuri, String destfile)
+				throws RemoteException {
+			thread.download(new DownloadItem(externalid, srcuri, destfile, 0));
+		}
+		@Override
+		public void cancelAndRemoveCurrent() throws RemoteException {
+			thread.cancelAndRemoveCurrent();
+		}
 		@Override
 		public void cancelAndRemove(long externalid) throws RemoteException {
-			DownloadItem item = items.get(externalid);
-			String destfile = item.getDestfile();
-			if(lastDestFile.equalsIgnoreCase(destfile)){
-				continueDownload = false;
-			}
-			new File(destfile).delete();
-//			items.remove(externalid);
+			thread.cancelAndRemove(externalid);
 		}
 		@Override
 		public void cancelAndRemoveAll() throws RemoteException {
-			continueDownload = false;
-			new File(lastDestFile).delete();
-			Iterator<DownloadItem> it = items.values().iterator();
-			while(it.hasNext()){
-				DownloadItem item = it.next();
-				new File(item.getDestfile()).delete();
-				it.remove();
-			}
+			thread.cancelAndRemoveAll();
 		}
 		@Override
 		public void registerCallback(IDownloadServiceCallback cb)
@@ -180,9 +214,24 @@ public class DownloadService extends Service implements ProgressListener {
 				throws RemoteException {
 			mCallbacks.unregister(cb);
 		}
+		//TODO 5: Parcable?
+		@SuppressWarnings("unchecked")
 		@Override
 		public List getDownloads() throws RemoteException {
-			return new ArrayList<DownloadItem>(items.values());
+			return thread.getQueue();
+		}
+		@Override
+		public long getCurrentDownload() throws RemoteException {
+			DownloadItem item = thread.getCurrentDownload();
+			if(item != null) {
+				return item.getExternalId();
+			}
+			return -1;
+		}
+		@Override
+		public long getProgress() throws RemoteException {
+			DownloadItem item = thread.getCurrentDownload();
+			return (item != null ? item.getProgress() : 0);
 		}
 	};
 
@@ -194,57 +243,27 @@ public class DownloadService extends Service implements ProgressListener {
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy");
+		mCallbacks.kill();
+		mDbHelper.close();
+		mDbHelper = null;
 		super.onDestroy();
 	}
 
-	@Override
-	public void progressDiff(long externalid, long size) {
-		DownloadItem item = items.get(externalid);
-		if(item != null){
-			item.setProgress(item.getProgress()+size);
-		}
-		broadcastDiff(externalid, size);
-	}
+	private void showNotification() {
+		Log.d(TAG, "showNotification()");
+		String ticker = "Download complete";
+		CharSequence title = "Download complete";
+		String text = "Download complete";
 
-	@Override
-	public boolean continueDownload(long externalid) {
-		return continueDownload;
-	}
+		Notification notification = new Notification(R.drawable.downloaded,
+				ticker, System.currentTimeMillis());
 
-	private void broadcastCompleted(int externalid){
-//		NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-//		nm.notify(0, new Notification(R.drawable.icon, "Download complete", 0));
+		Intent i = new Intent(this, DownloadedList.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
-        final int N = mCallbacks.beginBroadcast();
-		for (int i = 0; i < N; i++) {
-			try {
-				mCallbacks.getBroadcastItem(i).onCompleted(externalid);
-			} catch (RemoteException e) {
-			}
-		}
-		mCallbacks.finishBroadcast();
-	}
+		notification.setLatestEventInfo(this, title, text, contentIntent);
 
-	private void broadcastException(int externalid, String exception){
-        final int N = mCallbacks.beginBroadcast();
-		for (int i = 0; i < N; i++) {
-			try {
-				mCallbacks.getBroadcastItem(i).onException(externalid, exception);
-			} catch (RemoteException e) {
-			}
-		}
-		mCallbacks.finishBroadcast();		
-	}
-
-	private void broadcastDiff(long externalid, long diff){
-        final int N = mCallbacks.beginBroadcast();
-		for (int i = 0; i < N; i++) {
-			try {
-				mCallbacks.getBroadcastItem(i).onProgress(externalid, diff);
-			} catch (RemoteException e) {
-			}
-		}
-		mCallbacks.finishBroadcast();		
+		mNM.notify(NOTIFICATION_ID, notification);
 	}
 
 }

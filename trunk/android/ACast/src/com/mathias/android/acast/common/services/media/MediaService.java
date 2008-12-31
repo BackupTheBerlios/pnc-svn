@@ -18,6 +18,7 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.mathias.android.acast.ACastDbAdapter;
 import com.mathias.android.acast.Player;
 import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
@@ -32,39 +33,49 @@ public class MediaService extends Service {
 
     private NotificationManager mNM;
     
+    private WorkerThread thread;
+    
+	private ACastDbAdapter mDbHandler;
+	
     final RemoteCallbackList<IMediaServiceCallback> mCallbacks = new RemoteCallbackList<IMediaServiceCallback>();
-
-	public Handler mediahandler;
 
     @Override
 	public void onCreate() {
 
-    	new Thread(){
-    		@Override
-    		public void run() {
-    			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
-
-    			Looper.prepare();
-    			
-    			mediahandler = new Handler(){
-    				@Override
-    				public void handleMessage(Message msg) {
-    					Log.d(TAG, "Starting MediaPlayerThread");
-    					if(mp != null){
-        					mp.start();
-    					}
-    					Log.d(TAG, "Exiting MediaPlayerThread");
-    				}
-    			};
-    			
-    			Looper.loop();
-    		}
-    	}.start();
+    	thread = new WorkerThread();
+    	thread.start();
     	
     	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
-		showNotification();
+		mDbHandler = new ACastDbAdapter(this);
+		mDbHandler.open();
 	}
+    
+    private class WorkerThread extends Thread {
+    	
+		public Handler handler;
+		
+		public void play(){
+			showNotification();
+			handler.sendEmptyMessage(0);
+		}
+
+		@Override
+		public void run() {
+			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
+			Looper.prepare();
+			handler = new Handler(){
+				@Override
+				public void handleMessage(Message msg) {
+					if(mp != null && !mp.isPlaying()){
+						Log.d(TAG, "mp.start()");
+    					mp.start();
+					}
+				}
+			};
+			Looper.loop();
+		}
+    }
 
 	@Override
 	public void onStart(Intent intent, int startId) {
@@ -88,6 +99,8 @@ public class MediaService extends Service {
 		@Override
 		public void pause() throws RemoteException {
 			Log.d(TAG, "pause()");
+			mDbHandler.updateFeedItem(externalid,
+					ACastDbAdapter.FEEDITEM_BOOKMARK, getCurrentPosition());
 	        mNM.cancel(NOTIFICATION_ID);
 			if(mp != null){
 				Log.d(TAG, "mp.pause()");
@@ -97,11 +110,7 @@ public class MediaService extends Service {
 		@Override
 		public void play() throws RemoteException {
 			Log.d(TAG, "play()");
-			showNotification();
-			if(mp != null && !mp.isPlaying()){
-				Log.d(TAG, "play() send start message");
-				mediahandler.sendEmptyMessage(0);
-			}
+			thread.play();
 		}
 		@Override
 		public void seek(int msec) throws RemoteException {
@@ -113,7 +122,9 @@ public class MediaService extends Service {
 		@Override
 		public void stop() throws RemoteException {
 			Log.d(TAG, "stop() mp="+mp);
-			MediaService.this.stop();
+			mDbHandler.updateFeedItem(externalid,
+					ACastDbAdapter.FEEDITEM_BOOKMARK, getCurrentPosition());
+			stopMediaPlayer();
 			stopSelf();
 		}
 		@Override
@@ -140,13 +151,17 @@ public class MediaService extends Service {
 			}
 		}
 		@Override
-		public void initItem(long externalid, String locator, boolean stream) throws RemoteException {
+		public void initItem(final long newexternalid, String locator, boolean stream) throws RemoteException {
 			Log.d(TAG, "initItem, locator="+locator);
+
 			if(locator == null){
 				return;
 			}
 
-			this.externalid = externalid;
+			mDbHandler.updateFeedItem(this.externalid,
+					ACastDbAdapter.FEEDITEM_BOOKMARK, getCurrentPosition());
+
+			this.externalid = newexternalid;
 			this.locator = locator;
 			this.stream = stream;
 			
@@ -183,6 +198,15 @@ public class MediaService extends Service {
 			mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
 				@Override
 				public void onCompletion(MediaPlayer mediaplayer) {
+					if (externalid >= 0) {
+						int currentPosition = mp.getCurrentPosition();
+						if (currentPosition + 100 >= mp.getDuration()) {
+							mDbHandler.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_COMPLETED, true);
+							mDbHandler.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_BOOKMARK, 0);
+						}else{
+							mDbHandler.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_BOOKMARK, currentPosition);
+						}
+					}
 					broadcastOnCompletion();
 			        mNM.cancel(NOTIFICATION_ID);
 					stopSelf();
@@ -244,11 +268,13 @@ public class MediaService extends Service {
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy() mp="+mp);
-		stop();
+		stopMediaPlayer();
 		mCallbacks.kill();
+		mDbHandler.close();
+		mDbHandler = null;
 	}
 	
-	private void stop(){
+	private void stopMediaPlayer(){
         mNM.cancel(NOTIFICATION_ID);
 		if(mp != null){
 			mp.reset();

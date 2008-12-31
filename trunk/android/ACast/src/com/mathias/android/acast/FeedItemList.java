@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.List;
 
 import android.app.ListActivity;
-import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -55,8 +54,6 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	private ACastDbAdapter mDbHelper;
 	
 	private FeedItemAdapter adapter;
-	
-	private ProgressDialog pd;
 
 	private IDownloadService binder;
 
@@ -95,6 +92,12 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 				R.drawable.question);
 
 		populateFields();
+
+		Intent i = new Intent(this, DownloadService.class);
+		startService(i);
+		if(!bindService(i, this, BIND_AUTO_CREATE)) {
+			Util.showDialog(this, "Could not start download service!");
+		}
 	}
 
 	private void populateFields() {
@@ -202,40 +205,20 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 			return;
 		}
 
-		String srcuri = item.getMp3uri().replace(' ', '+');
-		Intent i = new Intent(this, DownloadService.class);
-		i.putExtra(DownloadService.EXTERNALID, item.getId());
-		i.putExtra(DownloadService.SRCURI, srcuri);
-		i.putExtra(DownloadService.DESTFILE, item.getMp3file());
-		startService(i);
-		if(!bindService(i, this, BIND_AUTO_CREATE)) {
-			Util.showDialog(this, "Could not start download!");
+		if(binder == null){
+			Log.e(TAG, "binder is null. No connection to download service!");
 			return;
 		}
-
-		pd = new ProgressDialog(this);
-		pd.setTitle("Downloading");
-		pd.setMessage(item.getMp3uri());
-		pd.setButton("Background", new OnClickListener(){
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				pd.dismiss();
-			}
-		});
-		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		pd.setButton2("Cancel", new OnClickListener(){
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				if(binder != null){
-					try {
-						binder.cancelAndRemoveCurrent();
-					} catch (RemoteException e) {
-					}
-				}
-			}
-		});
-		pd.setMax((int)item.getSize());
-		pd.show();
+		
+		String srcuri = item.getMp3uri().replace(' ', '+');
+		try {
+			binder.download(item.getId(), srcuri, item.getMp3file());
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+			return;
+		}
+		
+		Util.showToastShort(this, "Download added to download queue!");
 	}
 
 	private void deleteItem(final FeedItem item){
@@ -330,22 +313,29 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
 	private final IDownloadServiceCallback downloadCallback = new IDownloadServiceCallback.Stub() {
 		@Override
-		public void onCompleted(long externalid) throws RemoteException {
-			pd.dismiss();
-			if(mDbHelper != null){
-				mDbHelper.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
-			}
-			populateFields();
+		public void onCompleted(final long externalid) throws RemoteException {
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					populateFields();
+			        setProgressBarIndeterminateVisibility(false);
+			        Util.showToastShort(FeedItemList.this, "Downloaded");
+				}
+			});
 		}
 		@Override
-		public void onException(long externalid, String exception) throws RemoteException {
-			pd.dismiss();
-			Util.showDialog(FeedItemList.this, "Download failed: "+exception);
-			populateFields();
+		public void onException(long externalid, final String exception) throws RemoteException {
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					populateFields();
+			        setProgressBarIndeterminateVisibility(false);
+			        Util.showToastShort(FeedItemList.this, "Download failed: "+exception);
+				}
+			});
 		}
 		@Override
 		public void onProgress(long externalid, long diff) throws RemoteException {
-			pd.incrementProgressBy((int)diff);
 		}
 	};
 

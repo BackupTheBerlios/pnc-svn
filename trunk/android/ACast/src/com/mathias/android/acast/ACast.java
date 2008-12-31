@@ -1,3 +1,9 @@
+//TODO 6: Option menu should be for actions which affect all feeds/items. LongPress (ContectMenu?) should affect single items
+//TODO 6: Increase size of feed/feeditem list rows
+//TODO 5: dont show/send all download progress msgs
+//TODO 5: Download estimated time
+//TODO 6: Progress dialog should show title instead of url
+//TODO 5: Add indeterminate status progress bar during play init
 //TODO 6: Bug: audio notification triggered player does not stop audio
 //TODO 6: Bug: info for feed item is not shown when opening player with notifiction
 //TODO 6: Download queue not visible after close. How to go to file download page? Main page menu item.
@@ -108,17 +114,21 @@ import java.io.File;
 import java.util.List;
 
 import android.app.ListActivity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -136,11 +146,13 @@ import android.widget.TextView;
 
 import com.mathias.android.acast.common.RssUtil;
 import com.mathias.android.acast.common.Util;
+import com.mathias.android.acast.common.services.download.DownloadService;
+import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
 
-public class ACast extends ListActivity {
+public class ACast extends ListActivity implements ServiceConnection {
 
 	private static final String TAG = ACast.class.getSimpleName();
 
@@ -166,6 +178,8 @@ public class ACast extends ListActivity {
 	private Settings settings;
 
 	private Bitmap defaultIcon;
+
+	private IDownloadService binder;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -210,6 +224,12 @@ public class ACast extends ListActivity {
 				}
 			}
 		});
+
+		Intent i = new Intent(this, DownloadService.class);
+		startService(i);
+		if(!bindService(i, this, BIND_AUTO_CREATE)) {
+			Util.showDialog(this, "Could not start download service!");
+		}
 	}
 
 	private void fillData() {
@@ -341,7 +361,7 @@ public class ACast extends ListActivity {
 	}
 
 	private void showDownloadManager() {
-		Intent i = new Intent(this, DownloadList.class);
+		Intent i = new Intent(this, DownloadQueueList.class);
 		startActivityForResult(i, 0);
 	}
 
@@ -375,9 +395,17 @@ public class ACast extends ListActivity {
 		WifiInfo info = wifiManager.getConnectionInfo();
 		boolean connected = info != null && info.getSSID() != null;
 		if(!settings.isOnlyWifiDownload() || connected){
-			Intent i = new Intent(this, DownloadList.class);
-			i.putExtra(ACast.FEED, feed);
-			startActivityForResult(i, 0);
+			try {
+				for (FeedItem item : feed.getItems()) {
+					binder.download(item.getId(), item.getMp3uri(), item
+							.getMp3file());
+				}
+				Util.showToastShort(this, "Downloading all "+feed.getTitle());
+			} catch (RemoteException e) {
+				Util.showToastShort(this, e.getMessage());
+			}
+		}else{
+			Util.showToastShort(this, "Only Wifi download is allowed");
 		}
 	}
 
@@ -392,6 +420,9 @@ public class ACast extends ListActivity {
 		Log.d(TAG, "onDestroy");
 		mDbHelper.close();
 		mDbHelper = null;
+		if(binder != null){
+			unbindService(this);
+		}
 		super.onDestroy();
 	}
 
@@ -466,5 +497,17 @@ public class ACast extends ListActivity {
         TextView text;
         TextView text2;
     }
+
+	@Override
+	public void onServiceConnected(ComponentName name, IBinder service) {
+		Log.d(TAG, "onServiceConnected: "+name);
+		binder = IDownloadService.Stub.asInterface(service);
+	}
+
+	@Override
+	public void onServiceDisconnected(ComponentName name) {
+		Log.d(TAG, "onServiceDisconnected: "+name);
+		binder = null;
+	}
 
 }
