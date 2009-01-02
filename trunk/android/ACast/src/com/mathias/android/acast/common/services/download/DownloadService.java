@@ -17,6 +17,7 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.mathias.android.acast.ACast;
 import com.mathias.android.acast.ACastDbAdapter;
 import com.mathias.android.acast.DownloadedList;
 import com.mathias.android.acast.R;
@@ -32,8 +33,6 @@ public class DownloadService extends Service {
 
 	private static final String TAG = DownloadService.class.getSimpleName();
 	
-	private static final int NOTIFICATION_ID = R.string.downloadmanager;
-
 	public static final String EXTERNALID = "EXTERNALID";
 	
 	public static final String SRCURI = "SRCURI";
@@ -263,7 +262,7 @@ public class DownloadService extends Service {
 
 		notification.setLatestEventInfo(this, title, text, contentIntent);
 
-		mNM.notify(NOTIFICATION_ID, notification);
+		mNM.notify(ACast.NOTIFICATION_DOWNLOADSERVICE_ID, notification);
 	}
 
 }

@@ -1,3 +1,4 @@
+//TODO 5: sort on pubDate, title, ... (settings)
 //TODO 6: Option menu should be for actions which affect all feeds/items. LongPress (ContectMenu?) should affect single items
 //TODO 6: Increase size of feed/feeditem list rows
 //TODO 5: dont show/send all download progress msgs
@@ -161,13 +162,17 @@ public class ACast extends ListActivity implements ServiceConnection {
 	public static final String FEEDITEM = "feeditem";
 	public static final String FEEDITEMID = "feeditemid";
 
+	public static final int NOTIFICATION_DOWNLOADSERVICE_ID = R.id.add;
+	public static final int NOTIFICATION_MEDIASERVICE_ID = R.id.addresult;
+
 	private static final int INSERT_ID = Menu.FIRST + 0;
 	private static final int DELETE_ID = Menu.FIRST + 1;
 	private static final int REFRESH_ID = Menu.FIRST + 2;
 	private static final int INFO_ID = Menu.FIRST + 3;
 	private static final int DOWNLOADALL_ID = Menu.FIRST + 4;
-	private static final int DOWNLOADMANAGER_ID = Menu.FIRST + 5;
-	private static final int SETTINGS_ID = Menu.FIRST + 6;
+	private static final int DOWNLOADQUEUE_ID = Menu.FIRST + 5;
+	private static final int DOWNLOADLIST_ID = Menu.FIRST + 6;
+	private static final int SETTINGS_ID = Menu.FIRST + 7;
 
 	private ACastDbAdapter mDbHelper;
 
@@ -260,7 +265,9 @@ public class ACast extends ListActivity implements ServiceConnection {
 		item.setIcon(android.R.drawable.ic_menu_info_details);
 		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
 		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(Menu.NONE, DOWNLOADMANAGER_ID, Menu.NONE, R.string.downloadmanager);
+		item = menu.add(Menu.NONE, DOWNLOADQUEUE_ID, Menu.NONE, R.string.downloadqueue);
+		item.setIcon(android.R.drawable.stat_sys_download);
+		item = menu.add(Menu.NONE, DOWNLOADLIST_ID, Menu.NONE, R.string.downloadlist);
 		item.setIcon(android.R.drawable.stat_sys_download);
 		item = menu.add(Menu.NONE, SETTINGS_ID, Menu.NONE, R.string.settings);
 		item.setIcon(android.R.drawable.stat_sys_download);
@@ -281,8 +288,12 @@ public class ACast extends ListActivity implements ServiceConnection {
 			createFeed();
 		}else if(REFRESH_ID == item.getItemId()){
 			thread.refreshFeeds();
-		}else if(DOWNLOADMANAGER_ID == item.getItemId()){
-			showDownloadManager();
+		}else if(DOWNLOADQUEUE_ID == item.getItemId()){
+			Intent i = new Intent(this, DownloadQueueList.class);
+			startActivityForResult(i, 0);
+		}else if(DOWNLOADLIST_ID == item.getItemId()){
+			Intent i = new Intent(this, DownloadedList.class);
+			startActivityForResult(i, 0);
 		}else if(SETTINGS_ID == item.getItemId()){
 			showSettings();
 		}else{
@@ -357,11 +368,6 @@ public class ACast extends ListActivity implements ServiceConnection {
 
 	private void showSettings() {
 		Intent i = new Intent(this, SettingsEdit.class);
-		startActivityForResult(i, 0);
-	}
-
-	private void showDownloadManager() {
-		Intent i = new Intent(this, DownloadQueueList.class);
 		startActivityForResult(i, 0);
 	}
 
@@ -454,6 +460,7 @@ public class ACast extends ListActivity implements ServiceConnection {
                 holder.icon = (ImageView) convertView.findViewById(R.id.feedrowicon);
                 holder.text = (TextView) convertView.findViewById(R.id.feedrowtext);
                 holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
+                holder.text3 = (TextView) convertView.findViewById(R.id.feedrowtext3);
 
                 convertView.setTag(holder);
 
@@ -471,6 +478,8 @@ public class ACast extends ListActivity implements ServiceConnection {
             holder.text.setText(feeds.get(position).getTitle());
             String author = feeds.get(position).getAuthor();
             holder.text2.setText((author != null ? author : ""));
+            String pubDate = feeds.get(position).getPubdate();
+            holder.text3.setText((pubDate != null ? pubDate : ""));
 
             return convertView;
 		}
@@ -496,6 +505,7 @@ public class ACast extends ListActivity implements ServiceConnection {
         ImageView icon;
         TextView text;
         TextView text2;
+        TextView text3;
     }
 
 	@Override

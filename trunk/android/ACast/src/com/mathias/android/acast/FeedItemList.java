@@ -104,21 +104,24 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		if (mFeedId != null && mDbHelper != null) {
 			Feed feed = mDbHelper.fetchFeed(mFeedId);
 
-	        String iconStr = feed.getIcon();
-	        ImageView icon = (ImageView) findViewById(R.id.feedrowicon);
-	        icon.setImageBitmap(iconStr != null ? BitmapFactory
+			String iconStr = feed.getIcon();
+			ImageView icon = (ImageView) findViewById(R.id.feedrowicon);
+			icon.setImageBitmap(iconStr != null ? BitmapFactory
 					.decodeFile(iconStr) : defaultIcon);
-	        TextView text = (TextView) findViewById(R.id.feedrowtext);
-	        text.setText(feed.getTitle());
-	        String author = feed.getAuthor();
-	        TextView text2 = (TextView) findViewById(R.id.feedrowtext2);
-	        text2.setText((author != null ? author : ""));
+			TextView text = (TextView) findViewById(R.id.feedrowtext);
+			text.setText(feed.getTitle());
+			String author = feed.getAuthor();
+			TextView text2 = (TextView) findViewById(R.id.feedrowtext2);
+			text2.setText((author != null ? author : ""));
+			String pubDate = feed.getPubdate();
+			TextView text3 = (TextView) findViewById(R.id.feedrowtext3);
+			text3.setText((pubDate != null ? pubDate : ""));
 
-	        adapter = new FeedItemAdapter(this, feed.getItems());
+			adapter = new FeedItemAdapter(this, feed.getItems());
 			setListAdapter(adapter);
 		}
 	}
-	
+
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
@@ -384,6 +387,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
                 holder.icon = (ImageView) convertView.findViewById(R.id.feedrowicon);
                 holder.text = (TextView) convertView.findViewById(R.id.feedrowtext);
                 holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
+                holder.text3 = (TextView) convertView.findViewById(R.id.feedrowtext3);
 
                 convertView.setTag(holder);
             } else {
@@ -428,6 +432,8 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
             holder.text.setText(item.getTitle());
             String author = item.getAuthor();
             holder.text2.setText((author != null ? author : ""));
+	        String pubDate = item.getPubdate();
+	        holder.text3.setText((pubDate != null ? pubDate : ""));
 
             return convertView;
 		}
@@ -436,6 +442,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	        ImageView icon;
 	        TextView text;
 	        TextView text2;
+	        TextView text3;
 	    }
 
 	}

@@ -1,13 +1,17 @@
 package com.mathias.android.acast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.app.ListActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -23,11 +27,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.mathias.android.acast.common.Util;
-import com.mathias.android.acast.common.services.download.DownloadItem;
 import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
 import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings;
 
 public class DownloadedList extends ListActivity implements ServiceConnection {
 
@@ -40,12 +44,14 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 
 	private DownloadAdapter adapter;
 
-	private Integer currPos;
-
 	private IDownloadService binder;
 
-	private List<DownloadItem> downloads = new ArrayList<DownloadItem>();
+	private List<FeedItem> downloads = new ArrayList<FeedItem>();
+	
+	private Map<Long, String> iconCache = new HashMap<Long, String>();
 
+	private Settings settings;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -60,6 +66,11 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 			Util.showDialog(this, "Could not start download!");
 		}
 
+		settings = mDbHelper.fetchSettings();
+		if(settings == null){
+			settings = new Settings(0, null, (long)0);
+		}
+
 		// start progress handler loop
 		populateList();
 	}
@@ -68,6 +79,7 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 		runOnUiThread(new Runnable(){
 			@Override
 			public void run() {
+				downloads = mDbHelper.fetchDownloadedFeedItems();
 				adapter = new DownloadAdapter(DownloadedList.this, downloads);
 				setListAdapter(adapter);
 			}
@@ -92,22 +104,21 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-		currPos = position;
-		openOptionsMenu();
+		FeedItem item = adapter.getItem(position);
+		if(item.getMp3uri() == null){
+			infoItem(item);
+		}else{
+			playItem(item);
+		}
 	}
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
 		int pos = getSelectedItemPosition();
-		if(currPos != null){
-			pos = currPos;
-			currPos = null;
-		}
 		if(REFRESH_ID == menuitem.getItemId()){
 			populateList();
 		}else if(pos >= 0 && INFO_ID == menuitem.getItemId()){
-			DownloadItem item = adapter.getItem(pos);
-			FeedItem feedItem = mDbHelper.fetchFeedItem(item.getExternalId());
+			FeedItem feedItem = adapter.getItem(pos);
 			infoItem(feedItem);
 		}
 		//return super.onMenuItemSelected(featureId, menuitem);
@@ -116,6 +127,14 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 	
 	private void infoItem(FeedItem item){
 		Intent i = new Intent(this, FeedItemInfo.class);
+		i.putExtra(ACast.FEEDITEM, item);
+		startActivityForResult(i, 0);
+	}
+
+	private void playItem(FeedItem item) {
+		settings.setLastFeedItemId(item.getId());
+		mDbHelper.updateSettings(settings);
+		Intent i = new Intent(this, Player.class);
 		i.putExtra(ACast.FEEDITEM, item);
 		startActivityForResult(i, 0);
 	}
@@ -171,15 +190,15 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 	private class DownloadAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
-		private List<DownloadItem> items;
+		private List<FeedItem> items;
 
-		public DownloadAdapter(Context cxt, List<DownloadItem> items){
+		public DownloadAdapter(Context cxt, List<FeedItem> items){
 			this.items = items;
 			mInflater = LayoutInflater.from(cxt);
 		}
-		public DownloadItem getByExternalId(long externalId){
-			for (DownloadItem item : items) {
-				if(externalId == item.getExternalId()){
+		public FeedItem getByExternalId(long externalId){
+			for (FeedItem item : items) {
+				if(externalId == item.getId()){
 					return item;
 				}
 			}
@@ -190,12 +209,12 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 			return items.size();
 		}
 		@Override
-		public DownloadItem getItem(int position) {
+		public FeedItem getItem(int position) {
 			return items.get(position);
 		}
 		@Override
 		public long getItemId(int position) {
-			return getItem(position).getExternalId();
+			return getItem(position).getId();
 		}
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
@@ -215,6 +234,7 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
                 holder.icon = (ImageView) convertView.findViewById(R.id.icon);
                 holder.title = (TextView) convertView.findViewById(R.id.title);
                 holder.author = (TextView) convertView.findViewById(R.id.author);
+                holder.pubdate = (TextView) convertView.findViewById(R.id.pubdate);
 
                 convertView.setTag(holder);
             } else {
@@ -225,14 +245,15 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
 
             // Bind the data efficiently with the holder.
             Log.d(TAG, "getView; position="+position+" items="+items.size());
-            DownloadItem downloadItem = items.get(position);
-			FeedItem item = mDbHelper.fetchFeedItem(downloadItem.getExternalId());
+            FeedItem item = items.get(position);
             if(item == null) {
             	return null;
             }
+            Bitmap bm = BitmapFactory.decodeFile(getIcon(item.getFeedId()));
+			holder.icon.setImageBitmap(bm);
             holder.title.setText(item.getTitle());
             holder.author.setText(item.getAuthor());
-			holder.icon.setImageResource(R.drawable.downloaded);
+            holder.pubdate.setText(item.getPubdate());
 
             return convertView;
 		}
@@ -243,6 +264,16 @@ public class DownloadedList extends ListActivity implements ServiceConnection {
         ImageView icon;
         TextView title;
         TextView author;
+        TextView pubdate;
+    }
+
+    private String getIcon(long feedid){
+    	String icon = iconCache.get(feedid);
+    	if(icon == null){
+            icon = mDbHelper.fetchFeedIcon(feedid);
+    		iconCache.put(feedid, icon);
+    	}
+    	return icon;
     }
 
 }

@@ -34,6 +34,12 @@
 		        android:textSize="10sp"
 		        android:paddingLeft="6dip" />
 
+		    <TextView android:id="@+id/pubdate"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:textSize="10sp"
+		        android:paddingLeft="6dip" />
+
 	    </LinearLayout>
 
     </LinearLayout>
