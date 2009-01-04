@@ -21,20 +21,18 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.mathias.android.acast.common.ACastUtil;
 import com.mathias.android.acast.common.Util;
-import com.mathias.android.acast.common.services.download.DownloadItem;
-import com.mathias.android.acast.common.services.download.DownloadService;
-import com.mathias.android.acast.common.services.download.IDownloadService;
-import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
+import com.mathias.android.acast.common.services.media.IMediaService;
+import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
+import com.mathias.android.acast.common.services.media.MediaService;
 import com.mathias.android.acast.podcast.FeedItem;
 
-public class DownloadQueueList extends ListActivity implements ServiceConnection {
+public class PlayList extends ListActivity implements ServiceConnection {
 
-	private static final String TAG = DownloadQueueList.class.getSimpleName();
+	private static final String TAG = PlayList.class.getSimpleName();
 
 	private static final long UPDATE_DELAY = 3000;
 
@@ -45,11 +43,11 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 
 	private ACastDbAdapter mDbHelper;
 
-	private DownloadAdapter adapter;
+	private MediaAdapter adapter;
 
 	private Integer currPos;
 
-	private IDownloadService binder;
+	private IMediaService mediaBinder;
 
 	private boolean visible = false;
 
@@ -57,15 +55,15 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		ACastUtil.customTitle(this, "Queue", R.layout.downloadqueue_list);
+		ACastUtil.customTitle(this, "Play", R.layout.play_list);
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 
-		Intent i = new Intent(this, DownloadService.class);
+		Intent i = new Intent(this, MediaService.class);
 		startService(i);
 		if(!bindService(i, this, BIND_AUTO_CREATE)) {
-			Util.showDialog(this, "Could not start download!");
+			Util.showDialog(this, "Could not start media!");
 		}
 
 		// start progress handler loop
@@ -76,31 +74,8 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		@Override
 		public void handleMessage(Message not_used) {
 			if(visible){
-				if(binder != null){
-					try {
-						long currId = binder.getCurrentDownload();
-						if(mDbHelper == null){
-							Log.d(TAG, "mDbHelper null/not available");
-						}else{
-							FeedItem item = mDbHelper.fetchFeedItem(currId);
-							TextView title = (TextView) findViewById(R.id.title);
-							TextView author = (TextView) findViewById(R.id.author);
-							ProgressBar progress = (ProgressBar) findViewById(R.id.progressbar);
-							if(item != null){
-								title.setText(item.getTitle());
-								author.setText(item.getAuthor());
-								progress.setMax((int)item.getSize());
-								progress.setProgress((int)binder.getProgress());
-							}else{
-								title.setText("No current download");
-								author.setText("No current download");
-								progress.setVisibility(View.GONE);
-							}
-						}
-					} catch (RemoteException e) {
-						Log.e(TAG, e.getMessage(), e);
-						Util.showDialog(DownloadQueueList.this, e.getClass().getSimpleName(), e.getMessage());
-					}
+				if(mediaBinder != null){
+					//TODO
 				}else{
 					Log.d(TAG, "binder is null!!");
 				}
@@ -159,9 +134,9 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 			progressHandler.sendEmptyMessage(0);
 			return true;
 		}else if(pos >= 0 && INFO_ID == menuitem.getItemId()){
-			DownloadItem item = adapter.getItem(pos);
-			FeedItem feedItem = mDbHelper.fetchFeedItem(item.getExternalId());
-			infoItem(feedItem);
+//			MediaItem item = adapter.getItem(pos);
+//			FeedItem feedItem = mDbHelper.fetchFeedItem(item.getExternalId());
+//			infoItem(feedItem);
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, menuitem);
@@ -174,54 +149,54 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 	}
 
 	private void cancelAndRemove(long externalId){
-		try {
-			binder.cancelAndRemove(externalId);
-			populateList();
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage(), e);
-		}
+//		try {
+//			binder.cancelAndRemove(externalId);
+//			populateList();
+//		} catch (Exception e) {
+//			Log.e(TAG, e.getMessage(), e);
+//		}
 	}
 	
 	private void cancelAndRemoveAll(){
-		try {
-			binder.cancelAndRemoveAll();
-			populateList();
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage(), e);
-		}
+//		try {
+//			binder.cancelAndRemoveAll();
+//			populateList();
+//		} catch (Exception e) {
+//			Log.e(TAG, e.getMessage(), e);
+//		}
 	}
 
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
 		mDbHelper = null;
-		if(binder != null){
+		if(mediaBinder != null){
 			unbindService(this);
 		}
 		super.onDestroy();
 	}
 	
 	private void populateList() throws RemoteException {
-		final List<DownloadItem> downloads = binder.getDownloads();
-		Log.d(TAG, "downloads.length="+downloads.size());
-		runOnUiThread(new Runnable(){
-			@Override
-			public void run() {
-				adapter = new DownloadAdapter(DownloadQueueList.this, downloads);
-				setListAdapter(adapter);
-
-				progressHandler.sendEmptyMessage(0);
-			}
-		});
+//		final List<FeedItem> items = binder.getFeedItems();
+//		Log.d(TAG, "items.length="+items.size());
+//		runOnUiThread(new Runnable(){
+//			@Override
+//			public void run() {
+//				adapter = new MediaAdapter(PlayList.this, items);
+//				setListAdapter(adapter);
+//
+//				progressHandler.sendEmptyMessage(0);
+//			}
+//		});
 	}
 
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
 		Log.d(TAG, "onServiceConnected: "+name);
-		binder = IDownloadService.Stub.asInterface(service);
+		mediaBinder = IMediaService.Stub.asInterface(service);
 		try {
 			populateList();
-			binder.registerCallback(downloadCallback);
+			mediaBinder.registerCallback(mediaCallback);
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
@@ -231,48 +206,34 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 	public void onServiceDisconnected(ComponentName name) {
 		Log.d(TAG, "onServiceDisconnected: "+name);
 		try {
-			binder.unregisterCallback(downloadCallback);
+			mediaBinder.unregisterCallback(mediaCallback);
 		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
-		binder = null;
+		mediaBinder = null;
 	}
 
-	private final IDownloadServiceCallback downloadCallback = new IDownloadServiceCallback.Stub() {
+	private final IMediaServiceCallback mediaCallback = new IMediaServiceCallback.Stub() {
+
 		@Override
-		public void onCompleted(long externalid) throws RemoteException {
-			Log.d(TAG, "onCompleted: externalid="+externalid);
-			populateList();
-		}
-		@Override
-		public void onException(long externalid, final String exception) throws RemoteException {
-			Log.d(TAG, "onException: externalid="+externalid+" exception="+exception);
-			populateList();
-			runOnUiThread(new Runnable(){
-				@Override
-				public void run() {
-					Util.showDialog(DownloadQueueList.this, "Download failed: "+exception);
-				}
-			});
-		}
-		@Override
-		public void onProgress(long externalid, long diff) throws RemoteException {
-//			Log.d(TAG, "onProgress: externalid="+externalid+" diff="+diff);
+		public void onCompletion() throws RemoteException {
+			// TODO Auto-generated method stub
+			
 		}
 	};
 
-	private class DownloadAdapter extends BaseAdapter {
+	private class MediaAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
-		private List<DownloadItem> items;
+		private List<FeedItem> items;
 
-		public DownloadAdapter(Context cxt, List<DownloadItem> items){
+		public MediaAdapter(Context cxt, List<FeedItem> items){
 			this.items = items;
 			mInflater = LayoutInflater.from(cxt);
 		}
-		public DownloadItem getByExternalId(long externalId){
-			for (DownloadItem item : items) {
-				if(externalId == item.getExternalId()){
+		public FeedItem getByExternalId(long externalId){
+			for (FeedItem item : items) {
+				if(externalId == item.getId()){
 					return item;
 				}
 			}
@@ -283,12 +244,12 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 			return items.size();
 		}
 		@Override
-		public DownloadItem getItem(int position) {
+		public FeedItem getItem(int position) {
 			return items.get(position);
 		}
 		@Override
 		public long getItemId(int position) {
-			return getItem(position).getExternalId();
+			return getItem(position).getId();
 		}
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
@@ -300,7 +261,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
             // to reinflate it. We only inflate a new View when the convertView supplied
             // by ListView is null.
             if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.downloadqueue_row, null);
+                convertView = mInflater.inflate(R.layout.play_row, null);
 
                 // Creates a ViewHolder and store references to the two children views
                 // we want to bind data to.
@@ -318,8 +279,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 
             // Bind the data efficiently with the holder.
             Log.d(TAG, "getView; position="+position+" items="+items.size());
-            DownloadItem downloadItem = items.get(position);
-			FeedItem item = mDbHelper.fetchFeedItem(downloadItem.getExternalId());
+            FeedItem item = items.get(position);
             if(item == null) {
             	return null;
             }

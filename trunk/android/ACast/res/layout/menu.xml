@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:padding="10sp"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_weight="1"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent">
+ 
+		<Button android:id="@+id/library"
+			android:src="@drawable/pause"
+			android:text="Feeds"
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent" />
+	
+		<Button android:id="@+id/playlist" 
+			android:src="@drawable/stop"
+			android:text="Playlist"
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent" />
+
+	</LinearLayout>
+
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_weight="1"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent">
+
+		<Button android:id="@+id/downloaded" 
+			android:src="@drawable/rewind" 
+			android:text="Downloaded"
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent" />
+
+		<Button android:id="@+id/queue" 
+			android:src="@drawable/forward" 
+			android:text="Download Queue"
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent" />
+
+	</LinearLayout>
+	
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_weight="1"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent">
+
+		<Button android:id="@+id/search" 
+			android:src="@drawable/rewind" 
+			android:text="Search"
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent" />
+
+		<Button android:id="@+id/player" 
+			android:src="@drawable/forward" 
+			android:text="Player"
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent" />
+
+	</LinearLayout>
+	
+	<LinearLayout android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_height="50sp">
+
+		<LinearLayout android:orientation="horizontal" 
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content">
+	 
+			<ImageButton android:id="@+id/resume"
+				android:src="@drawable/android:ic_media_play" 
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content" />
+
+			<LinearLayout android:orientation="horizontal" 
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+		 
+			  	<TextView android:id="@+id/resumetitle"
+						android:layout_width="fill_parent"
+			        	android:layout_height="wrap_content"
+			        	android:text="@string/noresume"/>
+		
+			  	<TextView android:id="@+id/resumedesc"
+						android:layout_width="fill_parent"
+			        	android:layout_height="wrap_content"
+			        	android:text="@string/noresume"/>
+	
+			</LinearLayout>
+		
+		</LinearLayout>
+	
+	</LinearLayout>
+	
+</LinearLayout>

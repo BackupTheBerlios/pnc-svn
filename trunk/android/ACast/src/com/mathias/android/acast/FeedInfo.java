@@ -2,7 +2,6 @@ package com.mathias.android.acast;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -11,6 +10,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.mathias.android.acast.common.ACastUtil;
+import com.mathias.android.acast.common.BitmapCache;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 
@@ -24,13 +25,14 @@ public class FeedInfo extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.feed_info);
+
+		ACastUtil.customTitle(this, "Information", R.layout.feed_info);
 
 		item = (Feed) (savedInstanceState != null ? savedInstanceState
-				.getSerializable(ACast.FEED) : null);
+				.getSerializable(Constants.FEED) : null);
 		if (item == null) {
 			Bundle extras = getIntent().getExtras();
-			item = (Feed) (extras != null ? extras.getSerializable(ACast.FEED)
+			item = (Feed) (extras != null ? extras.getSerializable(Constants.FEED)
 					: null);
 		}
 		
@@ -42,7 +44,7 @@ public class FeedInfo extends Activity {
 		String iconVal = item.getIcon();
 		ImageView icon = (ImageView) findViewById(R.id.icon);
 		if(iconVal != null){
-			Bitmap bitmap = BitmapFactory.decodeFile(iconVal);
+			Bitmap bitmap = BitmapCache.instance().get(iconVal);
 			icon.setImageBitmap(bitmap);
 		}else{
 			icon.setVisibility(View.GONE);

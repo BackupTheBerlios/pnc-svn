@@ -50,7 +50,9 @@ public class FeedAdd extends ListActivity {
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
 		setContentView(R.layout.feedadd);
-
+		
+		setTitle("Add feed");
+		
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		

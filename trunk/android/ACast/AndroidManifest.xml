@@ -4,21 +4,24 @@
       android:versionCode="1"
       android:versionName="1.0.0">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true">
-        <activity android:name=".ACast"
+        <activity android:name=".ACastMenu"
                   android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".FeedAdd"/>
+        <activity android:name=".FeedList"/>
         <activity android:name=".FeedItemList"/>
+        <activity android:name=".FeedAdd"/>
         <activity android:name=".VideoPlayer"/>
         <activity android:name=".Player"/>
         <activity android:name=".FeedInfo"/>
         <activity android:name=".FeedItemInfo"/>
         <activity android:name=".DownloadQueueList"/>
         <activity android:name=".DownloadedList"/>
+        <activity android:name=".DownloadTabs"/>
+        <activity android:name=".PlayList"/>
         <activity android:name=".SettingsEdit"/>
         <service android:name=".common.services.media.MediaService"/>
         <service android:name=".common.services.download.DownloadService"/>

@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
+import com.mathias.android.acast.common.ACastUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.FeedItem;
 
@@ -23,13 +24,14 @@ public class FeedItemInfo extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.feeditem_info);
+
+		ACastUtil.customTitle(this, "Information", R.layout.feeditem_info);
 
 		item = (FeedItem) (savedInstanceState != null ? savedInstanceState
-				.getSerializable(ACast.FEEDITEM) : null);
+				.getSerializable(Constants.FEEDITEM) : null);
 		if (item == null) {
 			Bundle extras = getIntent().getExtras();
-			item = (FeedItem) (extras != null ? extras.getSerializable(ACast.FEEDITEM)
+			item = (FeedItem) (extras != null ? extras.getSerializable(Constants.FEEDITEM)
 					: null);
 		}
 		

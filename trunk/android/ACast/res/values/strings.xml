@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<!-- general -->
-	<string name="hello">ACast</string>
 	<string name="app_name">ACast</string>
 	<string name="gotolink">Open browser</string>
 	<!-- feed_edit -->

@@ -1,7 +1,6 @@
 package com.mathias.android.acast;
 
 import java.io.File;
-import java.util.List;
 
 import android.app.ListActivity;
 import android.content.ComponentName;
@@ -30,16 +29,20 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.mathias.android.acast.common.ACastUtil;
+import com.mathias.android.acast.common.BitmapCache;
 import com.mathias.android.acast.common.RssUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
+import com.mathias.android.acast.common.services.media.IMediaService;
+import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
+import com.mathias.android.acast.common.services.media.MediaService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
-import com.mathias.android.acast.podcast.Settings;
 
-public class FeedItemList extends ListActivity implements ServiceConnection {
+public class FeedItemList extends ListActivity {
 
 	private static final String TAG = FeedItemList.class.getSimpleName();
 
@@ -55,13 +58,19 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	
 	private FeedItemAdapter adapter;
 
-	private IDownloadService binder;
+	private IDownloadService downloadBinder;
 
-	private Settings settings;
+	private IMediaService mediaBinder;
 	
+	private ServiceConnection mediaServiceConn;
+
+	private ServiceConnection downloadServiceConn;
+
 	private Bitmap defaultIcon;
 	
 	private WorkerThread thread;
+	
+	private Feed feed;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +79,8 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
 		setContentView(R.layout.feeditem_list);
+		
+		setTitle("Feed items");
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
@@ -78,14 +89,10 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		thread.start();
 
 		mFeedId = savedInstanceState != null ? savedInstanceState
-				.getLong(ACast.FEEDID) : null;
+				.getLong(Constants.FEEDID) : null;
 		if (mFeedId == null) {
 			Bundle extras = getIntent().getExtras();
-			mFeedId = extras != null ? extras.getLong(ACast.FEEDID) : null;
-		}
-		settings = mDbHelper.fetchSettings();
-		if(settings == null){
-			settings = new Settings(0, mFeedId, (long)0);
+			mFeedId = extras != null ? extras.getLong(Constants.FEEDID) : null;
 		}
 
 		defaultIcon = BitmapFactory.decodeResource(getResources(),
@@ -95,19 +102,71 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
 		Intent i = new Intent(this, DownloadService.class);
 		startService(i);
-		if(!bindService(i, this, BIND_AUTO_CREATE)) {
+		downloadServiceConn = new ServiceConnection(){
+			@Override
+			public void onServiceConnected(ComponentName name, IBinder service) {
+				Log.d(TAG, "onServiceConnected: "+name);
+				downloadBinder = IDownloadService.Stub.asInterface(service);
+				try {
+					downloadBinder.registerCallback(downloadCallback);
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+			@Override
+			public void onServiceDisconnected(ComponentName name) {
+				Log.d(TAG, "onServiceDisconnected: "+name);
+				try {
+					downloadBinder.unregisterCallback(downloadCallback);
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+				downloadBinder = null;
+			}
+		};
+		if(!bindService(i, downloadServiceConn, BIND_AUTO_CREATE)) {
 			Util.showDialog(this, "Could not start download service!");
+		}
+
+		i = new Intent(this, MediaService.class);
+		startService(i);
+		mediaServiceConn = new ServiceConnection(){
+			@Override
+			public void onServiceConnected(ComponentName name, IBinder service) {
+				Log.d(TAG, "onServiceConnected: "+name);
+				mediaBinder = IMediaService.Stub.asInterface(service);
+				try {
+					mediaBinder.registerCallback(mediaCallback);
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+
+			@Override
+			public void onServiceDisconnected(ComponentName name) {
+				Log.d(TAG, "onServiceDisconnected: "+name);
+				try {
+					mediaBinder.unregisterCallback(mediaCallback);
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+				mediaBinder = null;
+			}
+
+		};
+		if(!bindService(i, mediaServiceConn, BIND_AUTO_CREATE)) {
+			Util.showDialog(this, "Could not start media service!");
 		}
 	}
 
 	private void populateFields() {
 		if (mFeedId != null && mDbHelper != null) {
-			Feed feed = mDbHelper.fetchFeed(mFeedId);
+			feed = mDbHelper.fetchFeed(mFeedId);
 
 			String iconStr = feed.getIcon();
 			ImageView icon = (ImageView) findViewById(R.id.feedrowicon);
-			icon.setImageBitmap(iconStr != null ? BitmapFactory
-					.decodeFile(iconStr) : defaultIcon);
+			Bitmap iconBM = BitmapCache.instance().get(iconStr);
+			icon.setImageBitmap(iconBM != null ? iconBM : defaultIcon);
 			TextView text = (TextView) findViewById(R.id.feedrowtext);
 			text.setText(feed.getTitle());
 			String author = feed.getAuthor();
@@ -117,7 +176,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 			TextView text3 = (TextView) findViewById(R.id.feedrowtext3);
 			text3.setText((pubDate != null ? pubDate : ""));
 
-			adapter = new FeedItemAdapter(this, feed.getItems());
+			adapter = new FeedItemAdapter(this, feed);
 			setListAdapter(adapter);
 		}
 	}
@@ -125,7 +184,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putLong(ACast.FEEDID, mFeedId);
+		outState.putLong(Constants.FEEDID, mFeedId);
 	}
 
 	@Override
@@ -189,16 +248,26 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
 	private void infoItem(FeedItem item){
 		Intent i = new Intent(this, FeedItemInfo.class);
-		i.putExtra(ACast.FEEDITEM, item);
-		startActivityForResult(i, 0);
+		i.putExtra(Constants.FEEDITEM, item);
+		startActivity(i);
 	}
 
 	private void playItem(FeedItem item){
-		settings.setLastFeedItemId(item.getId());
-		mDbHelper.updateSettings(settings);
+		try {
+			if (mediaBinder != null
+					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item
+							.getId())) {
+				ACastUtil.playItem(mediaBinder, item);
+				ACastUtil.queueItems(mediaBinder, feed.getItems(), item.getId());
+			}else{
+				Log.d(TAG, "isPlaying or mediaBinder == null");
+			}
+		} catch (Exception e) {
+			String msg = e.getMessage();
+			Log.e(TAG, (msg != null ? msg : e.toString()), e);
+		}
 		Intent i = new Intent(this, Player.class);
-		i.putExtra(ACast.FEEDITEM, item);
-		startActivityForResult(i, 0);
+		startActivity(i);
 	}
 
 	private void downloadItem(FeedItem item){
@@ -208,19 +277,19 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 			return;
 		}
 
-		if(binder == null){
+		if(downloadBinder == null){
 			Log.e(TAG, "binder is null. No connection to download service!");
 			return;
 		}
 		
 		String srcuri = item.getMp3uri().replace(' ', '+');
 		try {
-			binder.download(item.getId(), srcuri, item.getMp3file());
+			downloadBinder.download(item.getId(), srcuri, item.getMp3file());
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage());
 			return;
 		}
-		
+
 		Util.showToastShort(this, "Download added to download queue!");
 	}
 
@@ -254,9 +323,8 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 				@Override
 				public void handleMessage(Message msg) {
 					try {
-						Feed feed = mDbHelper.fetchFeed(mFeedId);
-						feed = new RssUtil().parse(feed.getUri());
-						mDbHelper.updateFeed(mFeedId, feed);
+						Feed feed1 = new RssUtil().parse(feed.getUri());
+						mDbHelper.updateFeed(mFeedId, feed1);
 						runOnUiThread(new Runnable(){
 							@Override
 							public void run() {
@@ -286,33 +354,15 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 	protected void onDestroy() {
 		mDbHelper.close();
 		mDbHelper = null;
-		if(binder != null){
-			unbindService(this);
+		if(downloadBinder != null){
+			unbindService(downloadServiceConn);
+		}
+		if(mediaBinder != null){
+			unbindService(mediaServiceConn);
 		}
 		super.onDestroy();
 	}
 
-	@Override
-	public void onServiceConnected(ComponentName name, IBinder service) {
-		Log.d(TAG, "onServiceConnected: "+name);
-		binder = IDownloadService.Stub.asInterface(service);
-		try {
-			binder.registerCallback(downloadCallback);
-		} catch (RemoteException e) {
-			Log.e(TAG, e.getMessage(), e);
-		}
-	}
-	
-	@Override
-	public void onServiceDisconnected(ComponentName name) {
-		Log.d(TAG, "onServiceDisconnected: "+name);
-		try {
-			binder.unregisterCallback(downloadCallback);
-		} catch (RemoteException e) {
-			Log.e(TAG, e.getMessage(), e);
-		}
-		binder = null;
-	}
 
 	private final IDownloadServiceCallback downloadCallback = new IDownloadServiceCallback.Stub() {
 		@Override
@@ -342,25 +392,31 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 		}
 	};
 
+	private final IMediaServiceCallback mediaCallback = new IMediaServiceCallback.Stub() {
+		@Override
+		public void onCompletion() throws RemoteException {
+		}
+	};
+
 	private static class FeedItemAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
-		private List<FeedItem> items;
+		private Feed feed;
 
-		public FeedItemAdapter(Context cxt, List<FeedItem> items){
-			this.items = items;
+		public FeedItemAdapter(Context cxt, Feed feed){
+			this.feed = feed;
 			mInflater = LayoutInflater.from(cxt);
 		}
 		@Override
 		public int getCount() {
-			return items.size();
+			return feed.getItems().size();
 		}
 		@Override
 		public FeedItem getItem(int position) {
 			if(position == -1){
 				return null;
 			}
-			return items.get(position);
+			return feed.getItems().get(position);
 		}
 		@Override
 		public long getItemId(int position) {
@@ -398,7 +454,7 @@ public class FeedItemList extends ListActivity implements ServiceConnection {
 
             // Bind the data efficiently with the holder.
 
-            FeedItem item = items.get(position);
+            FeedItem item = feed.getItems().get(position);
 			if(item.isDownloaded()){
 				if(item.isCompleted()){
 					if(item.getBookmark() > 0){

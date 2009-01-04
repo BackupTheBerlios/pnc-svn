@@ -17,8 +17,8 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.mathias.android.acast.ACast;
 import com.mathias.android.acast.ACastDbAdapter;
+import com.mathias.android.acast.Constants;
 import com.mathias.android.acast.DownloadedList;
 import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
@@ -262,7 +262,7 @@ public class DownloadService extends Service {
 
 		notification.setLatestEventInfo(this, title, text, contentIntent);
 
-		mNM.notify(ACast.NOTIFICATION_DOWNLOADSERVICE_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_DOWNLOADSERVICE_ID, notification);
 	}
 
 }

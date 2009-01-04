@@ -1,8 +1,7 @@
 package com.mathias.android.acast.common.services.media;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -20,11 +19,13 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.mathias.android.acast.ACast;
 import com.mathias.android.acast.ACastDbAdapter;
+import com.mathias.android.acast.Constants;
 import com.mathias.android.acast.Player;
 import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
+import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings;
 
 public class MediaService extends Service {
 	
@@ -40,14 +41,16 @@ public class MediaService extends Service {
 	
     final RemoteCallbackList<IMediaServiceCallback> mCallbacks = new RemoteCallbackList<IMediaServiceCallback>();
 
-	private List<MediaItem> queue = new ArrayList<MediaItem>();
+	private LinkedList<FeedItem> queue = new LinkedList<FeedItem>();
+	
+	private FeedItem currentItem;
 
     @Override
 	public void onCreate() {
 
     	thread = new WorkerThread();
     	thread.start();
-    	
+
     	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
 		mDbHandler = new ACastDbAdapter(this);
@@ -93,18 +96,36 @@ public class MediaService extends Service {
 
     private final IMediaService.Stub binder = new IMediaService.Stub() {
 
-    	private long externalid;
-    	
-    	private String locator;
-    	
-    	private boolean stream;
-
+    	private void bookmark(boolean completed){
+			try {
+				long oldid = getId();
+				int currpos = (mp != null ? mp.getCurrentPosition() : -1);
+				int dur = (mp != null ? mp.getDuration(): -1);
+				Log.d(TAG, "Storing bookmark: "+currpos+"/"+dur+" for: "+oldid);
+				if(oldid != -1 && currpos != -1 && dur != -1){
+					if (completed && currpos + 100 >= dur) {
+						mDbHandler.updateFeedItem(oldid,
+								ACastDbAdapter.FEEDITEM_COMPLETED, true);
+						mDbHandler.updateFeedItem(oldid,
+								ACastDbAdapter.FEEDITEM_BOOKMARK, 0);
+					}else{
+						mDbHandler.updateFeedItem(oldid,
+								ACastDbAdapter.FEEDITEM_BOOKMARK, currpos);
+					}
+				}
+			} catch (RemoteException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
+    	}
+		@Override
+		public long getId() throws RemoteException {
+			return (currentItem != null ? currentItem.getId() : -1);
+		}
 		@Override
 		public void pause() throws RemoteException {
 			Log.d(TAG, "pause()");
-			mDbHandler.updateFeedItem(externalid,
-					ACastDbAdapter.FEEDITEM_BOOKMARK, getCurrentPosition());
-	        mNM.cancel(ACast.NOTIFICATION_MEDIASERVICE_ID);
+			bookmark(false);
+	        mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
 			if(mp != null){
 				Log.d(TAG, "mp.pause()");
 				mp.pause();
@@ -125,26 +146,18 @@ public class MediaService extends Service {
 		@Override
 		public void stop() throws RemoteException {
 			Log.d(TAG, "stop() mp="+mp);
-			mDbHandler.updateFeedItem(externalid,
-					ACastDbAdapter.FEEDITEM_BOOKMARK, getCurrentPosition());
+			bookmark(false);
 			stopMediaPlayer();
 			stopSelf();
 		}
 		@Override
 		public int getCurrentPosition() throws RemoteException {
-			//Log.d(TAG, "getCurrentPosition() mp="+mp);
-			if(mp == null){
-				return 0;
-			}
-			return mp.getCurrentPosition();
+			return (mp != null ? mp.getCurrentPosition() : 0);
 		}
 		@Override
 		public int getDuration() throws RemoteException {
 			Log.d(TAG, "getDuration() mp="+mp);
-			if(mp == null){
-				return 0;
-			}
-			return mp.getDuration();
+			return (mp != null ? mp.getDuration() : 0);
 		}
 		@Override
 		public void setCurrentPosition(int position) throws RemoteException {
@@ -154,78 +167,78 @@ public class MediaService extends Service {
 			}
 		}
 		@Override
-		public void queue(long externalid, String locator, boolean stream)
-				throws RemoteException {
-			queue.add(new MediaItem(externalid, locator, stream));
+		public void queue(long id) throws RemoteException {
+			FeedItem item = mDbHandler.fetchFeedItem(id);
+			queue.offer(item);
 		}
 		@Override
-		public void initItem(final long newexternalid, String locator, boolean stream) throws RemoteException {
-			Log.d(TAG, "initItem, locator="+locator);
+		public void initItem(long newid) throws RemoteException {
+			FeedItem item = mDbHandler.fetchFeedItem(newid);
+			initItem(item);
+		}
+		public void initItem(FeedItem item) throws RemoteException {
+			Log.d(TAG, "initItem, id="+item.getId());
 
-			if(locator == null){
-				return;
-			}
+			bookmark(false);
 
-			mDbHandler.updateFeedItem(this.externalid,
-					ACastDbAdapter.FEEDITEM_BOOKMARK, getCurrentPosition());
+			Log.d(TAG, "Storing last feed item: "+item.getId()+" title="+item.getTitle());
+			mDbHandler.setSetting(Settings.SettingEnum.LASTFEEDITEMID, item.getId());
 
-			this.externalid = newexternalid;
-			this.locator = locator;
-			this.stream = stream;
-			
+			currentItem = item;
+
 			if(mp != null){
 				mp.reset();
 				mp.release();
 				mp = null;
 			}
-			if(stream){
-				String uri = locator.replace(' ', '+');
-				Log.d(TAG, "Initializing from URI: "+uri);
-				mp = MediaPlayer.create(MediaService.this, Uri.parse(uri));
-				if(mp == null){
-					Util.showDialog(MediaService.this, "Could not create media player for: "+uri);
-					return;
-				}
-			}else{
-				Log.d(TAG, "Initializing from file: "+locator);
-				mp = new MediaPlayer();
-				try {
-					File f = new File(locator);
-					if(!f.exists()){
-						Util.showDialog(MediaService.this, "File does not exist: "+locator);
+			if(item != null){
+				if(!item.isDownloaded()){
+					String uri = item.getMp3uri().replace(' ', '+');
+					Log.d(TAG, "Initializing from URI: "+uri);
+					Util.isRedirect(uri);
+					mp = MediaPlayer.create(MediaService.this, Uri.parse(uri));
+					if(mp == null){
+						String err = "Could not create media player for: "+uri;
+						Log.e(TAG, err);
+						showErrorNotification(err);
 						return;
 					}
-					mp.setDataSource(MediaService.this, Uri.fromFile(f));
-					mp.prepare();
-				} catch (Exception e) {
-					Log.e(TAG, locator, e);
-					Util.showDialog(MediaService.this, e.getMessage()+": "+locator);
+				}else{
+					String locator = item.getMp3file();
+					Log.d(TAG, "Initializing from file: "+locator);
+					mp = new MediaPlayer();
+					try {
+						File f = new File(locator);
+						if(!f.exists()){
+							String err = "File does not exist: "+locator;
+							Log.e(TAG, err);
+							showErrorNotification(err);
+							return;
+						}
+						mp.setDataSource(MediaService.this, Uri.fromFile(f));
+						mp.prepare();
+					} catch (Exception e) {
+						Log.e(TAG, locator, e);
+						showErrorNotification(e.getMessage());
+					}
 				}
 			}
 
 			mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
 				@Override
 				public void onCompletion(MediaPlayer mediaplayer) {
-					if (externalid >= 0) {
-						int currentPosition = mp.getCurrentPosition();
-						if (currentPosition + 100 >= mp.getDuration()) {
-							mDbHandler.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_COMPLETED, true);
-							mDbHandler.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_BOOKMARK, 0);
+					try {
+						bookmark(true);
+						if(queue.isEmpty()){
+							broadcastOnCompletion();
+							mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
+							stopSelf();
 						}else{
-							mDbHandler.updateFeedItem(externalid, ACastDbAdapter.FEEDITEM_BOOKMARK, currentPosition);
+							currentItem = queue.remove();
+							initItem(currentItem.getId());
 						}
-					}
-					if(queue.isEmpty()){
-						broadcastOnCompletion();
-				        mNM.cancel(ACast.NOTIFICATION_MEDIASERVICE_ID);
-						stopSelf();
-					}else{
-						MediaItem item = queue.remove(queue.size()-1);
-						try {
-							initItem(item.externalid, item.locator, item.stream);
-						} catch (RemoteException e) {
-							Log.e(TAG, e.getMessage(), e);
-						}
+					} catch (Exception e) {
+						Log.e(TAG, e.getMessage(), e);
 					}
 				}
 			});
@@ -238,18 +251,6 @@ public class MediaService extends Service {
 				return mp.isPlaying();
 			}
 			return false;
-		}
-		@Override
-		public long getExternalId() throws RemoteException {
-			return externalid;
-		}
-		@Override
-		public String getLocator() throws RemoteException {
-			return locator;
-		}
-		@Override
-		public boolean isStreming() throws RemoteException {
-			return stream;
 		}
 		@Override
 		public void registerCallback(IMediaServiceCallback cb)
@@ -292,7 +293,7 @@ public class MediaService extends Service {
 	}
 	
 	private void stopMediaPlayer(){
-        mNM.cancel(ACast.NOTIFICATION_MEDIASERVICE_ID);
+        mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
 		if(mp != null){
 			mp.reset();
 			mp.release();
@@ -304,9 +305,12 @@ public class MediaService extends Service {
 		Log.d(TAG, "showNotification()");
 		String filename = "";
 		try {
-			String locator = binder.getLocator();
-			if(locator != null){
-				filename = new File(locator).getName();
+			long id = binder.getId();
+			if(id >= 0){
+				FeedItem item = mDbHandler.fetchFeedItem(id);
+				if(item != null && item.getMp3uri() != null){
+					filename = new File(item.getMp3uri()).getName();
+				}
 			}
 		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -323,18 +327,21 @@ public class MediaService extends Service {
 
 		notification.setLatestEventInfo(this, title, text, contentIntent);
 
-		mNM.notify(ACast.NOTIFICATION_MEDIASERVICE_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_MEDIASERVICE_ID, notification);
 	}
 
-	private static class MediaItem {
-		private long externalid;
-		private String locator;
-		private boolean stream;
-		public MediaItem(long externalid, String locator, boolean stream){
-			this.externalid = externalid;
-			this.locator = locator;
-			this.stream = stream;
-		}
+	private void showErrorNotification(String error) {
+		Log.d(TAG, "showErrorNotification()");
+
+		Notification notification = new Notification(R.drawable.icon, "Exception",
+				System.currentTimeMillis());
+
+		Intent i = new Intent(this, Player.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
+
+		notification.setLatestEventInfo(this, "Error", error, contentIntent);
+
+		mNM.notify(Constants.NOTIFICATION_MEDIASERVICE_ID, notification);
 	}
 
 }

@@ -45,10 +45,8 @@ public class ACastDbAdapter {
 	public static final String FEEDITEM_COMMENTS = "comments";
 	public static final String FEEDITEM_DESCRIPTION = "description";
 
-	public static final String SETTING_ID = "_id";
-	public static final String SETTING_VOLUME = "volume";
-	public static final String SETTING_LASTFEEDITEMID = "lastfeeditemid";
-	public static final String SETTING_FLAGS = "flags";
+	public static final String SETTING_KEY = "key";
+	public static final String SETTING_VALUE = "value";
 
 	private static final String DATABASE_NAME = "acast";
 	private static final String DATABASE_TABLE_FEED = "feed";
@@ -84,12 +82,10 @@ public class ACastDbAdapter {
 			+ FEEDITEM_DESCRIPTION+" text);";
 
 	private static final String DATABASE_CREATE_SETTING = "create table setting ("
-			+ SETTING_ID+" integer primary key autoincrement, "
-			+ SETTING_VOLUME+" integer, "
-			+ SETTING_LASTFEEDITEMID+" integer, "
-			+ SETTING_FLAGS+" integer);";
+			+ SETTING_KEY+" text primary key, "
+			+ SETTING_VALUE+" text);";
 
-	private static final int DATABASE_VERSION = 32;
+	private static final int DATABASE_VERSION = 33;
 
 	private static final String TAG = ACastDbAdapter.class.getSimpleName();
 	private DatabaseHelper mDbHelper;
@@ -533,40 +529,29 @@ public class ACastDbAdapter {
 		return mDb.insert(DATABASE_TABLE_FEEDITEM, null, initialValues);
 	}
 
-	public Settings fetchSettings() {
-		Settings settings = null;
-		Cursor c = mDb.query(true, DATABASE_TABLE_SETTING, new String[] {
-				SETTING_VOLUME, SETTING_LASTFEEDITEMID, SETTING_FLAGS },
-				SETTING_ID + "=0", null, null, null, null, null);
+	public String getSetting(Settings.SettingEnum setting) {
+		String key = setting.name();
+		String value = null;
+
+		Cursor c = mDb.query(true, DATABASE_TABLE_SETTING,
+				new String[] { SETTING_VALUE }, SETTING_KEY + "='" + key+"'", null,
+				null, null, null, null);
 		if (c == null || !c.moveToFirst()) {
 			Log.w(TAG, "No settings found!");
 		}else{
-			Integer volume = c.getInt(c.getColumnIndexOrThrow(SETTING_VOLUME));
-			if(volume <= 0){
-				volume = null;
-			}
-			Long lastfeeditemid = c.getLong(c.getColumnIndexOrThrow(SETTING_LASTFEEDITEMID));
-			if(lastfeeditemid <= 0){
-				lastfeeditemid = null;
-			}
-			long flags = c.getLong(c.getColumnIndexOrThrow(SETTING_FLAGS));
-			settings = new Settings(volume, lastfeeditemid, flags);
+			value = c.getString(c.getColumnIndexOrThrow(SETTING_VALUE));
 		}
 		Util.closeCursor(c);
-		return settings;
+		return value;
 	}
 
-	public boolean updateSettings(Settings settings) {
-		if(settings == null){
-			return false;
-		}
+	public boolean setSetting(Settings.SettingEnum setting, Object value) {
+		String key = setting.name();
 		ContentValues args = new ContentValues();
-		args.put(SETTING_ID, 0);
-		args.put(SETTING_VOLUME, settings.getVolume());
-		args.put(SETTING_LASTFEEDITEMID, settings.getLastFeedItemId());
-		args.put(SETTING_FLAGS, settings.getFlags());
-		boolean update = mDb.update(DATABASE_TABLE_SETTING, args, SETTING_ID
-				+ "= 0", null) > 0;
+		args.put(SETTING_KEY, key);
+		args.put(SETTING_VALUE, value.toString());
+		boolean update = mDb.update(DATABASE_TABLE_SETTING, args, SETTING_KEY
+				+ "='"+key+"'", null) > 0;
 		if (!update) {
 			long id = mDb.insert(DATABASE_TABLE_SETTING, null, args);
 			if(id != 0){

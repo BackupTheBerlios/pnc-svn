@@ -1,57 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical" android:layout_width="fill_parent"
-	android:layout_height="fill_parent">
+	android:padding="10sp"
+	android:orientation="vertical" 
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent" >
 
-	<TextView android:id="@+id/title" 
-        android:textSize="20sp"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content" />
-
-	<TextView android:id="@+id/duration" 
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content" />
-
-	<LinearLayout android:orientation="horizontal" 
-		android:gravity="center"
+	<LinearLayout android:orientation="vertical" 
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
  
-		<ImageButton android:id="@+id/playpause"
-			android:gravity="center"
-			android:layout_gravity="center"
-			android:src="@drawable/pause"
-			android:layout_width="130sp"
-			android:layout_height="130sp" />
+		<TextView android:id="@+id/title" 
+			android:text="Title"
+	        android:textSize="20sp"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content" />
 	
-		<ImageButton android:id="@+id/stop" 
-			android:src="@drawable/stop"
-			android:layout_width="130sp"
-			android:layout_height="130sp" />
+		<TextView android:id="@+id/duration" 
+			android:text="00:00:00/00:00:00"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content" />
 
 	</LinearLayout>
 
-	<LinearLayout android:orientation="horizontal" 
-		android:gravity="center"
+	<LinearLayout android:orientation="vertical" 
+		android:layout_weight="1"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent">
+ 
+		<LinearLayout android:orientation="horizontal" 
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/playpause"
+				android:src="@drawable/pause"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+		
+			<ImageButton android:id="@+id/stop" 
+				android:src="@drawable/stop"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+	
+		</LinearLayout>
+	
+		<LinearLayout android:orientation="horizontal" 
+			android:layout_weight="1"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/rewind" 
+				android:src="@drawable/rewind" 
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+	
+			<ImageButton android:id="@+id/forward" 
+				android:src="@drawable/forward" 
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+	
+		</LinearLayout>
+	
+	</LinearLayout>
+	
+	<LinearLayout android:orientation="vertical" 
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
  
-		<ImageButton android:id="@+id/rewind" 
-			android:src="@drawable/rewind" 
-			android:layout_width="130sp"
-			android:layout_height="130sp" />
+		<SeekBar android:id="@+id/seekbar" 
+			android:scaleType="fitXY" 
+			android:layout_width="fill_parent"
+			android:layout_height="60sp" />
 
-		<ImageButton android:id="@+id/forward" 
-			android:src="@drawable/forward" 
-			android:layout_width="130sp"
-			android:layout_height="130sp" />
+<!-- 	
+		<SurfaceView android:id="@+id/surface"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+ -->
 
 	</LinearLayout>
-	
-	<SeekBar android:id="@+id/seekbar" 
-		android:layout_width="fill_parent"
-		android:scaleType="fitXY" 
-		android:layout_height="40sp" />
 
 </LinearLayout>
