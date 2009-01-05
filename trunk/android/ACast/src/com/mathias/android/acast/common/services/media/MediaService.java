@@ -1,7 +1,10 @@
 package com.mathias.android.acast.common.services.media;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -267,6 +270,14 @@ public class MediaService extends Service {
             if (cb != null) {
             	mCallbacks.unregister(cb);
             }
+		}
+		@Override
+		public List getQueue() throws RemoteException {
+			List<Long> ret = new ArrayList<Long>(queue.size());
+			for (Iterator<FeedItem> it = queue.iterator(); it.hasNext(); ) {
+				ret.add(it.next().getId());
+			}
+			return ret;
 		}
 	};
 	

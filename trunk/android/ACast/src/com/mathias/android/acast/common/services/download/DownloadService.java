@@ -165,13 +165,13 @@ public class DownloadService extends Service {
 							}
 							mCallbacks.finishBroadcast();
 						} catch (Exception e) {
-							Log.e(TAG, e.getMessage());
+							String ret = "Exception: "+e.getMessage();
+							Log.e(TAG, ret);
 					        final int N = mCallbacks.beginBroadcast();
 							for (int i = 0; i < N; i++) {
 								try {
-									mCallbacks.getBroadcastItem(i)
-											.onException(externalId,
-													e.getMessage());
+									mCallbacks.getBroadcastItem(i).onException(
+											externalId, ret);
 								} catch (RemoteException e1) {
 								}
 							}

@@ -1,9 +1,31 @@
 package com.mathias.android.acast.podcast;
 
 import java.io.Serializable;
+import java.util.Comparator;
+import java.util.Date;
+
+import android.util.Log;
 
 @SuppressWarnings("serial")
 public class FeedItem implements Serializable {
+	
+	private static final String TAG = FeedItem.class.getSimpleName();
+
+	public static Comparator<FeedItem> BYDATE = new Comparator<FeedItem>() {
+		@Override
+		public int compare(FeedItem arg0, FeedItem arg1) {
+			Date a0 = arg0.getPubdateAsDate();
+			Date a1 = arg1.getPubdateAsDate();
+			return (a0 != null && a1 != null ? a0.compareTo(a1) : 0);
+		}
+	};
+
+	public static Comparator<FeedItem> BYTITLE = new Comparator<FeedItem>() {
+		@Override
+		public int compare(FeedItem arg0, FeedItem arg1) {
+			return arg0.title.compareTo(arg1.title);
+		}
+	};
 
 	private long id;
 
@@ -149,6 +171,16 @@ public class FeedItem implements Serializable {
 
 	public String getPubdate() {
 		return pubdate;
+	}
+
+	public Date getPubdateAsDate() {
+		Date date = null;
+		try{
+			date = new Date(pubdate);
+		}catch(Exception e){
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return date;
 	}
 
 	public void setPubdate(String pubdate) {

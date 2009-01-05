@@ -11,6 +11,8 @@ import android.content.ServiceConnection;
 import android.content.DialogInterface.OnClickListener;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -41,6 +43,7 @@ import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
 import com.mathias.android.acast.common.services.media.MediaService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings.SettingEnum;
 
 public class FeedItemList extends ListActivity {
 
@@ -51,6 +54,7 @@ public class FeedItemList extends ListActivity {
 	private static final int DELETE_ID = Menu.FIRST + 2;
 	private static final int REFRESH_ID = Menu.FIRST + 3;
 	private static final int INFO_ID = Menu.FIRST + 4;
+	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
 
 	private Long mFeedId;
 
@@ -206,6 +210,8 @@ public class FeedItemList extends ListActivity {
 		item.setIcon(android.R.drawable.ic_menu_rotate);
 		item = menu.add(0, INFO_ID, 0, R.string.info);
 		item.setIcon(android.R.drawable.ic_menu_info_details);
+		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
+		item.setIcon(android.R.drawable.stat_sys_download);
 		return true;
 	}
 
@@ -223,6 +229,8 @@ public class FeedItemList extends ListActivity {
 	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
 		if(REFRESH_ID == menuitem.getItemId()){
 			thread.refreshFeed();
+		}else if(DOWNLOADALL_ID == menuitem.getItemId()){
+			downloadAll(adapter.feed);
 		}else{
 			// items which needs position
 			int pos = getSelectedItemPosition();
@@ -244,6 +252,29 @@ public class FeedItemList extends ListActivity {
 		}
 		//return super.onMenuItemSelected(featureId, menuitem);
 		return true;
+	}
+
+	private void downloadAll(Feed feed) {
+		WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		WifiInfo info = wifiManager.getConnectionInfo();
+		boolean connected = info != null && info.getSSID() != null;
+		boolean onlyWifiDownload = Boolean.parseBoolean(mDbHelper
+				.getSetting(SettingEnum.ONLYWIFIDOWNLOAD));
+		if(!onlyWifiDownload || connected){
+			try {
+				for (FeedItem item : feed.getItems()) {
+					if(!item.isDownloaded()){
+						downloadBinder.download(item.getId(), item.getMp3uri(),
+								item.getMp3file());
+					}
+				}
+				Util.showToastShort(this, "Downloading all " + feed.getTitle());
+			} catch (RemoteException e) {
+				Util.showToastShort(this, e.getMessage());
+			}
+		}else{
+			Util.showToastShort(this, "Only Wifi download is allowed");
+		}
 	}
 
 	private void infoItem(FeedItem item){
@@ -272,12 +303,13 @@ public class FeedItemList extends ListActivity {
 
 	private void downloadItem(FeedItem item){
 		String file = item.getMp3file();
-		if(item.isDownloaded()){
+		if(file == null || item.getMp3uri() == null){
+			Util.showToastShort(this, "Feed item has no audio to download!");
+			return;
+		}else if(item.isDownloaded()){
 			Util.showToastShort(this, "Already downloaded: "+file);
 			return;
-		}
-
-		if(downloadBinder == null){
+		}else if(downloadBinder == null){
 			Log.e(TAG, "binder is null. No connection to download service!");
 			return;
 		}

@@ -1,5 +1,7 @@
 package com.mathias.android.acast;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +15,8 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -34,6 +38,13 @@ import com.mathias.android.acast.podcast.Feed;
 public class FeedAdd extends ListActivity {
 
 	private static final String TAG = FeedAdd.class.getSimpleName();
+	
+	private static final String OPMLLOCALFILE = File.separator + "sdcard"
+			+ File.separator + "acast" + File.separator + "acast.opml";
+
+	private static final int IMPORT_OPML = 0;
+
+	private static final int EXPORT_OPML = 1;
 
     private ACastDbAdapter mDbHelper;
 	
@@ -42,6 +53,8 @@ public class FeedAdd extends ListActivity {
 	private List<SearchItem> items = new ArrayList<SearchItem>();
 
     private WorkerThread thread;
+    
+    private int selected = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +124,29 @@ public class FeedAdd extends ListActivity {
 			}
 		});
 
+		ImageButton search = (ImageButton) findViewById(R.id.findinresults);
+		search.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String s = text.getText().toString().toLowerCase();
+				if(selected >= items.size()){
+					selected = 0;
+				}
+				for (int i = selected; i < items.size(); i++) {
+					SearchItem item = items.get(i);
+					if (item.getTitle().toLowerCase().contains(s)
+							|| item.getUri().toLowerCase().contains(s)
+							|| item.getDescription().toLowerCase().contains(s)) {
+						setSelection(i);
+						selected = i + 1;
+						return;
+					}
+				}
+				selected = 0;
+				Util.showToastShort(FeedAdd.this, "Can't find the text: "+s);
+			}
+		});
+
 	}
 
 	@Override
@@ -131,6 +167,45 @@ public class FeedAdd extends ListActivity {
 		mDbHelper.close();
 		mDbHelper = null;
 		super.onDestroy();
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		MenuItem item = menu.add(Menu.NONE, IMPORT_OPML, Menu.NONE, R.string.importlocalopml);
+		item.setIcon(android.R.drawable.stat_sys_download);
+		item = menu.add(Menu.NONE, EXPORT_OPML, Menu.NONE, R.string.exportlocalopml);
+		item.setIcon(android.R.drawable.stat_sys_download);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if(IMPORT_OPML == item.getItemId()){
+			try {
+				items = new OpmlUtil().parse(new File(OPMLLOCALFILE));
+				thread.hideProgessAndUpdateResultList("Local import found "+items.size()+" results");
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage(), e);
+				Util.showToastShort(this, "Exception: "+e.getMessage());
+			}
+		}else if(EXPORT_OPML == item.getItemId()){
+			OpmlUtil.Opml opml = new OpmlUtil.Opml(getString(R.string.app_name));
+			List<Feed> feeds = mDbHelper.fetchAllFeeds();
+			for (Feed feed : feeds) {
+				opml.add(new OpmlUtil.OpmlItem(feed.getTitle(), feed.getUri()));
+			}
+			String export = OpmlUtil.exportOpml(opml);
+			try {
+				new FileOutputStream(OPMLLOCALFILE).write(export.getBytes());
+				Util.showToastShort(this, "Export done");
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage(), e);
+				Util.showToastShort(this, "Exception: "+e.getMessage());
+			}
+		}
+		//return super.onOptionsItemSelected(item);
+		return true;
 	}
 
 	private class WorkerThread extends Thread {
@@ -167,7 +242,7 @@ public class FeedAdd extends ListActivity {
 			parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTOPML, uristr));
 		}
 
-		private void hideProgessAndUpdateResultList(String resultstr){
+		public void hideProgessAndUpdateResultList(String resultstr){
 			runOnUiThread(new HideProgessAndUpdateResultList(resultstr));
 		}
 
@@ -242,6 +317,7 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void run() {
 				Log.d(TAG, "adapter.notifyDataSetChanged()");
+				selected = 0;
 				adapter.notifyDataSetChanged();
 				setProgressBarIndeterminateVisibility(false);
 				if (resultstr != null) {

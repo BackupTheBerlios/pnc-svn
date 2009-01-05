@@ -1,6 +1,7 @@
 package com.mathias.android.acast;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import android.app.ListActivity;
@@ -11,8 +12,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -39,20 +38,15 @@ import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
-import com.mathias.android.acast.podcast.Settings.SettingEnum;
 
 public class FeedList extends ListActivity {
 
 	private static final String TAG = FeedList.class.getSimpleName();
 
-	private static final int INSERT_ID = Menu.FIRST + 0;
-	private static final int DELETE_ID = Menu.FIRST + 1;
-	private static final int REFRESH_ID = Menu.FIRST + 2;
-	private static final int INFO_ID = Menu.FIRST + 3;
-	private static final int DOWNLOADALL_ID = Menu.FIRST + 4;
-	private static final int DOWNLOADQUEUE_ID = Menu.FIRST + 5;
-	private static final int DOWNLOADLIST_ID = Menu.FIRST + 6;
-	private static final int SETTINGS_ID = Menu.FIRST + 7;
+	private static final int DELETE_ID = Menu.FIRST + 0;
+	private static final int REFRESH_ID = Menu.FIRST + 1;
+	private static final int INFO_ID = Menu.FIRST + 2;
+	private static final int DOWNLOADLAST_ID = Menu.FIRST + 3;
 
 	private ACastDbAdapter mDbHelper;
 
@@ -125,22 +119,35 @@ public class FeedList extends ListActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
-		MenuItem item = menu.add(Menu.NONE, INSERT_ID, Menu.NONE, R.string.addfeed);
-		item.setIcon(android.R.drawable.ic_menu_add);
-		item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.removefeed);
+		MenuItem item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.removefeed);
 		item.setIcon(android.R.drawable.ic_menu_delete);
 		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refreshall);
 		item.setIcon(android.R.drawable.ic_menu_rotate);
 		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
 		item.setIcon(android.R.drawable.ic_menu_info_details);
-		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
+		item = menu.add(Menu.NONE, DOWNLOADLAST_ID, Menu.NONE, R.string.downloadlast);
 		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(Menu.NONE, DOWNLOADQUEUE_ID, Menu.NONE, R.string.downloadqueue);
-		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(Menu.NONE, DOWNLOADLIST_ID, Menu.NONE, R.string.downloadlist);
-		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(Menu.NONE, SETTINGS_ID, Menu.NONE, R.string.settings);
-		item.setIcon(android.R.drawable.stat_sys_download);
+		return true;
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		if(REFRESH_ID == item.getItemId()){
+			thread.refreshFeeds();
+		}else if(DOWNLOADLAST_ID == item.getItemId()){
+			downloadLatest();
+		}else{
+			// items which needs position
+			int pos = getSelectedItemPosition();
+			if(pos < 0){
+				Util.showToastShort(this, "No item selected!");
+			}else if(INFO_ID == item.getItemId()){
+				infoFeed(adapter.getItem(pos));
+			}else if(DELETE_ID == item.getItemId()){
+				deleteFeed(adapter.getItem(pos));
+			}
+		}
+		//return super.onMenuItemSelected(featureId, item);
 		return true;
 	}
 
@@ -150,37 +157,6 @@ public class FeedList extends ListActivity {
 		Intent i = new Intent(this, FeedItemList.class);
 		i.putExtra(Constants.FEEDID, adapter.getItemId(position));
 		startActivityForResult(i, 0);
-	}
-
-	@Override
-	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		if(INSERT_ID == item.getItemId()){
-			createFeed();
-		}else if(REFRESH_ID == item.getItemId()){
-			thread.refreshFeeds();
-		}else if(DOWNLOADQUEUE_ID == item.getItemId()){
-			Intent i = new Intent(this, DownloadQueueList.class);
-			startActivityForResult(i, 0);
-		}else if(DOWNLOADLIST_ID == item.getItemId()){
-			Intent i = new Intent(this, DownloadedList.class);
-			startActivityForResult(i, 0);
-		}else if(SETTINGS_ID == item.getItemId()){
-			showSettings();
-		}else{
-			// items which needs position
-			int pos = getSelectedItemPosition();
-			if(pos < 0){
-				Util.showToastShort(this, "No item selected!");
-			}else if(DOWNLOADALL_ID == item.getItemId()){
-				downloadAll(adapter.getItem(pos));
-			}else if(INFO_ID == item.getItemId()){
-				infoFeed(adapter.getItem(pos));
-			}else if(DELETE_ID == item.getItemId()){
-				deleteFeed(adapter.getItem(pos));
-			}
-		}
-		//return super.onMenuItemSelected(featureId, item);
-		return true;
 	}
 
 	private class WorkerThread extends Thread {
@@ -235,15 +211,27 @@ public class FeedList extends ListActivity {
 			Looper.loop();
 		}
 	}
-
-	private void showSettings() {
-		Intent i = new Intent(this, SettingsEdit.class);
-		startActivityForResult(i, 0);
-	}
-
-	private void createFeed() {
-		Intent i = new Intent(this, FeedAdd.class);
-		startActivityForResult(i, 0);
+	
+	private void downloadLatest(){
+		int count = 0;
+		for (Feed feed : adapter.feeds) {
+			for (FeedItem feeditem : feed.getItems()) {
+				if (feeditem.getMp3uri() != null
+						&& feeditem.getMp3file() != null) {
+					try {
+						if (!feeditem.isDownloaded()) {
+							downloadBinder.download(feeditem.getId(), feeditem
+									.getMp3uri(), feeditem.getMp3file());
+							count++;
+						}
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+					break;
+				}
+			}
+		}
+		Util.showToastShort(this, "Downloading "+count+" items");
 	}
 
 	private void deleteFeed(final Feed feed) {
@@ -264,27 +252,6 @@ public class FeedList extends ListActivity {
 		Intent i = new Intent(this, FeedInfo.class);
 		i.putExtra(Constants.FEED, feed);
 		startActivityForResult(i, 0);
-	}
-
-	private void downloadAll(Feed feed) {
-		WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-		WifiInfo info = wifiManager.getConnectionInfo();
-		boolean connected = info != null && info.getSSID() != null;
-		boolean onlyWifiDownload = Boolean.parseBoolean(mDbHelper
-				.getSetting(SettingEnum.ONLYWIFIDOWNLOAD));
-		if(!onlyWifiDownload || connected){
-			try {
-				for (FeedItem item : feed.getItems()) {
-					downloadBinder.download(item.getId(), item.getMp3uri(),
-							item.getMp3file());
-				}
-				Util.showToastShort(this, "Downloading all " + feed.getTitle());
-			} catch (RemoteException e) {
-				Util.showToastShort(this, e.getMessage());
-			}
-		}else{
-			Util.showToastShort(this, "Only Wifi download is allowed");
-		}
 	}
 
 	@Override
@@ -310,6 +277,8 @@ public class FeedList extends ListActivity {
 		private List<Feed> feeds;
 		
 		public FeedAdapter(Context cxt, List<Feed> feeds){
+			Collections.sort(feeds, Feed.BYDATE);
+			Collections.reverse(feeds);
 			this.feeds = feeds;
 			mInflater = LayoutInflater.from(cxt);
 		}

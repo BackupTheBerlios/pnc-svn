@@ -1,6 +1,7 @@
 package com.mathias.android.acast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,21 +109,11 @@ public class DownloadedList extends ListActivity {
 			public void onServiceConnected(ComponentName name, IBinder service) {
 				Log.d(TAG, "onServiceConnected: "+name);
 				mediaBinder = IMediaService.Stub.asInterface(service);
-//				try {
-//					mediaBinder.registerCallback(mediaCallback);
-//				} catch (RemoteException e) {
-//					Log.e(TAG, e.getMessage(), e);
-//				}
 			}
 
 			@Override
 			public void onServiceDisconnected(ComponentName name) {
 				Log.d(TAG, "onServiceDisconnected: "+name);
-//				try {
-//					mediaBinder.unregisterCallback(mediaCallback);
-//				} catch (RemoteException e) {
-//					Log.e(TAG, e.getMessage(), e);
-//				}
 				mediaBinder = null;
 			}
 
@@ -247,6 +238,8 @@ public class DownloadedList extends ListActivity {
 		private List<FeedItem> items;
 
 		public DownloadAdapter(Context cxt, List<FeedItem> items){
+			Collections.sort(items, FeedItem.BYDATE);
+			Collections.reverse(items);
 			this.items = items;
 			mInflater = LayoutInflater.from(cxt);
 		}

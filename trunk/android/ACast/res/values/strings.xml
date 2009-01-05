@@ -8,10 +8,7 @@
 	<string name="add">Add</string>
 	<string name="noresults">No search results available</string>
 	<!-- feeds_list -->
-	<string name="nofeeds">No feed available! Add a feed by pressing the
-		menu button and select \'Add feed\', enter URL to podcast and press
-		\'Add\' button. Podcasts can for example be found at podcastalley.com
-	</string>
+	<string name="nofeeds">No feed available! Add a feed first.</string>
 	<string name="noresume">No feed item to resume!</string>
 	<string name="settings">Settings</string>
 	<!-- feed_list -->
@@ -26,6 +23,7 @@
 	<string name="downloadall">Download all</string>
 	<string name="downloadqueue">Download queue</string>
 	<string name="downloadlist">Download list</string>
+	<string name="downloadlast">Download latest</string>
 	<!-- feeditem_list menu items -->
 	<string name="playitem">Play item</string>
 	<string name="downloaditem">Download item</string>
@@ -43,4 +41,7 @@
 	<!-- download_list -->
 	<string name="cancel">Cancel</string>
 	<string name="cancelall">Cancel all</string>
+	<!-- feed_add -->
+	<string name="importlocalopml">Import local OPML</string>
+	<string name="exportlocalopml">Export local OPML</string>
 </resources>

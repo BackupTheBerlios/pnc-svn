@@ -4,34 +4,6 @@
     android:layout_width="fill_parent"
 	android:layout_height="wrap_content">
 
-	<LinearLayout android:orientation="horizontal" 
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
- 
-		<ImageButton android:id="@+id/resume"
-			android:src="@drawable/android:ic_media_play" 
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-	
-		<!-- 
-		<ImageButton android:id="@+id/resume"
-			style="@android:style/MediaButton.Play"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-			 --> 
-
-	  	<TextView android:id="@+id/resumetitle"
-	          android:layout_width="fill_parent"
-	        	android:layout_height="wrap_content"
-	        	android:text="@string/noresume"/>
-
-	</LinearLayout>
-
-	<View
-		android:layout_width="fill_parent"
-		android:layout_height="2dip"
-		android:background="#FFFFFFFF" />
-
     <ListView android:id="@+id/android:list"
           android:layout_width="fill_parent"
         	android:layout_height="wrap_content"/>

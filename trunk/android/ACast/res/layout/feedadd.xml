@@ -16,88 +16,81 @@
 		android:layout_height="wrap_content">
 		
 		<LinearLayout android:orientation="vertical" 
+			android:layout_weight="1"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content">
 			
 			<ImageButton android:id="@+id/add" 
-				android:src="@drawable/android:ic_input_add"
+				android:src="@drawable/additem"
 				android:gravity="center"
 				android:layout_width="55sp"
 				android:layout_height="55sp" />
-				
-		  	<TextView android:text="Add item"
-		        android:textSize="10sp"
-				android:layout_width="wrap_content"
-		       	android:layout_height="wrap_content" />
-	
+
 		</LinearLayout>
 		
 		<LinearLayout android:orientation="vertical" 
+			android:layout_weight="1"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content">
 			
 			<ImageButton android:id="@+id/searchpodgrove" 
-				android:src="@drawable/android:ic_menu_search"
+				android:src="@drawable/podgrove"
 				android:gravity="center"
 				android:layout_width="55sp"
 				android:layout_height="55sp" />
-	
-		  	<TextView android:text="PodGrove"
-		        android:textSize="10sp"
-				android:layout_width="wrap_content"
-		       	android:layout_height="wrap_content" />
-	
+
 		</LinearLayout>
 		
 		<LinearLayout android:orientation="vertical" 
+			android:layout_weight="1"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content">
 			
 			<ImageButton android:id="@+id/searchdigitalpodcast" 
-				android:src="@drawable/android:ic_menu_search"
+				android:src="@drawable/digitalpodcast"
 				android:gravity="center"
 				android:layout_width="55sp"
 				android:layout_height="55sp" />
-	
-		  	<TextView android:text="DigitalPodcast"
-		        android:textSize="10sp"
-				android:layout_width="wrap_content"
-		       	android:layout_height="wrap_content" />
-	
+
 		</LinearLayout>
 		
 		<LinearLayout android:orientation="vertical" 
+			android:layout_weight="1"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content">
 			
 			<ImageButton android:id="@+id/top50podcastalley" 
-				android:src="@drawable/android:btn_star_big_off"
+				android:src="@drawable/podcastalleytop50"
 				android:gravity="center"
 				android:layout_width="55sp"
 				android:layout_height="55sp" />
-	
-		  	<TextView android:text="PodcastAlley Top 50"
-		        android:textSize="10sp"
-				android:layout_width="wrap_content"
-		       	android:layout_height="wrap_content" />
-	
+
 		</LinearLayout>
 		
 		<LinearLayout android:orientation="vertical" 
+			android:layout_weight="1"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content">
 			
 			<ImageButton android:id="@+id/importopml" 
-				android:src="@drawable/android:stat_sys_download"
+				android:src="@drawable/importopml"
 				android:gravity="center"
 				android:layout_width="55sp"
 				android:layout_height="55sp" />
-	
-		  	<TextView android:text="Import OPML"
-		        android:textSize="10sp"
-				android:layout_width="wrap_content"
-		       	android:layout_height="wrap_content" />
-	
+
+		</LinearLayout>
+		
+		<LinearLayout android:orientation="vertical" 
+			android:layout_weight="1"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+			
+			<ImageButton android:id="@+id/findinresults" 
+				android:src="@drawable/findinresults"
+				android:gravity="center"
+				android:layout_width="55sp"
+				android:layout_height="55sp" />
+
 		</LinearLayout>
 		
 	</LinearLayout>

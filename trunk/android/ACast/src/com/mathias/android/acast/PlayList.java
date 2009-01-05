@@ -1,5 +1,6 @@
 package com.mathias.android.acast;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.ListActivity;
@@ -10,6 +11,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
@@ -34,8 +36,6 @@ public class PlayList extends ListActivity implements ServiceConnection {
 
 	private static final String TAG = PlayList.class.getSimpleName();
 
-	private static final long UPDATE_DELAY = 3000;
-
 	private static final int CANCEL_ID = Menu.FIRST;
 	private static final int CANCELALL_ID = Menu.FIRST + 1;
 	private static final int REFRESH_ID = Menu.FIRST + 2;
@@ -48,8 +48,8 @@ public class PlayList extends ListActivity implements ServiceConnection {
 	private Integer currPos;
 
 	private IMediaService mediaBinder;
-
-	private boolean visible = false;
+	
+	private WorkerThread thread;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -59,42 +59,21 @@ public class PlayList extends ListActivity implements ServiceConnection {
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
+		
+		thread = new WorkerThread();
+		thread.start();
 
 		Intent i = new Intent(this, MediaService.class);
 		startService(i);
 		if(!bindService(i, this, BIND_AUTO_CREATE)) {
 			Util.showDialog(this, "Could not start media!");
 		}
-
-		// start progress handler loop
-		progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
 	}
 
-	private Handler progressHandler = new Handler(){
-		@Override
-		public void handleMessage(Message not_used) {
-			if(visible){
-				if(mediaBinder != null){
-					//TODO
-				}else{
-					Log.d(TAG, "binder is null!!");
-				}
-				sendEmptyMessageDelayed(0, UPDATE_DELAY);
-			}
-		}
-	};
-
 	@Override
-	protected void onResume() {
-		super.onResume();
-		visible = true;
-		progressHandler.sendEmptyMessage(0);
-	}
-	
-	@Override
-	protected void onPause() {
-		super.onPause();
-		visible = false;
+	protected void onListItemClick(ListView l, View v, int position, long id) {
+		currPos = position;
+		openOptionsMenu();
 	}
 
 	@Override
@@ -112,12 +91,6 @@ public class PlayList extends ListActivity implements ServiceConnection {
 	}
 
 	@Override
-	protected void onListItemClick(ListView l, View v, int position, long id) {
-		currPos = position;
-		openOptionsMenu();
-	}
-
-	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
 		int pos = getSelectedItemPosition();
 		if(currPos != null){
@@ -131,7 +104,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 			cancelAndRemoveAll();
 			return true;
 		}else if(REFRESH_ID == menuitem.getItemId()){
-			progressHandler.sendEmptyMessage(0);
+			thread.populateAdapter();
 			return true;
 		}else if(pos >= 0 && INFO_ID == menuitem.getItemId()){
 //			MediaItem item = adapter.getItem(pos);
@@ -175,27 +148,13 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		}
 		super.onDestroy();
 	}
-	
-	private void populateList() throws RemoteException {
-//		final List<FeedItem> items = binder.getFeedItems();
-//		Log.d(TAG, "items.length="+items.size());
-//		runOnUiThread(new Runnable(){
-//			@Override
-//			public void run() {
-//				adapter = new MediaAdapter(PlayList.this, items);
-//				setListAdapter(adapter);
-//
-//				progressHandler.sendEmptyMessage(0);
-//			}
-//		});
-	}
 
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
 		Log.d(TAG, "onServiceConnected: "+name);
 		mediaBinder = IMediaService.Stub.asInterface(service);
 		try {
-			populateList();
+			thread.populateAdapter();
 			mediaBinder.registerCallback(mediaCallback);
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -217,10 +176,50 @@ public class PlayList extends ListActivity implements ServiceConnection {
 
 		@Override
 		public void onCompletion() throws RemoteException {
-			// TODO Auto-generated method stub
-			
 		}
 	};
+	
+	private class WorkerThread extends Thread {
+		private Handler handler;
+		
+		public void populateAdapter(){
+			handler.post(new Runnable(){
+				@Override
+				public void run() {
+					try {
+						if(mediaBinder != null){
+							List<Long> queue = mediaBinder.getQueue();
+							final List<FeedItem> items = new ArrayList<FeedItem>(queue.size());
+							for (Long itemid : queue) {
+								FeedItem item = mDbHelper.fetchFeedItem(itemid);
+								items.add(item);
+							}
+							Log.d(TAG, "items.length="+items.size());
+							runOnUiThread(new Runnable(){
+								@Override
+								public void run() {
+									adapter = new MediaAdapter(PlayList.this, items);
+									setListAdapter(adapter);
+								}
+							});
+						}
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+				}
+			});
+		}
+		@Override
+		public void run() {
+			Looper.prepare();
+			handler = new Handler(){
+				@Override
+				public void handleMessage(Message msg) {
+				}
+			};
+			Looper.loop();
+		}
+	}
 
 	private class MediaAdapter extends BaseAdapter {
 		

@@ -1,7 +1,10 @@
 package com.mathias.android.acast.common;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +46,13 @@ public class OpmlUtil implements ContentHandler {
 		HttpEntity entity = response.getEntity();
 //		Encoding enc = Encoding.valueOf(entity.getContentEncoding().getValue());
 		Xml.parse(entity.getContent(), Encoding.UTF_8, this);
+		return items;
+	}
+
+	public List<SearchItem> parse(File file) throws ClientProtocolException,
+			IOException, IllegalStateException, SAXException {
+		Log.d(TAG, "Parsing: " + file.getAbsolutePath());
+		Xml.parse(new FileInputStream(file), Encoding.UTF_8, this);
 		return items;
 	}
 
@@ -124,6 +134,74 @@ public class OpmlUtil implements ContentHandler {
 	@Override
 	public void skippedEntity(String name) throws SAXException {
 		Log.d(TAG, "skippedEntity() "+name);
+	}
+
+	// EXPORT
+	public static String exportOpml(Opml inp){
+		StringBuilder sb = new StringBuilder();
+		sb.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+		sb.append("<opml version=\"1.1\">");
+		sb.append(" <head>");
+		sb.append("  <title>"+inp.title+"</title>");
+		sb.append("  <dateCreated>"+new Date()+"</dateCreated>");
+		sb.append("  <dateModified>"+new Date()+"</dateModified>");
+		sb.append("  <ownerName>"+inp.ownerName+"</ownerName>");
+		sb.append("  <ownerEmail>"+inp.ownerEmail+"</ownerEmail>");
+		sb.append("  <expansionState></expansionState>");
+		sb.append("  <vertScrollState>1</vertScrollState>");
+		sb.append("  <windowTop>20</windowTop>");
+		sb.append("  <windowLeft>0</windowLeft>");
+		sb.append("  <windowBottom>120</windowBottom>");
+		sb.append("  <windowRight>147</windowRight>");
+		sb.append(" </head>");
+		sb.append(" <body>");
+		for (OpmlItem item : inp.items) {
+			sb.append("  <outline text=\""+item.text+"\" count=\""+item.count+"\" xmlUrl=\""+item.xmlUri+"\"/>");
+		}
+		sb.append(" </body>");
+		sb.append("</opml>");
+		return sb.toString();
+	}
+
+	public static class Opml {
+		String title;
+		String ownerName;
+		String ownerEmail;
+		List<OpmlItem> items = new ArrayList<OpmlItem>();
+
+		public Opml(String title) {
+			this.title = title;
+			ownerName = "";
+			ownerEmail = "";
+		}
+
+		public Opml(String title, String ownerName, String ownerEmail) {
+			this.title = title;
+			this.ownerName = ownerName;
+			this.ownerEmail = ownerEmail;
+		}
+
+		public void add(OpmlItem item) {
+			items.add(item);
+		}
+	}
+
+	public static class OpmlItem {
+		String text;
+		String count;
+		String xmlUri;
+
+		public OpmlItem(String text, String xmlUri) {
+			this.text = text;
+			this.count = "100";
+			this.xmlUri = xmlUri;
+		}
+
+		public OpmlItem(String text, String count, String xmlUri) {
+			this.text = text;
+			this.count = count;
+			this.xmlUri = xmlUri;
+		}
 	}
 
 }

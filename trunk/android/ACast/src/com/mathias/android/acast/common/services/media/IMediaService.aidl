@@ -13,6 +13,7 @@ interface IMediaService {
   void setCurrentPosition(int position);
   int getDuration();
   long getId();
+  List getQueue();
   boolean isPlaying();
   void registerCallback(in IMediaServiceCallback cb);
   void unregisterCallback(in IMediaServiceCallback cb);

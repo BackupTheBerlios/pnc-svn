@@ -1,8 +1,10 @@
+//TODO 6: Download latest from every feed
+//TODO 6: Export OPML to sdcard/acast/acast.opml
 //TODO 6: Playlist, queue, view, remove, reorder.
 //TODO 5: Sort by date, unsorted, title, size, ...
 //TODO 6: Remove notification when opening download list
 //TODO 5: Move resume button to list so it is possible to move it out of screen like iphone.
-//TODO 7: Date in feed item view
+// Date in feed item view
 //TODO 6: Search through all titles for all feeds
 //TODO 6: Show feed icon for downloaded and downloadqueue
 //TODO 6: Search in search results. Display Search button after a result is presented.

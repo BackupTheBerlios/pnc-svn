@@ -7,6 +7,8 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.View.OnClickListener;
@@ -24,6 +26,8 @@ import com.mathias.android.acast.podcast.Settings;
 public class ACastMenu extends Activity {
 
 	private static final String TAG = ACastMenu.class.getSimpleName();
+	
+	private static final int SETTINGS_ID = 0;
 
 	private ACastDbAdapter mDbHelper;
 
@@ -160,6 +164,24 @@ public class ACastMenu extends Activity {
 			unbindService(mediaServiceConn);
 		}
 		super.onDestroy();
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		MenuItem item = menu.add(Menu.NONE, SETTINGS_ID, Menu.NONE, R.string.settings);
+		item.setIcon(android.R.drawable.ic_menu_preferences);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if(SETTINGS_ID == item.getItemId()){
+			Intent i = new Intent(this, SettingsEdit.class);
+			startActivity(i);
+		}
+		//return super.onOptionsItemSelected(item);
+		return true;
 	}
 
 }

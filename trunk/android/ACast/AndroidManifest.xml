@@ -20,7 +20,6 @@
         <activity android:name=".FeedItemInfo"/>
         <activity android:name=".DownloadQueueList"/>
         <activity android:name=".DownloadedList"/>
-        <activity android:name=".DownloadTabs"/>
         <activity android:name=".PlayList"/>
         <activity android:name=".SettingsEdit"/>
         <service android:name=".common.services.media.MediaService"/>
