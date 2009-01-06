@@ -27,12 +27,12 @@ public abstract class ACastUtil {
 
 	public static void resumeItem(IMediaService mediaBinder, FeedItem item){
 		try {
-			if (mediaBinder != null
+			if (item != null && mediaBinder != null
 					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item
 							.getId())) {
 				playItem(mediaBinder, item);
 			}else{
-				Log.d(TAG, "isPlaying or mediaBinder == null");
+				Log.d(TAG, "isPlaying or mediaBinder == null or item == null");
 			}
 		} catch (Exception e) {
 			String msg = e.getMessage();
@@ -62,20 +62,22 @@ public abstract class ACastUtil {
 			Log.e(TAG, "binder is null. No connection to media service!");
 			return;
 		}
-
-		boolean found = false;
-		for (FeedItem item : items) {
-			if(found){
-				Log.d(TAG, "queue: "+item.getId());
-				try {
-					mediaBinder.queue(item.getId());
-				} catch (Exception e) {
-					String msg = e.getMessage();
-					Log.e(TAG, (msg != null ? msg : e.toString()), e);
+		
+		try {
+			mediaBinder.clearQueue();
+	
+			boolean found = false;
+			for (FeedItem item : items) {
+				if(found){
+					Log.d(TAG, "queue: "+item.getId());
+						mediaBinder.queue(item.getId());
+				}else if(afterid == item.getId()){
+					found = true;
 				}
-			}else if(afterid == item.getId()){
-				found = true;
 			}
+		} catch (Exception e) {
+			String msg = e.getMessage();
+			Log.e(TAG, (msg != null ? msg : e.toString()), e);
 		}
 	}
 

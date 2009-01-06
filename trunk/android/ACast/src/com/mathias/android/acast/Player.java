@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,6 +22,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import com.mathias.android.acast.common.ACastUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.media.IMediaService;
+import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
 import com.mathias.android.acast.common.services.media.MediaService;
 import com.mathias.android.acast.podcast.FeedItem;
 
@@ -217,12 +219,6 @@ public class Player extends Activity implements ServiceConnection {
 	};
 
 	@Override
-	protected void onPause() {
-		Log.d(TAG, "onPause "+getTaskId());
-		super.onPause();
-	}
-	
-	@Override
 	protected void onStop() {
 		Log.d(TAG, "onStop() finishing"+getTaskId());
 		super.onStop();
@@ -245,24 +241,7 @@ public class Player extends Activity implements ServiceConnection {
 	protected void onResume() {
 		Log.d(TAG, "onResume "+getTaskId());
 		super.onResume();
-		try {
-			if(mediaBinder != null){
-				if(!mediaBinder.isPlaying()){
-					playpause.setImageResource(R.drawable.play);
-					//playpause.setImageResource(android.R.drawable.ic_media_play);
-				}else{
-					playpause.setImageResource(R.drawable.pause);
-					//playpause.setImageResource(android.R.drawable.ic_media_pause);
-				}
-				itemDuration = mediaBinder.getDuration();
-				seekbar.setMax(itemDuration);
-			}else{
-				Log.w(TAG, "binder is null");
-			}
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage(), e);
-			Util.showDialog(Player.this, e.getMessage());
-		}
+		populateView();
 	}
 
 	@Override
@@ -270,35 +249,73 @@ public class Player extends Activity implements ServiceConnection {
 		Log.d(TAG, "onServiceConnected: "+getTaskId()+" "+name);
 		mediaBinder = IMediaService.Stub.asInterface(service);
 		try {
-			long id = mediaBinder.getId();
-			FeedItem item = mDbHandler.fetchFeedItem(id);
-
-			TextView title = (TextView) findViewById(R.id.title);
-			if(item == null){
-				title.setText("No item!");
-				return;
-			}
-			title.setText(item.getTitle());
-
-			if (mediaBinder.isPlaying()) {
-				Log.d(TAG, "Already playing: " + item.getMp3uri());
-				playpause.setImageResource(R.drawable.pause);
-				//playpause.setImageResource(android.R.drawable.ic_media_pause);
-			} else {
-				playpause.setImageResource(R.drawable.play);
-				//playpause.setImageResource(android.R.drawable.ic_media_play);
-			}
-			itemDuration = mediaBinder.getDuration();
-			seekbar.setMax(itemDuration);
-		} catch (Exception e) {
+			mediaBinder.registerCallback(mediaCallback);
+		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
+		populateView();
 	}
-
 
 	@Override
 	public void onServiceDisconnected(ComponentName name) {
 		Log.d(TAG, "onServiceDisconnected: "+getTaskId()+" "+name);
+		try {
+			mediaBinder.unregisterCallback(mediaCallback);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+
+	private final IMediaServiceCallback mediaCallback = new IMediaServiceCallback.Stub() {
+		@Override
+		public void onPlaylistCompleted() throws RemoteException {
+			Log.d(TAG, "onPlaylistCompleted()");
+		}
+		@Override
+		public void onTrackCompleted() throws RemoteException {
+			Log.d(TAG, "onTrackCompleted()");
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					populateView();
+				}
+			});
+		}
+	};
+
+	private void populateView(){
+		try {
+			if(mediaBinder != null){
+				long id = mediaBinder.getId();
+				FeedItem item = mDbHandler.fetchFeedItem(id);
+	
+				TextView title = (TextView) findViewById(R.id.title);
+				if(item == null){
+					title.setText("No item!");
+					return;
+				}
+				title.setText(item.getTitle());
+	
+				if (mediaBinder.isPlaying()) {
+					Log.d(TAG, "Already playing: " + item.getMp3uri());
+					playpause.setImageResource(R.drawable.pause);
+					//playpause.setImageResource(android.R.drawable.ic_media_pause);
+				} else {
+					playpause.setImageResource(R.drawable.play);
+					//playpause.setImageResource(android.R.drawable.ic_media_play);
+				}
+				int dur = mediaBinder.getDuration();
+				if(dur > 0){
+					itemDuration = dur;
+					seekbar.setMax(itemDuration);
+				}
+			}else{
+				Log.w(TAG, "binder is null");
+			}
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
+			Util.showDialog(Player.this, e.getMessage());
+		}
 	}
 
 }

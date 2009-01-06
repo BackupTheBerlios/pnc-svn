@@ -115,30 +115,6 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		return super.onMenuItemSelected(featureId, menuitem);
 	}
 	
-	private void infoItem(FeedItem item){
-		Intent i = new Intent(this, FeedItemInfo.class);
-		i.putExtra(Constants.FEEDITEM, item);
-		startActivityForResult(i, 0);
-	}
-
-	private void cancelAndRemove(long externalId){
-//		try {
-//			binder.cancelAndRemove(externalId);
-//			populateList();
-//		} catch (Exception e) {
-//			Log.e(TAG, e.getMessage(), e);
-//		}
-	}
-	
-	private void cancelAndRemoveAll(){
-//		try {
-//			binder.cancelAndRemoveAll();
-//			populateList();
-//		} catch (Exception e) {
-//			Log.e(TAG, e.getMessage(), e);
-//		}
-	}
-
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
@@ -173,9 +149,11 @@ public class PlayList extends ListActivity implements ServiceConnection {
 	}
 
 	private final IMediaServiceCallback mediaCallback = new IMediaServiceCallback.Stub() {
-
 		@Override
-		public void onCompletion() throws RemoteException {
+		public void onPlaylistCompleted() throws RemoteException {
+		}
+		@Override
+		public void onTrackCompleted() throws RemoteException {
 		}
 	};
 	
@@ -296,5 +274,29 @@ public class PlayList extends ListActivity implements ServiceConnection {
         TextView title;
         TextView author;
     }
+
+	private void infoItem(FeedItem item){
+		Intent i = new Intent(this, FeedItemInfo.class);
+		i.putExtra(Constants.FEEDITEM, item);
+		startActivityForResult(i, 0);
+	}
+
+	private void cancelAndRemove(long externalId){
+//		try {
+//			binder.cancelAndRemove(externalId);
+//			populateList();
+//		} catch (Exception e) {
+//			Log.e(TAG, e.getMessage(), e);
+//		}
+	}
+	
+	private void cancelAndRemoveAll(){
+//		try {
+//			binder.cancelAndRemoveAll();
+//			populateList();
+//		} catch (Exception e) {
+//			Log.e(TAG, e.getMessage(), e);
+//		}
+	}
 
 }

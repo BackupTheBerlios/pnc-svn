@@ -1,20 +1,19 @@
+//TODO 6: No mp3uri/downoad icon for text only feed items.
 //TODO 6: Download latest from every feed
 //TODO 6: Export OPML to sdcard/acast/acast.opml
 //TODO 6: Playlist, queue, view, remove, reorder.
 //TODO 5: Sort by date, unsorted, title, size, ...
 //TODO 6: Remove notification when opening download list
 //TODO 5: Move resume button to list so it is possible to move it out of screen like iphone.
-// Date in feed item view
 //TODO 6: Search through all titles for all feeds
 //TODO 6: Show feed icon for downloaded and downloadqueue
-//TODO 6: Search in search results. Display Search button after a result is presented.
 //TODO 5: sort on pubDate, title, ... (settings)
 //TODO 6: Option menu should be for actions which affect all feeds/items. LongPress (ContectMenu?) should affect single items
 //TODO 6: Increase size of feed/feeditem list rows
 //TODO 5: dont show/send all download progress msgs
 //TODO 5: Download estimated time
 //TODO 6: Progress dialog should show title instead of url
-//TODO 5: Add indeterminate status progress bar during play init
+//TODO 5: Add indeterminate status progress bar and loading on separate thread, during play init, since it takes time...
 //TODO 6: Bug: audio notification triggered player does not stop audio
 //TODO 6: Bug: info for feed item is not shown when opening player with notifiction
 //TODO 6: Download queue not visible after close. How to go to file download page? Main page menu item.
@@ -47,7 +46,7 @@
 //TODO 5: On multidownload, press (drag?) to activate/setcurrent download of podcast.
 //TODO 5: Pause when incoming call, resume afterwards. Pause playback when a call is initiated. 
 //TODO 5: Support video
-//TODO 5: Pause/play with button on headset
+//TODO 5: Pause/play with button on headset. Multi press; one: pause/play, two: seek forward, three: seek backward, long: ?
 //TODO 5: Show partial downloads
 //TODO 5: System tool to prevent phone from sleeping?
 //TODO 5: Show if streaming when playing
@@ -67,6 +66,8 @@
 //TODO 5: Low: show kb/s for download progress window
 //TODO 5: Low: Username/password protected RSS
 //TODO 5: Low: Use default media player with broadcast sender.
+// Date in feed item view
+// Search in search results. Display Search button after a result is presented.
 // Loading on refresh all feeds, show status bar processing circle
 // Remove information from player, can be shown with menu->information.
 // remove feed/feeditem confirmation

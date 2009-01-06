@@ -16,6 +16,7 @@ public class Settings {
 		PLAYERINLANDSCAPE(TypeEnum.BOOLEAN),
 		DEFAULTMEDIAPLAYER(TypeEnum.BOOLEAN),
 		LASTFEEDITEMID(TypeEnum.INTEGER),
+		LASTFULLUPDATE(TypeEnum.DATE),
 		SORTBY(TypeEnum.SortbyEnum);
 		
 		TypeEnum type;
@@ -41,6 +42,7 @@ public class Settings {
 		BOOLEAN,
 		STRING,
 		INTEGER,
+		DATE,
 		SortbyEnum;
 	}
 

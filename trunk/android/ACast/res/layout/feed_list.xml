@@ -4,6 +4,29 @@
     android:layout_width="fill_parent"
 	android:layout_height="wrap_content">
 
+	<LinearLayout
+		android:orientation="horizontal"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content">
+
+	    <TextView 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Last full update: "
+	        android:textSize="10sp" />
+
+	    <TextView android:id="@+id/updatedate"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:textSize="10sp" />
+
+    </LinearLayout>
+
+	<View
+		android:layout_width="fill_parent"
+		android:layout_height="2dip"
+		android:background="#FFFFFFFF" />
+
     <ListView android:id="@+id/android:list"
           android:layout_width="fill_parent"
         	android:layout_height="wrap_content"/>

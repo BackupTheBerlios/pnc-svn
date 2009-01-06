@@ -2,7 +2,10 @@ package com.mathias.android.acast;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.app.ListActivity;
 import android.content.ComponentName;
@@ -38,6 +41,7 @@ import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings.SettingEnum;
 
 public class FeedList extends ListActivity {
 
@@ -59,6 +63,8 @@ public class FeedList extends ListActivity {
 	private IDownloadService downloadBinder;
 
 	private ServiceConnection downloadServiceConn;
+	
+	private Map<Long, Date> lastUpdate = new HashMap<Long, Date>();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -111,6 +117,10 @@ public class FeedList extends ListActivity {
 	}
 
 	private void fillData() {
+		String lfuStr = (mDbHelper != null ? mDbHelper.getSetting(SettingEnum.LASTFULLUPDATE) : null);
+		TextView updatedate = (TextView) findViewById(R.id.updatedate);
+		updatedate.setText((lfuStr != null ? lfuStr : "Unknown"));
+
 		List<Feed> feeds = mDbHelper.fetchAllFeeds();
 		adapter = new FeedAdapter(this, feeds);
 		setListAdapter(adapter);
@@ -181,10 +191,12 @@ public class FeedList extends ListActivity {
 							for (Feed feed : feeds) {
 								long rowId = feed.getId();
 								final String title = feed.getTitle();
+								lastUpdate.put(rowId, Feed.getPubdateAsDate(feed));
 								Log.d(TAG, "Parsing "+title);
 								feed = new RssUtil().parse(feed.getUri());
 								mDbHelper.updateFeed(rowId, feed);
 							}
+							mDbHelper.setSetting(SettingEnum.LASTFULLUPDATE, new Date());
 							Log.d(TAG, "Done");
 							runOnUiThread(new Runnable(){
 								@Override
@@ -302,6 +314,7 @@ public class FeedList extends ListActivity {
                 holder.text = (TextView) convertView.findViewById(R.id.feedrowtext);
                 holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
                 holder.text3 = (TextView) convertView.findViewById(R.id.feedrowtext3);
+                holder.newitems = (TextView) convertView.findViewById(R.id.newitems);
 
                 convertView.setTag(holder);
 
@@ -312,16 +325,25 @@ public class FeedList extends ListActivity {
             }
 
             // Bind the data efficiently with the holder.
-            
-            String iconPath = feeds.get(position).getIcon();
+            Feed feed = feeds.get(position);
+            String iconPath = feed.getIcon();
             Bitmap icon = BitmapCache.instance().get(iconPath);
             holder.icon.setImageBitmap(icon != null ? icon : defaultIcon);
-            holder.text.setText(feeds.get(position).getTitle());
-            String author = feeds.get(position).getAuthor();
+            holder.text.setText(feed.getTitle());
+            String author = feed.getAuthor();
             holder.text2.setText((author != null ? author : ""));
-            String pubDate = feeds.get(position).getPubdate();
-            holder.text3.setText((pubDate != null ? pubDate : ""));
-
+            Date pubDate = Feed.getPubdateAsDate(feed);
+            holder.text3.setText((pubDate != null ? pubDate.toString() : ""));
+            int count = 0;
+            Date lastDate = lastUpdate.get(feed.getId());
+            for (FeedItem item : feed.getItems()) {
+            	Date itemDate = item.getPubdateAsDate();
+				if (itemDate != null && lastDate != null
+						&& itemDate.after(lastDate)) {
+					count++;
+				}
+			}
+            holder.newitems.setText(count+" new items");
             return convertView;
 		}
 		
@@ -347,6 +369,7 @@ public class FeedList extends ListActivity {
         TextView text;
         TextView text2;
         TextView text3;
+        TextView newitems;
     }
 
 }

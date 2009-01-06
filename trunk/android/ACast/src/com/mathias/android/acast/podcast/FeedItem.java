@@ -176,7 +176,9 @@ public class FeedItem implements Serializable {
 	public Date getPubdateAsDate() {
 		Date date = null;
 		try{
-			date = new Date(pubdate);
+			if(pubdate != null){
+				date = new Date(pubdate);
+			}
 		}catch(Exception e){
 			Log.e(TAG, e.getMessage(), e);
 		}

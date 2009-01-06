@@ -39,7 +39,6 @@ import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
 import com.mathias.android.acast.common.services.media.IMediaService;
-import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
 import com.mathias.android.acast.common.services.media.MediaService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
@@ -139,21 +138,11 @@ public class FeedItemList extends ListActivity {
 			public void onServiceConnected(ComponentName name, IBinder service) {
 				Log.d(TAG, "onServiceConnected: "+name);
 				mediaBinder = IMediaService.Stub.asInterface(service);
-				try {
-					mediaBinder.registerCallback(mediaCallback);
-				} catch (RemoteException e) {
-					Log.e(TAG, e.getMessage(), e);
-				}
 			}
 
 			@Override
 			public void onServiceDisconnected(ComponentName name) {
 				Log.d(TAG, "onServiceDisconnected: "+name);
-				try {
-					mediaBinder.unregisterCallback(mediaCallback);
-				} catch (RemoteException e) {
-					Log.e(TAG, e.getMessage(), e);
-				}
 				mediaBinder = null;
 			}
 
@@ -164,7 +153,7 @@ public class FeedItemList extends ListActivity {
 	}
 
 	private void populateFields() {
-		if (mFeedId != null && mDbHelper != null) {
+		if (mDbHelper != null && mFeedId != null) {
 			feed = mDbHelper.fetchFeed(mFeedId);
 
 			String iconStr = feed.getIcon();
@@ -278,6 +267,10 @@ public class FeedItemList extends ListActivity {
 	}
 
 	private void infoItem(FeedItem item){
+		if(item.getMp3uri() == null && !item.isCompleted()){
+			item.setCompleted(true);
+			mDbHelper.updateFeedItem(item);
+		}
 		Intent i = new Intent(this, FeedItemInfo.class);
 		i.putExtra(Constants.FEEDITEM, item);
 		startActivity(i);
@@ -424,12 +417,6 @@ public class FeedItemList extends ListActivity {
 		}
 	};
 
-	private final IMediaServiceCallback mediaCallback = new IMediaServiceCallback.Stub() {
-		@Override
-		public void onCompletion() throws RemoteException {
-		}
-	};
-
 	private static class FeedItemAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
@@ -487,7 +474,13 @@ public class FeedItemList extends ListActivity {
             // Bind the data efficiently with the holder.
 
             FeedItem item = feed.getItems().get(position);
-			if(item.isDownloaded()){
+            if(item.getMp3uri() == null){
+            	if(item.isCompleted()){
+    	            holder.icon.setImageResource(R.drawable.textonly_done);
+            	}else{
+    	            holder.icon.setImageResource(R.drawable.textonly);
+            	}
+            }else if(item.isDownloaded()){
 				if(item.isCompleted()){
 					if(item.getBookmark() > 0){
 			            holder.icon.setImageResource(R.drawable.downloaded_done_bm);

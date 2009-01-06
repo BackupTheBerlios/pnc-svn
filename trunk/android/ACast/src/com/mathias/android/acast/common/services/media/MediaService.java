@@ -10,7 +10,10 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
@@ -47,6 +50,8 @@ public class MediaService extends Service {
 	private LinkedList<FeedItem> queue = new LinkedList<FeedItem>();
 	
 	private FeedItem currentItem;
+	
+	private BroadcastReceiver receiver;
 
     @Override
 	public void onCreate() {
@@ -58,6 +63,25 @@ public class MediaService extends Service {
 
 		mDbHandler = new ACastDbAdapter(this);
 		mDbHandler.open();
+		
+		receiver = new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				Log.d(TAG, "MEDIA_BUTTON pressed");
+				try {
+					if(binder != null && mp != null){
+						if(binder.isPlaying()) {
+							binder.pause();
+						}else{
+							binder.play();
+						}
+					}
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		};
+		registerReceiver(receiver, new IntentFilter("android.intent.action.MEDIA_BUTTON"));
 	}
     
     private class WorkerThread extends Thread {
@@ -76,9 +100,23 @@ public class MediaService extends Service {
 			handler = new Handler(){
 				@Override
 				public void handleMessage(Message msg) {
-					if(mp != null && !mp.isPlaying()){
-						Log.d(TAG, "mp.start()");
-    					mp.start();
+					if (mp != null) {
+						if (!mp.isPlaying()) {
+							Log.d(TAG, "mp.start()");
+							mp.start();
+						}
+					}else{
+						// reinit mp
+						if(currentItem != null){
+							try {
+								initItem(currentItem);
+								binder.setCurrentPosition(currentItem.getBookmark());
+								binder.play();
+								broadcastTrackCompleted();
+							} catch (Exception e) {
+								Log.d(TAG, e.getMessage());
+							}
+						}
 					}
 				}
 			};
@@ -99,27 +137,6 @@ public class MediaService extends Service {
 
     private final IMediaService.Stub binder = new IMediaService.Stub() {
 
-    	private void bookmark(boolean completed){
-			try {
-				long oldid = getId();
-				int currpos = (mp != null ? mp.getCurrentPosition() : -1);
-				int dur = (mp != null ? mp.getDuration(): -1);
-				Log.d(TAG, "Storing bookmark: "+currpos+"/"+dur+" for: "+oldid);
-				if(oldid != -1 && currpos != -1 && dur != -1){
-					if (completed && currpos + 100 >= dur) {
-						mDbHandler.updateFeedItem(oldid,
-								ACastDbAdapter.FEEDITEM_COMPLETED, true);
-						mDbHandler.updateFeedItem(oldid,
-								ACastDbAdapter.FEEDITEM_BOOKMARK, 0);
-					}else{
-						mDbHandler.updateFeedItem(oldid,
-								ACastDbAdapter.FEEDITEM_BOOKMARK, currpos);
-					}
-				}
-			} catch (RemoteException e) {
-				Log.e(TAG, e.getMessage(), e);
-			}
-    	}
 		@Override
 		public long getId() throws RemoteException {
 			return (currentItem != null ? currentItem.getId() : -1);
@@ -177,75 +194,7 @@ public class MediaService extends Service {
 		@Override
 		public void initItem(long newid) throws RemoteException {
 			FeedItem item = mDbHandler.fetchFeedItem(newid);
-			initItem(item);
-		}
-		public void initItem(FeedItem item) throws RemoteException {
-			Log.d(TAG, "initItem, id="+item.getId());
-
-			bookmark(false);
-
-			Log.d(TAG, "Storing last feed item: "+item.getId()+" title="+item.getTitle());
-			mDbHandler.setSetting(Settings.SettingEnum.LASTFEEDITEMID, item.getId());
-
-			currentItem = item;
-
-			if(mp != null){
-				mp.reset();
-				mp.release();
-				mp = null;
-			}
-			if(item != null){
-				if(!item.isDownloaded()){
-					String uri = item.getMp3uri().replace(' ', '+');
-					Log.d(TAG, "Initializing from URI: "+uri);
-					Util.isRedirect(uri);
-					mp = MediaPlayer.create(MediaService.this, Uri.parse(uri));
-					if(mp == null){
-						String err = "Could not create media player for: "+uri;
-						Log.e(TAG, err);
-						showErrorNotification(err);
-						return;
-					}
-				}else{
-					String locator = item.getMp3file();
-					Log.d(TAG, "Initializing from file: "+locator);
-					mp = new MediaPlayer();
-					try {
-						File f = new File(locator);
-						if(!f.exists()){
-							String err = "File does not exist: "+locator;
-							Log.e(TAG, err);
-							showErrorNotification(err);
-							return;
-						}
-						mp.setDataSource(MediaService.this, Uri.fromFile(f));
-						mp.prepare();
-					} catch (Exception e) {
-						Log.e(TAG, locator, e);
-						showErrorNotification(e.getMessage());
-					}
-				}
-			}
-
-			mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
-				@Override
-				public void onCompletion(MediaPlayer mediaplayer) {
-					try {
-						bookmark(true);
-						if(queue.isEmpty()){
-							broadcastOnCompletion();
-							mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
-							stopSelf();
-						}else{
-							currentItem = queue.remove();
-							initItem(currentItem.getId());
-						}
-					} catch (Exception e) {
-						Log.e(TAG, e.getMessage(), e);
-					}
-				}
-			});
-			showNotification();
+			MediaService.this.initItem(item);
 		}
 		@Override
 		public boolean isPlaying() throws RemoteException {
@@ -279,24 +228,136 @@ public class MediaService extends Service {
 			}
 			return ret;
 		}
+		@Override
+		public void clearQueue() throws RemoteException {
+			queue.clear();
+		}
 	};
 	
-	private void broadcastOnCompletion(){
+	private void bookmark(boolean completed){
+		try {
+			long oldid = binder.getId();
+			int currpos = (mp != null ? mp.getCurrentPosition() : -1);
+			int dur = (mp != null ? mp.getDuration(): -1);
+			Log.d(TAG, "Storing bookmark: "+currpos+"/"+dur+" for: "+oldid);
+			if(oldid != -1 && currpos != -1 && dur != -1){
+				if (completed && currpos + 100 >= dur) {
+					mDbHandler.updateFeedItem(oldid,
+							ACastDbAdapter.FEEDITEM_COMPLETED, true);
+					mDbHandler.updateFeedItem(oldid,
+							ACastDbAdapter.FEEDITEM_BOOKMARK, 0);
+				}else{
+					mDbHandler.updateFeedItem(oldid,
+							ACastDbAdapter.FEEDITEM_BOOKMARK, currpos);
+				}
+			}
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+
+	public void initItem(FeedItem item) throws RemoteException {
+		Log.d(TAG, "initItem, id="+item.getId());
+
+		bookmark(false);
+
+		Log.d(TAG, "Storing last feed item: "+item.getId()+" title="+item.getTitle());
+		mDbHandler.setSetting(Settings.SettingEnum.LASTFEEDITEMID, item.getId());
+
+		currentItem = item;
+
+		if(mp != null){
+			mp.reset();
+			mp.release();
+			mp = null;
+		}
+		if(item != null){
+			if(!item.isDownloaded()){
+				String uri = item.getMp3uri().replace(' ', '+');
+				Log.d(TAG, "Initializing from URI: "+uri);
+				Util.isRedirect(uri);
+				mp = MediaPlayer.create(MediaService.this, Uri.parse(uri));
+				if(mp == null){
+					String err = "Could not create media player for: "+uri;
+					Log.e(TAG, err);
+					showErrorNotification(err);
+					return;
+				}
+			}else{
+				String locator = item.getMp3file();
+				Log.d(TAG, "Initializing from file: "+locator);
+				mp = new MediaPlayer();
+				try {
+					File f = new File(locator);
+					if(!f.exists()){
+						String err = "File does not exist: "+locator;
+						Log.e(TAG, err);
+						showErrorNotification(err);
+						return;
+					}
+					mp.setDataSource(MediaService.this, Uri.fromFile(f));
+					mp.prepare();
+				} catch (Exception e) {
+					Log.e(TAG, locator, e);
+					showErrorNotification(e.getMessage());
+				}
+			}
+		}
+
+		mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+			@Override
+			public void onCompletion(MediaPlayer mediaplayer) {
+				try {
+					bookmark(true);
+					if(queue.isEmpty()){
+						mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
+						broadcastPlaylistCompleted();
+						stopSelf();
+					}else{
+						currentItem = queue.remove();
+						initItem(currentItem);
+						binder.setCurrentPosition(currentItem.getBookmark());
+						thread.play();
+						broadcastTrackCompleted();
+					}
+				} catch (Exception e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		});
+		showNotification();
+	}
+
+	private void broadcastTrackCompleted(){
         final int N = mCallbacks.beginBroadcast();
 		for (int i = 0; i < N; i++) {
 			try {
-				mCallbacks.getBroadcastItem(i).onCompletion();
+				mCallbacks.getBroadcastItem(i).onTrackCompleted();
 			} catch (RemoteException e) {
 				// The RemoteCallbackList will take care of removing
 				// the dead object for us.
 			}
 		}
-		mCallbacks.finishBroadcast();		
+		mCallbacks.finishBroadcast();
+	}
+
+	private void broadcastPlaylistCompleted(){
+        final int N = mCallbacks.beginBroadcast();
+		for (int i = 0; i < N; i++) {
+			try {
+				mCallbacks.getBroadcastItem(i).onPlaylistCompleted();
+			} catch (RemoteException e) {
+				// The RemoteCallbackList will take care of removing
+				// the dead object for us.
+			}
+		}
+		mCallbacks.finishBroadcast();
 	}
 
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy() mp="+mp);
+		unregisterReceiver(receiver);
 		stopMediaPlayer();
 		mCallbacks.kill();
 		mDbHandler.close();

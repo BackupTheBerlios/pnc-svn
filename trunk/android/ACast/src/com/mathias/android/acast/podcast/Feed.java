@@ -2,6 +2,7 @@ package com.mathias.android.acast.podcast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -16,8 +17,8 @@ public class Feed implements Serializable {
 	public static Comparator<Feed> BYDATE = new Comparator<Feed>() {
 		@Override
 		public int compare(Feed arg0, Feed arg1) {
-			Date a0 = arg0.getPubdateAsDate();
-			Date a1 = arg1.getPubdateAsDate();
+			Date a0 = getPubdateAsDate(arg0);
+			Date a1 = getPubdateAsDate(arg1);
 			return (a0 != null && a1 != null ? a0.compareTo(a1) : 0);
 		}
 	};
@@ -28,6 +29,17 @@ public class Feed implements Serializable {
 			return arg0.title.compareTo(arg1.title);
 		}
 	};
+	
+	public static Date getPubdateAsDate(Feed feed) {
+		Date date = feed.getPubdateAsDate();
+		if (date == null) {
+			List<FeedItem> items = feed.getItems();
+			Collections.sort(items, FeedItem.BYDATE);
+			Collections.reverse(items);
+			date = (items.size() > 0 ? items.get(0).getPubdateAsDate() : null);
+		}
+		return date;
+	}
 
 	private long id;
 
@@ -128,7 +140,9 @@ public class Feed implements Serializable {
 	public Date getPubdateAsDate() {
 		Date date = null;
 		try{
-			date = new Date(pubdate);
+			if(pubdate != null){
+				date = new Date(pubdate);
+			}
 		}catch(Exception e){
 			Log.e(TAG, e.getMessage(), e);
 		}

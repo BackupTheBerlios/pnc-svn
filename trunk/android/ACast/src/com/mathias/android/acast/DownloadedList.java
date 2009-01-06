@@ -187,7 +187,7 @@ public class DownloadedList extends ListActivity {
 
 	private void playItem(FeedItem item) {
 		try {
-			if (mediaBinder != null
+			if (item != null && mediaBinder != null
 					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item
 							.getId())) {
 				ACastUtil.playItem(mediaBinder, item);

@@ -79,22 +79,25 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 				if(binder != null){
 					try {
 						long currId = binder.getCurrentDownload();
-						if(mDbHelper == null){
-							Log.d(TAG, "mDbHelper null/not available");
+						FeedItem item = mDbHelper.fetchFeedItem(currId);
+						TextView title = (TextView) findViewById(R.id.title);
+						TextView author = (TextView) findViewById(R.id.author);
+						ProgressBar progress = (ProgressBar) findViewById(R.id.progressbar);
+						if(item != null){
+							title.setText(item.getTitle());
+							author.setText(item.getAuthor());
+							progress.setMax((int)item.getSize());
+							progress.setProgress((int)binder.getProgress());
 						}else{
-							FeedItem item = mDbHelper.fetchFeedItem(currId);
-							TextView title = (TextView) findViewById(R.id.title);
-							TextView author = (TextView) findViewById(R.id.author);
-							ProgressBar progress = (ProgressBar) findViewById(R.id.progressbar);
-							if(item != null){
-								title.setText(item.getTitle());
-								author.setText(item.getAuthor());
-								progress.setMax((int)item.getSize());
-								progress.setProgress((int)binder.getProgress());
-							}else{
-								title.setText("No current download");
-								author.setText("No current download");
-								progress.setVisibility(View.GONE);
+							title.setText("No current download");
+							author.setText("No current download");
+							progress.setVisibility(View.GONE);
+						}
+						List<DownloadItem> downloads = binder.getDownloads();
+						for (DownloadItem downloadItem : downloads) {
+							if(item.getId() == downloadItem.getExternalId()){
+								populateList();
+								break;
 							}
 						}
 					} catch (RemoteException e) {

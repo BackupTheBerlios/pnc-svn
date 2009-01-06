@@ -5,6 +5,7 @@ import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
 interface IMediaService {
   void initItem(long id);
   void queue(long id);
+  void clearQueue();
   void play();
   void pause();
   void stop();
