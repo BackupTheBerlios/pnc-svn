@@ -2,6 +2,7 @@ package com.mathias.android.acast;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -159,7 +160,7 @@ public class DownloadedList extends ListActivity {
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		FeedItem item = adapter.getItem(position);
-		if(item.getMp3uri() == null){
+		if(item.mp3uri == null){
 			infoItem(item);
 		}else{
 			playItem(item);
@@ -189,9 +190,9 @@ public class DownloadedList extends ListActivity {
 		try {
 			if (item != null && mediaBinder != null
 					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item
-							.getId())) {
+							.id)) {
 				ACastUtil.playItem(mediaBinder, item);
-				ACastUtil.queueItems(mediaBinder, downloads, item.getId());
+				ACastUtil.queueItems(mediaBinder, downloads, item.id);
 			}else{
 				Log.d(TAG, "isPlaying or mediaBinder == null");
 			}
@@ -238,14 +239,13 @@ public class DownloadedList extends ListActivity {
 		private List<FeedItem> items;
 
 		public DownloadAdapter(Context cxt, List<FeedItem> items){
-			Collections.sort(items, FeedItem.BYDATE);
-			Collections.reverse(items);
+			Collections.sort(items, ACastUtil.FEEDITEM_BYDATE);
 			this.items = items;
 			mInflater = LayoutInflater.from(cxt);
 		}
 		public FeedItem getByExternalId(long externalId){
 			for (FeedItem item : items) {
-				if(externalId == item.getId()){
+				if(externalId == item.id){
 					return item;
 				}
 			}
@@ -261,7 +261,7 @@ public class DownloadedList extends ListActivity {
 		}
 		@Override
 		public long getItemId(int position) {
-			return getItem(position).getId();
+			return getItem(position).id;
 		}
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
@@ -273,7 +273,7 @@ public class DownloadedList extends ListActivity {
             // to reinflate it. We only inflate a new View when the convertView supplied
             // by ListView is null.
             if (convertView == null) {
-                Log.d(TAG, "getView; convertView=null position="+position+" items="+items.size());
+                //Log.d(TAG, "getView; convertView=null position="+position+" items="+items.size());
 
                 convertView = mInflater.inflate(R.layout.downloaded_row, null);
 
@@ -297,18 +297,18 @@ public class DownloadedList extends ListActivity {
             if(item == null) {
             	return null;
             }
-            Bitmap bm = getIcon(item.getFeedId());
+            Bitmap bm = getIcon(item.feedId);
 			holder.icon.setImageBitmap(bm);
-            holder.title.setText(item.getTitle());
-            holder.author.setText(item.getAuthor());
-            holder.pubdate.setText(item.getPubdate());
+            holder.title.setText(item.title);
+            holder.author.setText(item.author);
+            holder.pubdate.setText(new Date(item.pubdate).toString());
 
             return convertView;
 		}
 
 	}
 
-    private static class ViewHolder {
+	private static class ViewHolder {
         ImageView icon;
         TextView title;
         TextView author;

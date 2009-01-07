@@ -26,6 +26,7 @@
 	<string name="downloadlast">Download latest</string>
 	<!-- feeditem_list menu items -->
 	<string name="playitem">Play item</string>
+	<string name="queueitem">Queue item</string>
 	<string name="downloaditem">Download item</string>
 	<string name="deleteitem">Delete item</string>
 	<string name="refresh">Refresh</string>

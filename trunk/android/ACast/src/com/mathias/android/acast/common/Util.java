@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.apache.http.HttpResponse;
@@ -242,18 +243,14 @@ public abstract class Util {
 		return Html.fromHtml(source, NULLIMAGEGETTER, null);
 	}
 
-	public static boolean isRedirect(String uri){
-		try {
-			HttpURLConnection conn = (HttpURLConnection) new URL(uri).openConnection();
-			conn.connect();
-			int res = conn.getResponseCode();
-			conn.disconnect();
-			Log.d(TAG, "response code: "+res);
-			if((""+res).charAt(0) == '3'){
-				return true;
-			}
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage(), e);
+	public static boolean isRedirect(String uri) throws MalformedURLException, IOException{
+		HttpURLConnection conn = (HttpURLConnection) new URL(uri).openConnection();
+		conn.connect();
+		int res = conn.getResponseCode();
+		conn.disconnect();
+		Log.d(TAG, "response code: "+res);
+		if((""+res).charAt(0) == '3'){
+			return true;
 		}
 		return false;
 	}

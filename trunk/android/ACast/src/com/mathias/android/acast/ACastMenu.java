@@ -146,9 +146,9 @@ public class ACastMenu extends Activity {
 			FeedItem item = mDbHelper.fetchFeedItem(Long.parseLong(lastid));
 			if(item != null){
 				TextView resumetitle = (TextView) findViewById(R.id.resumetitle);
-				resumetitle.setText(item.getTitle());
+				resumetitle.setText(item.title);
 				TextView resumedesc = (TextView) findViewById(R.id.resumedesc);
-				resumedesc.setText(item.getAuthor());
+				resumedesc.setText(item.author);
 			}else{
 				Log.w(TAG, "No resume item for lastid="+lastid);
 			}

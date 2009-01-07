@@ -185,8 +185,8 @@ public class Player extends Activity implements ServiceConnection {
 	public boolean onMenuItemSelected(int featureId, MenuItem mitem) {
 		try {
 			FeedItem item = mDbHandler.fetchFeedItem(mediaBinder.getId());
-			Util.showDialog(this, Util.fromHtmlNoImages(item.getTitle()), Util
-					.fromHtmlNoImages(item.getDescription()));
+			Util.showDialog(this, Util.fromHtmlNoImages(item.title), Util
+					.fromHtmlNoImages(item.description));
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
 			Util.showDialog(this, e.getMessage());
@@ -288,16 +288,16 @@ public class Player extends Activity implements ServiceConnection {
 			if(mediaBinder != null){
 				long id = mediaBinder.getId();
 				FeedItem item = mDbHandler.fetchFeedItem(id);
-	
+
 				TextView title = (TextView) findViewById(R.id.title);
 				if(item == null){
 					title.setText("No item!");
 					return;
 				}
-				title.setText(item.getTitle());
+				title.setText(item.title);
 	
 				if (mediaBinder.isPlaying()) {
-					Log.d(TAG, "Already playing: " + item.getMp3uri());
+					Log.d(TAG, "Already playing: " + item.mp3uri);
 					playpause.setImageResource(R.drawable.pause);
 					//playpause.setImageResource(android.R.drawable.ic_media_pause);
 				} else {

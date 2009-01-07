@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import android.app.ListActivity;
 import android.content.Context;
@@ -34,6 +35,7 @@ import com.mathias.android.acast.common.RssUtil;
 import com.mathias.android.acast.common.SearchItem;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
+import com.mathias.android.acast.podcast.FeedItem;
 
 public class FeedAdd extends ListActivity {
 
@@ -193,7 +195,7 @@ public class FeedAdd extends ListActivity {
 			OpmlUtil.Opml opml = new OpmlUtil.Opml(getString(R.string.app_name));
 			List<Feed> feeds = mDbHelper.fetchAllFeeds();
 			for (Feed feed : feeds) {
-				opml.add(new OpmlUtil.OpmlItem(feed.getTitle(), feed.getUri()));
+				opml.add(new OpmlUtil.OpmlItem(feed.title, feed.uri));
 			}
 			String export = OpmlUtil.exportOpml(opml);
 			try {
@@ -258,9 +260,10 @@ public class FeedAdd extends ListActivity {
 						// obj is String uri
 						try {
 							if(msg.obj != null){
-    							Feed feed = new RssUtil().parse(msg.obj.toString());
-    							mDbHelper.createFeed(feed);
-    							resultstr = "Added "+feed.getTitle();
+								Map<Feed, List<FeedItem>> result = new RssUtil().parse(msg.obj.toString());
+    							Feed resfeed = result.keySet().toArray(new Feed[0])[0];
+    							mDbHelper.createFeed(resfeed, result.get(resfeed));
+    							resultstr = "Added "+resfeed.title;
 							}else{
     							resultstr = "Could not add feed";
 							}

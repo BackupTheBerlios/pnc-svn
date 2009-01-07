@@ -1,3 +1,14 @@
+//TODO 5: Switch between pubdate and asc title order in feed list.
+//TODO 4: Mark feed item as read
+//TODO 5: Setting: only auto queue downloaded
+//TODO 5: Setting: only auto queue completed
+//TODO 5: Playlist feed icon and status icon
+//TODO 7: Lazy fetch feeds in feed list
+//TODO 5: Queue item in playlist from feed item list options menu
+//TODO 5: Move "Add item" next to importOPML in search view.
+//TODO 6: Add status icon in downloaded list view.
+//TODO 6: Media button should only trigger acast and not music player, or consume intent.
+//TODO 6: Library icon and text buttons.
 //TODO 6: No mp3uri/downoad icon for text only feed items.
 //TODO 6: Download latest from every feed
 //TODO 6: Export OPML to sdcard/acast/acast.opml

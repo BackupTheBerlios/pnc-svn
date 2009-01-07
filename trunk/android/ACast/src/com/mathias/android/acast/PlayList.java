@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -107,9 +108,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 			thread.populateAdapter();
 			return true;
 		}else if(pos >= 0 && INFO_ID == menuitem.getItemId()){
-//			MediaItem item = adapter.getItem(pos);
-//			FeedItem feedItem = mDbHelper.fetchFeedItem(item.getExternalId());
-//			infoItem(feedItem);
+			infoItem(adapter.getItem(pos));
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, menuitem);
@@ -210,7 +209,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		}
 		public FeedItem getByExternalId(long externalId){
 			for (FeedItem item : items) {
-				if(externalId == item.getId()){
+				if(externalId == item.id){
 					return item;
 				}
 			}
@@ -226,7 +225,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		}
 		@Override
 		public long getItemId(int position) {
-			return getItem(position).getId();
+			return getItem(position).id;
 		}
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
@@ -260,8 +259,8 @@ public class PlayList extends ListActivity implements ServiceConnection {
             if(item == null) {
             	return null;
             }
-            holder.title.setText(item.getTitle());
-            holder.author.setText(item.getAuthor());
+            holder.title.setText(item.title);
+            holder.author.setText(item.author);
 			holder.icon.setImageResource(R.drawable.notdownloaded);
 
             return convertView;
@@ -282,21 +281,21 @@ public class PlayList extends ListActivity implements ServiceConnection {
 	}
 
 	private void cancelAndRemove(long externalId){
-//		try {
-//			binder.cancelAndRemove(externalId);
-//			populateList();
-//		} catch (Exception e) {
-//			Log.e(TAG, e.getMessage(), e);
-//		}
+		try {
+			mediaBinder.clearQueueItem(externalId);
+			thread.populateAdapter();
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 	
 	private void cancelAndRemoveAll(){
-//		try {
-//			binder.cancelAndRemoveAll();
-//			populateList();
-//		} catch (Exception e) {
-//			Log.e(TAG, e.getMessage(), e);
-//		}
+		try {
+			mediaBinder.clearQueue();
+			thread.populateAdapter();
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 }

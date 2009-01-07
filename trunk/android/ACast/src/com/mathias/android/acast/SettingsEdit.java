@@ -35,8 +35,9 @@ public class SettingsEdit extends ListActivity {
 		items.add(new SettingsItem(Settings.SettingEnum.RESUMEPARTLYDOWNLOADED, "Resume partly downloaded", "Resume partly downloaded files"));
 		items.add(new SettingsItem(Settings.SettingEnum.AUTODELETECOMPLETED, "Auto delete after played", "Auto delete on completion played"));
 		items.add(new SettingsItem(Settings.SettingEnum.OPENINFORMATION, "Open information", "Open information as default instead of media player."));
-		items.add(new SettingsItem(Settings.SettingEnum.AUTOPLAYNEXT, "Auto-play next", "Auto-play next uncompleted Episode when an Episode has finished playing."));
-		items.add(new SettingsItem(Settings.SettingEnum.AUTOPLAYNEXT_DOWNLOADED, "Auto-play next downloaded", "Auto-play next downloaded uncompleted Episode when an Episode has finished playing."));
+		items.add(new SettingsItem(Settings.SettingEnum.AUTOPLAYNEXT, "Auto queue next", "Auto queue next feed items after a feed item is completed."));
+		items.add(new SettingsItem(Settings.SettingEnum.AUTOPLAYNEXT_DOWNLOADED, "Only auto queue downloaded", "Only auto queue downloaded feed items."));
+		items.add(new SettingsItem(Settings.SettingEnum.AUTOPLAYNEXT_COMPLETED, "Only auto queue completed", "Only auto queue downloaded feed items."));
 		items.add(new SettingsItem(Settings.SettingEnum.PLAYERINLANDSCAPE, "Player in landscape mode", "Always show player in landscape mode."));
 		Collections.sort(items);
 	}

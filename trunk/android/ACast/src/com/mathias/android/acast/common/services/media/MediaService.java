@@ -107,10 +107,13 @@ public class MediaService extends Service {
 						}
 					}else{
 						// reinit mp
+						if(currentItem == null && !queue.isEmpty()){
+							currentItem = queue.remove();
+						}
 						if(currentItem != null){
 							try {
 								initItem(currentItem);
-								binder.setCurrentPosition(currentItem.getBookmark());
+								binder.setCurrentPosition(currentItem.bookmark);
 								binder.play();
 								broadcastTrackCompleted();
 							} catch (Exception e) {
@@ -139,7 +142,12 @@ public class MediaService extends Service {
 
 		@Override
 		public long getId() throws RemoteException {
-			return (currentItem != null ? currentItem.getId() : -1);
+			if(currentItem != null){
+				return currentItem.id;
+			}else if(!queue.isEmpty()){
+				currentItem = queue.remove();
+			}
+			return (currentItem != null ? currentItem.id : -1);
 		}
 		@Override
 		public void pause() throws RemoteException {
@@ -224,13 +232,24 @@ public class MediaService extends Service {
 		public List getQueue() throws RemoteException {
 			List<Long> ret = new ArrayList<Long>(queue.size());
 			for (Iterator<FeedItem> it = queue.iterator(); it.hasNext(); ) {
-				ret.add(it.next().getId());
+				ret.add(it.next().id);
 			}
 			return ret;
 		}
 		@Override
 		public void clearQueue() throws RemoteException {
 			queue.clear();
+		}
+		@Override
+		public void clearQueueItem(long id) throws RemoteException {
+			Iterator<FeedItem> it = queue.iterator();
+			for (;it.hasNext();) {
+				FeedItem next = it.next();
+				if(next.id == id){
+					it.remove();
+					break;
+				}
+			}
 		}
 	};
 	
@@ -257,12 +276,12 @@ public class MediaService extends Service {
 	}
 
 	public void initItem(FeedItem item) throws RemoteException {
-		Log.d(TAG, "initItem, id="+item.getId());
+		Log.d(TAG, "initItem, id="+item.id);
 
 		bookmark(false);
 
-		Log.d(TAG, "Storing last feed item: "+item.getId()+" title="+item.getTitle());
-		mDbHandler.setSetting(Settings.SettingEnum.LASTFEEDITEMID, item.getId());
+		Log.d(TAG, "Storing last feed item: "+item.id+" title="+item.title);
+		mDbHandler.setSetting(Settings.SettingEnum.LASTFEEDITEMID, item.id);
 
 		currentItem = item;
 
@@ -272,10 +291,17 @@ public class MediaService extends Service {
 			mp = null;
 		}
 		if(item != null){
-			if(!item.isDownloaded()){
-				String uri = item.getMp3uri().replace(' ', '+');
+			if(!item.downloaded){
+				String uri = item.mp3uri.replace(' ', '+');
 				Log.d(TAG, "Initializing from URI: "+uri);
-				Util.isRedirect(uri);
+				try {
+					Util.isRedirect(uri);
+				} catch (Exception e) {
+					String err = e.getMessage();
+					Log.e(TAG, err);
+					showErrorNotification(err);
+					return;
+				}
 				mp = MediaPlayer.create(MediaService.this, Uri.parse(uri));
 				if(mp == null){
 					String err = "Could not create media player for: "+uri;
@@ -284,7 +310,7 @@ public class MediaService extends Service {
 					return;
 				}
 			}else{
-				String locator = item.getMp3file();
+				String locator = item.mp3file;
 				Log.d(TAG, "Initializing from file: "+locator);
 				mp = new MediaPlayer();
 				try {
@@ -300,6 +326,7 @@ public class MediaService extends Service {
 				} catch (Exception e) {
 					Log.e(TAG, locator, e);
 					showErrorNotification(e.getMessage());
+					return;
 				}
 			}
 		}
@@ -316,7 +343,7 @@ public class MediaService extends Service {
 					}else{
 						currentItem = queue.remove();
 						initItem(currentItem);
-						binder.setCurrentPosition(currentItem.getBookmark());
+						binder.setCurrentPosition(currentItem.bookmark);
 						thread.play();
 						broadcastTrackCompleted();
 					}
@@ -380,8 +407,8 @@ public class MediaService extends Service {
 			long id = binder.getId();
 			if(id >= 0){
 				FeedItem item = mDbHandler.fetchFeedItem(id);
-				if(item != null && item.getMp3uri() != null){
-					filename = new File(item.getMp3uri()).getName();
+				if(item != null && item.mp3uri != null){
+					filename = new File(item.mp3uri).getName();
 				}
 			}
 		} catch (RemoteException e) {

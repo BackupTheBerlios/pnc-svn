@@ -1,6 +1,7 @@
 package com.mathias.android.acast;
 
 import java.io.File;
+import java.util.Date;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -41,12 +42,12 @@ public class FeedItemInfo extends Activity {
 		}
 
 		TextView title = (TextView) findViewById(R.id.title);
-		title.setText(item.getTitle());
+		title.setText(item.title);
 
 		TextView uri = (TextView) findViewById(R.id.uri);
-		uri.setText(item.getMp3uri());
+		uri.setText(item.mp3uri);
 
-		int bookmarkVal = item.getBookmark();
+		int bookmarkVal = item.bookmark;
 		TextView bookmark = (TextView) findViewById(R.id.bookmark);
 		if(bookmarkVal > 0){
 			bookmark.setText(getString(R.string.bookmark)+Util.convertDuration(bookmarkVal));
@@ -54,23 +55,23 @@ public class FeedItemInfo extends Activity {
 			bookmark.setVisibility(View.GONE);
 		}
 
-		String linkVal = item.getLink();
+		String linkVal = item.link;
 		TextView link = (TextView) findViewById(R.id.link);
-		if(linkVal != null && !linkVal.equalsIgnoreCase(item.getMp3uri())){
+		if(linkVal != null && !linkVal.equalsIgnoreCase(item.mp3uri)){
 			link.setText(linkVal);
 		}else{
 			link.setVisibility(View.GONE);
 		}
 
-		String pubdateVal = item.getPubdate();
+		String pubdateVal = new Date(item.pubdate).toString();
 		TextView pubdate = (TextView) findViewById(R.id.pubdate);
-		if(pubdateVal != null){
+		if(item.pubdate != 0){
 			pubdate.setText(pubdateVal);
 		}else{
 			pubdate.setVisibility(View.GONE);
 		}
 
-		String categoryVal = item.getCategory();
+		String categoryVal = item.category;
 		TextView category = (TextView) findViewById(R.id.category);
 		if(categoryVal != null){
 			category.setText(categoryVal);
@@ -78,14 +79,14 @@ public class FeedItemInfo extends Activity {
 			category.setVisibility(View.GONE);
 		}
 
-		if(item.getMp3file() != null){
-			long fileSize = new File(item.getMp3file()).length();
-			String sizeVal = "Size: "+fileSize+"/"+item.getSize();
+		if(item.mp3file != null){
+			long fileSize = new File(item.mp3file).length();
+			String sizeVal = "Size: "+fileSize+"/"+item.size;
 			TextView size = (TextView) findViewById(R.id.size);
 			size.setText(sizeVal);
 		}
 
-		String descVal = item.getDescription();
+		String descVal = item.description;
         TextView description = (TextView) findViewById(R.id.description);
         if(descVal != null){
             description.setText(Util.fromHtmlNoImages(descVal));
@@ -104,8 +105,8 @@ public class FeedItemInfo extends Activity {
 	
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem mitem) {
-		if(item != null && item.getLink() != null){
-			Util.openBrowser(this, item.getLink());
+		if(item != null && item.link != null){
+			Util.openBrowser(this, item.link);
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, mitem);

@@ -1,5 +1,7 @@
 package com.mathias.android.acast;
 
+import java.util.Date;
+
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -41,7 +43,7 @@ public class FeedInfo extends Activity {
 			return;
 		}
 
-		String iconVal = item.getIcon();
+		String iconVal = item.icon;
 		ImageView icon = (ImageView) findViewById(R.id.icon);
 		if(iconVal != null){
 			Bitmap bitmap = BitmapCache.instance().get(iconVal);
@@ -51,28 +53,28 @@ public class FeedInfo extends Activity {
 		}
 
 		TextView title = (TextView) findViewById(R.id.title);
-		title.setText(item.getTitle());
+		title.setText(item.title);
 
 		TextView uri = (TextView) findViewById(R.id.uri);
-		uri.setText(item.getUri());
+		uri.setText(item.uri);
 
-		String linkVal = item.getLink();
+		String linkVal = item.link;
 		TextView link = (TextView) findViewById(R.id.link);
-		if(linkVal != null && !linkVal.equalsIgnoreCase(item.getUri())){
+		if(linkVal != null && !linkVal.equalsIgnoreCase(item.uri)){
 			link.setText(linkVal);
 		}else{
 			link.setVisibility(View.GONE);
 		}
 
-		String pubdateVal = item.getPubdate();
+		String pubdateVal = new Date(item.pubdate).toString();
 		TextView pubdate = (TextView) findViewById(R.id.pubdate);
-		if(pubdateVal != null){
+		if(item.pubdate != 0){
 			pubdate.setText(pubdateVal);
 		}else{
 			pubdate.setVisibility(View.GONE);
 		}
 
-		String categoryVal = item.getCategory();
+		String categoryVal = item.category;
 		TextView category = (TextView) findViewById(R.id.category);
 		if(categoryVal != null){
 			category.setText(categoryVal);
@@ -80,7 +82,7 @@ public class FeedInfo extends Activity {
 			category.setVisibility(View.GONE);
 		}
 
-		String descVal = item.getDescription();
+		String descVal = item.description;
         TextView description = (TextView) findViewById(R.id.description);
         if(descVal != null){
             description.setText(Util.fromHtmlNoImages(descVal));
@@ -99,8 +101,8 @@ public class FeedInfo extends Activity {
 	
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem mitem) {
-		if(item != null && item.getLink() != null){
-			Util.openBrowser(this, item.getLink());
+		if(item != null && item.link != null){
+			Util.openBrowser(this, item.link);
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, mitem);

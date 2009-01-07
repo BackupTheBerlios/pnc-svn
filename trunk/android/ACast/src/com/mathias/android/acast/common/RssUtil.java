@@ -2,7 +2,10 @@ package com.mathias.android.acast.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
@@ -26,8 +29,6 @@ public class RssUtil implements ContentHandler {
 
 	private static final String TAG = RssUtil.class.getSimpleName();
 	
-	private Feed feed;
-	
 	private FeedItem currentFeedItem = new FeedItem();
 	
 	private String characters;
@@ -35,21 +36,38 @@ public class RssUtil implements ContentHandler {
 	private int level = 0;
 	
 	private Map<Integer, String> parent = new HashMap<Integer, String>();
-
+	
+	private Feed feed;
+	
+	private List<FeedItem> items;
+	
 	public RssUtil(){
 	}
 	
-	public Feed parse(String uri) throws ClientProtocolException, IOException,
+	public Map<Feed, List<FeedItem>> parse(String uri) throws ClientProtocolException, IOException,
 			IllegalStateException, SAXException {
 		Log.d(TAG, "Parsing: "+uri);
 		feed = new Feed();
-		feed.setUri(uri);
+		items = new ArrayList<FeedItem>();
+		feed.uri = uri;
 		DefaultHttpClient client = new DefaultHttpClient();
 		HttpResponse response = client.execute(new HttpGet(uri));
 		HttpEntity entity = response.getEntity();
 //		Encoding enc = Encoding.valueOf(entity.getContentEncoding().getValue());
 		Xml.parse(entity.getContent(), Encoding.UTF_8, this);
-		return feed;
+		Map<Feed, List<FeedItem>> result = new HashMap<Feed, List<FeedItem>>();
+		if(feed.pubdate == 0){
+			Date latest = null;
+			for (FeedItem item : items) {
+				Date date = new Date(item.pubdate);
+				if(latest == null || (date != null && date.after(latest))){
+					latest = date;
+					feed.pubdate = item.pubdate;
+				}
+			}
+		}
+		result.put(feed, items);
+		return result;
 	}
 
 	@Override
@@ -83,12 +101,12 @@ public class RssUtil implements ContentHandler {
 					String attsLocalName = atts.getLocalName(i);
 					String value = atts.getValue(i);
 					if("url".equalsIgnoreCase(attsLocalName)){
-						currentFeedItem.setMp3uri(value);
+						currentFeedItem.mp3uri = value;
 						File file = buildFile(value);
-						currentFeedItem.setMp3file(file.getAbsolutePath());
-						currentFeedItem.setDownloaded(file.exists());
+						currentFeedItem.mp3file = file.getAbsolutePath();
+						currentFeedItem.downloaded = file.exists();
 					}else if("length".equalsIgnoreCase(attsLocalName)){
-						currentFeedItem.setSize(Long.parseLong(value.trim()));
+						currentFeedItem.size = Long.parseLong(value.trim());
 					}
 				}
 			}
@@ -107,26 +125,29 @@ public class RssUtil implements ContentHandler {
 		case 2:
 			if("channel".equalsIgnoreCase(p)){
 				if("title".equalsIgnoreCase(localName)){
-					feed.setTitle(characters);
+					feed.title = characters;
 				}else if(Util.isEmpty(uri) && "link".equalsIgnoreCase(localName)){
-					feed.setLink(characters);
+					feed.link = characters;
 				}else if("pubDate".equalsIgnoreCase(localName)){
-					feed.setPubdate(characters);
+					try{
+						feed.pubdate = new Date(characters).getTime();
+					}catch(Exception e){
+						Log.e(TAG, e.getMessage(), e);
+					}
 				}else if("category".equalsIgnoreCase(localName)){
-					String category = feed.getCategory();
+					String category = feed.category;
 					if(!Util.isEmpty(category)){
-						feed.setCategory(category + ", " + characters);
+						feed.category = category + ", " + characters;
 					}else if(!Util.isEmpty(characters)){
-						feed.setCategory("Category: "+characters);
+						feed.category = "Category: "+characters;
 					}
 				}else if("author".equalsIgnoreCase(localName)){
 					//itunes:owner, itunes:author
-					feed.setAuthor(characters);
+					feed.author = characters;
 				}else if("description".equalsIgnoreCase(localName)){
-					feed.setDescription(characters);
+					feed.description = characters;
 				}else if("item".equalsIgnoreCase(localName)){
-					Log.d(TAG, "Adding: "+currentFeedItem.getTitle());
-					feed.addItem(currentFeedItem);
+					items.add(currentFeedItem);
 					currentFeedItem = new FeedItem();
 				}
 			}
@@ -137,7 +158,7 @@ public class RssUtil implements ContentHandler {
 					try {
 						File file = buildFile(characters);
 						Util.downloadFile(0, characters, file, null);
-						feed.setIcon(file.getAbsolutePath());
+						feed.icon = file.getAbsolutePath();
 					} catch (Exception e) {
 						Log.e(TAG, e.getMessage(), e);
 						throw new SAXException(e);
@@ -145,25 +166,29 @@ public class RssUtil implements ContentHandler {
 				}
 			}else if("item".equalsIgnoreCase(p)){
 				if("title".equalsIgnoreCase(localName)){
-					currentFeedItem.setTitle(characters);
+					currentFeedItem.title = characters;
 				}else if("link".equalsIgnoreCase(localName)){
-					currentFeedItem.setLink(characters);
+					currentFeedItem.link = characters;
 				}else if("pubDate".equalsIgnoreCase(localName)){
-					currentFeedItem.setPubdate(characters);
+					try{
+						currentFeedItem.pubdate = new Date(characters).getTime();
+					}catch(Exception e){
+						Log.e(TAG, e.getMessage(), e);
+					}
 				}else if("category".equalsIgnoreCase(localName)){
-					String category = currentFeedItem.getCategory();
+					String category = currentFeedItem.category;
 					if(!Util.isEmpty(category)){
-						currentFeedItem.setCategory(category + ", " + characters);
+						currentFeedItem.category = category + ", " + characters;
 					}else if(!Util.isEmpty(characters)){
-						currentFeedItem.setCategory("Category: "+characters);
+						currentFeedItem.category = "Category: "+characters;
 					}
 				}else if("author".equalsIgnoreCase(localName)){
 					//itunes:owner, itunes:author
-					currentFeedItem.setAuthor(characters);
+					currentFeedItem.author = characters;
 				}else if("comments".equalsIgnoreCase(localName)){
-					currentFeedItem.setComments(characters);
+					currentFeedItem.comments = characters;
 				}else if("description".equalsIgnoreCase(localName)){
-					currentFeedItem.setDescription(characters);
+					currentFeedItem.description = characters;
 				}
 			}
 			break;
@@ -175,40 +200,45 @@ public class RssUtil implements ContentHandler {
 	public void startPrefixMapping(String prefix, String uri)
 			throws SAXException {
 		//atom, http://www.w3.org/2005/Atom
-		Log.d(TAG, "startPrefixMapping() "+prefix+" "+uri);
+		//Log.d(TAG, "startPrefixMapping() "+prefix+" "+uri);
+		//startPrefixMapping() itunes http://www.itunes.com/dtds/podcast-1.0.dtd
+		//startPrefixMapping() atom http://www.w3.org/2005/Atom
 	}
 
 	@Override
 	public void endPrefixMapping(String prefix) throws SAXException {
-		Log.d(TAG, "endPrefixMapping() "+prefix);
+		//Log.d(TAG, "endPrefixMapping() "+prefix);
+		//endPrefixMapping() atom
+		//endPrefixMapping() itunes
 	}
 
 	@Override
 	public void ignorableWhitespace(char[] ch, int start, int length)
 			throws SAXException {
-		String str = new String(ch).substring(start, length);
-		Log.d(TAG, "ignorableWhitespace() "+str+" "+start+" "+length);
+		//String str = new String(ch).substring(start, length);
+		//Log.d(TAG, "ignorableWhitespace() "+str+" "+start+" "+length);
 	}
 
 	@Override
 	public void processingInstruction(String target, String data)
 			throws SAXException {
-		Log.d(TAG, "processingInstruction() "+target+" "+data);
+		//Log.d(TAG, "processingInstruction() "+target+" "+data);
 	}
 
 	@Override
 	public void setDocumentLocator(Locator locator) {
-		Log.d(TAG, "setDocumentLocator() "+locator);
+		//Log.d(TAG, "setDocumentLocator() "+locator);
+		//setDocumentLocator() Locator[publicId: null, systemId: null, line: 1, column: 0]
 	}
 
 	@Override
 	public void skippedEntity(String name) throws SAXException {
-		Log.d(TAG, "skippedEntity() "+name);
+		//Log.d(TAG, "skippedEntity() "+name);
 	}
 	
 	private File buildFile(String uri){
 		String file = File.separator + "sdcard" + File.separator + "acast"
-				+ File.separator + feed.getTitle() + File.separator
+				+ File.separator + feed.title + File.separator
 				+ new File(uri).getName();
 		return new File(Util.escapeFilename(file));
 	}

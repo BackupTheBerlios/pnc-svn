@@ -2,6 +2,7 @@ package com.mathias.android.acast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -15,6 +16,7 @@ import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.FeedItemHelper;
+import com.mathias.android.acast.podcast.FeedItemLight;
 import com.mathias.android.acast.podcast.Settings;
 
 public class ACastDbAdapter {
@@ -59,7 +61,7 @@ public class ACastDbAdapter {
 			+ FEED_URI+" text not null unique, " 
 			+ FEED_ICON+" text, "
 			+ FEED_LINK+" text, "
-			+ FEED_PUBDATE+" text, "
+			+ FEED_PUBDATE+" integer, "
 			+ FEED_CATEGORY+" text, "
 			+ FEED_AUTHOR+" text, "
 			+ FEED_DESCRIPTION+" text);";
@@ -75,7 +77,7 @@ public class ACastDbAdapter {
 			+ FEEDITEM_COMPLETED+" boolean, " 
 			+ FEEDITEM_DOWNLOADED+" boolean, " 
 			+ FEEDITEM_LINK+" text, "
-			+ FEEDITEM_PUBDATE+" text, "
+			+ FEEDITEM_PUBDATE+" integer, "
 			+ FEEDITEM_CATEGORY+" text, "
 			+ FEEDITEM_AUTHOR+" text, "
 			+ FEEDITEM_COMMENTS+" text, "
@@ -85,7 +87,7 @@ public class ACastDbAdapter {
 			+ SETTING_KEY+" text primary key, "
 			+ SETTING_VALUE+" text);";
 
-	private static final int DATABASE_VERSION = 33;
+	private static final int DATABASE_VERSION = 34;
 
 	private static final String TAG = ACastDbAdapter.class.getSimpleName();
 	private DatabaseHelper mDbHelper;
@@ -131,7 +133,7 @@ public class ACastDbAdapter {
 	}
 
 	private long createFeed(String title, String uri, String icon, String link,
-			String pubdate, String category, String author, String description) {
+			long pubdate, String category, String author, String description) {
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(FEED_TITLE, title);
 		initialValues.put(FEED_URI, uri);
@@ -144,20 +146,20 @@ public class ACastDbAdapter {
 		return mDb.insert(DATABASE_TABLE_FEED, null, initialValues);
 	}
 
-	public boolean createFeed(Feed feed) {
+	public boolean createFeed(Feed feed, List<FeedItem> items) {
 		if(feed == null){
 			Log.w(TAG, "Feed is null!");
 			return false;
 		}
-		long id = createFeed(feed.getTitle(), feed.getUri(), feed.getIcon(),
-				feed.getLink(), feed.getPubdate(), feed.getCategory(), feed
-						.getAuthor(), feed.getDescription());
+		long id = createFeed(feed.title, feed.uri, feed.icon,
+				feed.link, feed.pubdate, feed.category, feed
+						.author, feed.description);
 		if(id == -1){
 			Log.w(TAG, "Could not insert feed!");
 			return false;
 		}
 		deleteFeedItems(id);
-		for (FeedItem item : feed.getItems()) {
+		for (FeedItem item : items) {
 			if(addFeedItem(id, item) == -1){
 				Log.w(TAG, "Could not insert feed item!");
 				return false;
@@ -203,15 +205,11 @@ public class ACastDbAdapter {
 				String uri = c.getString(c.getColumnIndexOrThrow(FEED_URI));
 				String icon = c.getString(c.getColumnIndexOrThrow(FEED_ICON));
 				String link = c.getString(c.getColumnIndexOrThrow(FEED_LINK));
-				String pubdate = c.getString(c.getColumnIndexOrThrow(FEED_PUBDATE));
+				long pubdate = c.getLong(c.getColumnIndexOrThrow(FEED_PUBDATE));
 				String category = c.getString(c.getColumnIndexOrThrow(FEED_CATEGORY));
 				String author = c.getString(c.getColumnIndexOrThrow(FEED_AUTHOR));
 				String description = c.getString(c.getColumnIndexOrThrow(FEED_DESCRIPTION));
 				Feed feed = new Feed(id, title, uri, icon, link, pubdate, category, author, description);
-				List<FeedItem> items = fetchAllFeedItems(id);
-				for (FeedItem item : items) {
-					feed.addItem(item);
-				}
 				feeds.add(feed);
 			}while(c.moveToNext());
 		}
@@ -232,16 +230,12 @@ public class ACastDbAdapter {
 			String uri = c.getString(c.getColumnIndex(FEED_URI));
 			String icon = c.getString(c.getColumnIndex(FEED_ICON));
 			String link = c.getString(c.getColumnIndex(FEED_LINK));
-			String pubdate = c.getString(c.getColumnIndex(FEED_PUBDATE));
+			long pubdate = c.getLong(c.getColumnIndex(FEED_PUBDATE));
 			String category = c.getString(c.getColumnIndex(FEED_CATEGORY));
 			String author = c.getString(c.getColumnIndex(FEED_AUTHOR));
 			String description = c.getString(c.getColumnIndex(FEED_DESCRIPTION));
 			feed = new Feed(id, title, uri, icon, link, pubdate, category,
 					author, description);
-			List<FeedItem> items = fetchAllFeedItems(id);
-			for (FeedItem item : items) {
-				feed.addItem(item);
-			}
 		}
 		Util.closeCursor(c);
 		return feed;
@@ -284,7 +278,7 @@ public class ACastDbAdapter {
 				short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
 				short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
 				String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
-				String pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
+				long pubdate = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
 				String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
 				String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
 				String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
@@ -292,6 +286,28 @@ public class ACastDbAdapter {
 				FeedItem item = new FeedItem(id, feedId, title, mp3uri, mp3file,
 						size, bookmark, completed != 0, downloaded != 0, link,
 						pubdate, category, author, comments, description);
+				items.add(item);
+			}while(c.moveToNext());
+		}
+		Util.closeCursor(c);
+		return items;
+	}
+
+	public List<FeedItemLight> fetchAllFeedItemLights(long feedId) throws SQLException {
+		List<FeedItemLight> items = new ArrayList<FeedItemLight>();
+		Cursor c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
+				FEEDITEM_BOOKMARK, FEEDITEM_COMPLETED,
+				FEEDITEM_DOWNLOADED, FEEDITEM_PUBDATE }, FEEDITEM_FEEDID + "=" + feedId, null,
+				null, null, null, null);
+		if (c == null || !c.moveToFirst()) {
+			Log.w(TAG, "No feed items for: "+feedId);
+		}else{
+			do{
+				int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
+				short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
+				short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
+				long pubdate = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
+				FeedItemLight item = new FeedItemLight(bookmark, completed != 0, downloaded != 0, pubdate);
 				items.add(item);
 			}while(c.moveToNext());
 		}
@@ -322,7 +338,7 @@ public class ACastDbAdapter {
 				short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
 				short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
 				String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
-				String pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
+				long pubdate = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
 				String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
 				String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
 				String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
@@ -358,7 +374,7 @@ public class ACastDbAdapter {
 			short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
 			short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
 			String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
-			String pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
+			long pubdate = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
 			String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
 			String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
 			String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
@@ -392,7 +408,7 @@ public class ACastDbAdapter {
 			short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
 			short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
 			String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
-			String pubdate = c.getString(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
+			long pubdate = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
 			String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
 			String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
 			String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
@@ -405,38 +421,42 @@ public class ACastDbAdapter {
 		return item;
 	}
 
-	public boolean updateFeed(long id, Feed feed) {
+	public boolean updateFeed(long id, Map<Feed, List<FeedItem>> result){
+		Feed resfeed = result.keySet().toArray(new Feed[0])[0];
+		return updateFeed(id, resfeed, result.get(resfeed));
+	}
+	
+	public boolean updateFeed(long id, Feed feed, List<FeedItem> newitems) {
 		if(feed == null){
 			Log.w(TAG, "Feed is null!");
 			return false;
 		}
-		Log.d(TAG, "updateFeed: "+id);
-		updateFeed(id, feed.getTitle(), feed.getUri(), feed.getIcon(), feed
-				.getLink(), feed.getPubdate(), feed.getCategory(), feed
-				.getAuthor(), feed.getDescription());
+		//Log.d(TAG, "updateFeed: "+id);
+		updateFeed(id, feed.title, feed.uri, feed.icon, feed
+				.link, feed.pubdate, feed.category, feed
+				.author, feed.description);
 
 		List<FeedItem> olditems = fetchAllFeedItems(id);
-		List<FeedItem> newitems = feed.getItems();
 		for (FeedItem item : newitems) {
-			FeedItem olditem = FeedItemHelper.getByTitle(olditems, item.getTitle());
+			FeedItem olditem = FeedItemHelper.getByTitle(olditems, item.title);
 			if(olditem != null){
-				item.setCompleted(olditem.isCompleted());
-				item.setBookmark(olditem.getBookmark());
+				item.completed = olditem.completed;
+				item.bookmark = olditem.bookmark;
 			}
 		}
-		Log.d(TAG, "deleteFeedItems: "+id);
+		//Log.d(TAG, "deleteFeedItems: "+id);
 		deleteFeedItems(id);
 		for (FeedItem item : newitems) {
-			Log.d(TAG, "addFeedItem: "+id);
+			//Log.d(TAG, "addFeedItem: "+id);
 			if(addFeedItem(id, item) == -1){
-				Log.w(TAG, "Could not update/add feed item!");
+				Log.w(TAG, "Could not update/add feed item! "+id+" "+item.id);
 			}
 		}
 		return true;
 	}
 
 	public boolean updateFeed(long id, String title, String uri, String icon,
-			String link, String pubdate, String category, String author, String description) {
+			String link, long pubdate, String category, String author, String description) {
 		ContentValues args = new ContentValues();
 		args.put(FEED_TITLE, title);
 		args.put(FEED_URI, uri);
@@ -455,23 +475,23 @@ public class ACastDbAdapter {
 			return false;
 		}
 		ContentValues args = new ContentValues();
-		args.put(FEEDITEM_ID, item.getId());
-		args.put(FEEDITEM_FEEDID, item.getFeedId());
-		args.put(FEEDITEM_TITLE, item.getTitle());
-		args.put(FEEDITEM_MP3URI, item.getMp3uri());
-		args.put(FEEDITEM_MP3FILE, item.getMp3file());
-		args.put(FEEDITEM_SIZE, item.getSize());
-		args.put(FEEDITEM_BOOKMARK, item.getBookmark());
-		args.put(FEEDITEM_COMPLETED, (item.isCompleted() ? 1 : 0));
-		args.put(FEEDITEM_DOWNLOADED, (item.isDownloaded() ? 1 : 0));
-		args.put(FEEDITEM_LINK, item.getLink());
-		args.put(FEEDITEM_PUBDATE, item.getPubdate());
-		args.put(FEEDITEM_CATEGORY, item.getCategory());
-		args.put(FEEDITEM_AUTHOR, item.getAuthor());
-		args.put(FEEDITEM_COMMENTS, item.getComments());
-		args.put(FEEDITEM_DESCRIPTION, item.getDescription());
+		args.put(FEEDITEM_ID, item.id);
+		args.put(FEEDITEM_FEEDID, item.feedId);
+		args.put(FEEDITEM_TITLE, item.title);
+		args.put(FEEDITEM_MP3URI, item.mp3uri);
+		args.put(FEEDITEM_MP3FILE, item.mp3file);
+		args.put(FEEDITEM_SIZE, item.size);
+		args.put(FEEDITEM_BOOKMARK, item.bookmark);
+		args.put(FEEDITEM_COMPLETED, (item.completed ? 1 : 0));
+		args.put(FEEDITEM_DOWNLOADED, (item.downloaded ? 1 : 0));
+		args.put(FEEDITEM_LINK, item.link);
+		args.put(FEEDITEM_PUBDATE, item.pubdate);
+		args.put(FEEDITEM_CATEGORY, item.category);
+		args.put(FEEDITEM_AUTHOR, item.author);
+		args.put(FEEDITEM_COMMENTS, item.comments);
+		args.put(FEEDITEM_DESCRIPTION, item.description);
 		return mDb.update(DATABASE_TABLE_FEEDITEM, args, FEEDITEM_ID + "="
-				+ item.getId(), null) > 0;
+				+ item.id, null) > 0;
 	}
 
 //	public boolean updateFeedItemBookmark(long id, int bookmark) {
@@ -513,19 +533,19 @@ public class ACastDbAdapter {
 	private long addFeedItem(long feedId, FeedItem item) {
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(FEEDITEM_FEEDID, feedId);
-		initialValues.put(FEEDITEM_TITLE, item.getTitle());
-		initialValues.put(FEEDITEM_MP3URI, item.getMp3uri());
-		initialValues.put(FEEDITEM_MP3FILE, item.getMp3file());
-		initialValues.put(FEEDITEM_SIZE, item.getSize());
-		initialValues.put(FEEDITEM_BOOKMARK, item.getBookmark());
-		initialValues.put(FEEDITEM_COMPLETED, (item.isCompleted() ? 1 : 0));
-		initialValues.put(FEEDITEM_DOWNLOADED, (item.isDownloaded() ? 1 : 0));
-		initialValues.put(FEEDITEM_LINK, item.getLink());
-		initialValues.put(FEEDITEM_PUBDATE, item.getPubdate());
-		initialValues.put(FEEDITEM_CATEGORY, item.getCategory());
-		initialValues.put(FEEDITEM_AUTHOR, item.getAuthor());
-		initialValues.put(FEEDITEM_COMMENTS, item.getComments());
-		initialValues.put(FEEDITEM_DESCRIPTION, item.getDescription());
+		initialValues.put(FEEDITEM_TITLE, item.title);
+		initialValues.put(FEEDITEM_MP3URI, item.mp3uri);
+		initialValues.put(FEEDITEM_MP3FILE, item.mp3file);
+		initialValues.put(FEEDITEM_SIZE, item.size);
+		initialValues.put(FEEDITEM_BOOKMARK, item.bookmark);
+		initialValues.put(FEEDITEM_COMPLETED, (item.completed ? 1 : 0));
+		initialValues.put(FEEDITEM_DOWNLOADED, (item.downloaded ? 1 : 0));
+		initialValues.put(FEEDITEM_LINK, item.link);
+		initialValues.put(FEEDITEM_PUBDATE, item.pubdate);
+		initialValues.put(FEEDITEM_CATEGORY, item.category);
+		initialValues.put(FEEDITEM_AUTHOR, item.author);
+		initialValues.put(FEEDITEM_COMMENTS, item.comments);
+		initialValues.put(FEEDITEM_DESCRIPTION, item.description);
 		return mDb.insert(DATABASE_TABLE_FEEDITEM, null, initialValues);
 	}
 

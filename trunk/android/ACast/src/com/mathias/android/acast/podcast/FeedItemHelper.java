@@ -9,7 +9,7 @@ public abstract class FeedItemHelper {
 	
 	public static FeedItem getByTitle(List<FeedItem> items, String title){
 		for (FeedItem item : items) {
-			if(title.equals(item.getTitle())){
+			if(title.equals(item.title)){
 				return item;
 			}
 		}
@@ -18,7 +18,7 @@ public abstract class FeedItemHelper {
 
 	public static FeedItem getById(List<FeedItem> items, long id){
 		for (FeedItem item : items) {
-			if(id == item.getId()){
+			if(id == item.id){
 				return item;
 			}
 		}

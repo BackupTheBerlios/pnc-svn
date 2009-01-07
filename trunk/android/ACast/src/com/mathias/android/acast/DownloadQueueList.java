@@ -84,9 +84,9 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 						TextView author = (TextView) findViewById(R.id.author);
 						ProgressBar progress = (ProgressBar) findViewById(R.id.progressbar);
 						if(item != null){
-							title.setText(item.getTitle());
-							author.setText(item.getAuthor());
-							progress.setMax((int)item.getSize());
+							title.setText(item.title);
+							author.setText(item.author);
+							progress.setMax((int)item.size);
 							progress.setProgress((int)binder.getProgress());
 						}else{
 							title.setText("No current download");
@@ -95,7 +95,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 						}
 						List<DownloadItem> downloads = binder.getDownloads();
 						for (DownloadItem downloadItem : downloads) {
-							if(item.getId() == downloadItem.getExternalId()){
+							if(item.id == downloadItem.getExternalId()){
 								populateList();
 								break;
 							}
@@ -326,8 +326,8 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
             if(item == null) {
             	return null;
             }
-            holder.title.setText(item.getTitle());
-            holder.author.setText(item.getAuthor());
+            holder.title.setText(item.title);
+            holder.author.setText(item.author);
 			holder.icon.setImageResource(R.drawable.notdownloaded);
 
             return convertView;

@@ -1,6 +1,9 @@
 package com.mathias.android.acast;
 
 import java.io.File;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import android.app.ListActivity;
 import android.content.ComponentName;
@@ -49,11 +52,12 @@ public class FeedItemList extends ListActivity {
 	private static final String TAG = FeedItemList.class.getSimpleName();
 
 	private static final int PLAY_ID = Menu.FIRST;
-	private static final int DOWNLOAD_ID = Menu.FIRST + 1;
-	private static final int DELETE_ID = Menu.FIRST + 2;
-	private static final int REFRESH_ID = Menu.FIRST + 3;
-	private static final int INFO_ID = Menu.FIRST + 4;
-	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
+	private static final int QUEUE_ID = Menu.FIRST+1;
+	private static final int DOWNLOAD_ID = Menu.FIRST + 2;
+	private static final int DELETE_ID = Menu.FIRST + 3;
+	private static final int REFRESH_ID = Menu.FIRST + 4;
+	private static final int INFO_ID = Menu.FIRST + 5;
+	private static final int DOWNLOADALL_ID = Menu.FIRST + 6;
 
 	private Long mFeedId;
 
@@ -74,6 +78,8 @@ public class FeedItemList extends ListActivity {
 	private WorkerThread thread;
 	
 	private Feed feed;
+
+	private List<FeedItem> items;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -155,21 +161,22 @@ public class FeedItemList extends ListActivity {
 	private void populateFields() {
 		if (mDbHelper != null && mFeedId != null) {
 			feed = mDbHelper.fetchFeed(mFeedId);
+			items = mDbHelper.fetchAllFeedItems(mFeedId);
 
-			String iconStr = feed.getIcon();
+			String iconStr = feed.icon;
 			ImageView icon = (ImageView) findViewById(R.id.feedrowicon);
 			Bitmap iconBM = BitmapCache.instance().get(iconStr);
 			icon.setImageBitmap(iconBM != null ? iconBM : defaultIcon);
 			TextView text = (TextView) findViewById(R.id.feedrowtext);
-			text.setText(feed.getTitle());
-			String author = feed.getAuthor();
+			text.setText(feed.title);
+			String author = feed.author;
 			TextView text2 = (TextView) findViewById(R.id.feedrowtext2);
 			text2.setText((author != null ? author : ""));
-			String pubDate = feed.getPubdate();
+			String pubDate = new Date(feed.pubdate).toString();
 			TextView text3 = (TextView) findViewById(R.id.feedrowtext3);
-			text3.setText((pubDate != null ? pubDate : ""));
+			text3.setText((feed.pubdate != 0 ? pubDate : ""));
 
-			adapter = new FeedItemAdapter(this, feed);
+			adapter = new FeedItemAdapter(this, items);
 			setListAdapter(adapter);
 		}
 	}
@@ -191,6 +198,8 @@ public class FeedItemList extends ListActivity {
 		super.onCreateOptionsMenu(menu);
 		MenuItem item = menu.add(0, PLAY_ID, 0, R.string.playitem);
 		item.setIcon(android.R.drawable.ic_media_play);
+		item = menu.add(0, QUEUE_ID, 0, R.string.queueitem);
+		item.setIcon(android.R.drawable.stat_sys_download);
 		item = menu.add(0, DOWNLOAD_ID, 0, R.string.downloaditem);
 		item.setIcon(android.R.drawable.stat_sys_download);
 		item = menu.add(0, DELETE_ID, 0, R.string.deleteitem);
@@ -207,7 +216,7 @@ public class FeedItemList extends ListActivity {
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		FeedItem item = adapter.getItem(position);
-		if(item.getMp3uri() == null){
+		if(item.mp3uri == null){
 			infoItem(item);
 		}else{
 			playItem(item);
@@ -219,7 +228,7 @@ public class FeedItemList extends ListActivity {
 		if(REFRESH_ID == menuitem.getItemId()){
 			thread.refreshFeed();
 		}else if(DOWNLOADALL_ID == menuitem.getItemId()){
-			downloadAll(adapter.feed);
+			downloadAll(adapter.items);
 		}else{
 			// items which needs position
 			int pos = getSelectedItemPosition();
@@ -228,6 +237,9 @@ public class FeedItemList extends ListActivity {
 			}else if(PLAY_ID == menuitem.getItemId()){
 				FeedItem item = adapter.getItem(pos);
 				playItem(item);
+			}else if(QUEUE_ID == menuitem.getItemId()){
+				FeedItem item = adapter.getItem(pos);
+				queueItem(item);
 			}else if(DOWNLOAD_ID == menuitem.getItemId()){
 				FeedItem item = adapter.getItem(pos);
 				downloadItem(item);
@@ -243,7 +255,7 @@ public class FeedItemList extends ListActivity {
 		return true;
 	}
 
-	private void downloadAll(Feed feed) {
+	private void downloadAll(List<FeedItem> items) {
 		WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 		WifiInfo info = wifiManager.getConnectionInfo();
 		boolean connected = info != null && info.getSSID() != null;
@@ -251,13 +263,13 @@ public class FeedItemList extends ListActivity {
 				.getSetting(SettingEnum.ONLYWIFIDOWNLOAD));
 		if(!onlyWifiDownload || connected){
 			try {
-				for (FeedItem item : feed.getItems()) {
-					if(!item.isDownloaded()){
-						downloadBinder.download(item.getId(), item.getMp3uri(),
-								item.getMp3file());
+				for (FeedItem item : items) {
+					if(!item.downloaded){
+						downloadBinder.download(item.id, item.mp3uri,
+								item.mp3file);
 					}
 				}
-				Util.showToastShort(this, "Downloading all " + feed.getTitle());
+				Util.showToastShort(this, "Downloading all " + feed.title);
 			} catch (RemoteException e) {
 				Util.showToastShort(this, e.getMessage());
 			}
@@ -267,8 +279,8 @@ public class FeedItemList extends ListActivity {
 	}
 
 	private void infoItem(FeedItem item){
-		if(item.getMp3uri() == null && !item.isCompleted()){
-			item.setCompleted(true);
+		if(item.mp3uri == null && !item.completed){
+			item.completed = true;
 			mDbHelper.updateFeedItem(item);
 		}
 		Intent i = new Intent(this, FeedItemInfo.class);
@@ -280,9 +292,9 @@ public class FeedItemList extends ListActivity {
 		try {
 			if (mediaBinder != null
 					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item
-							.getId())) {
+							.id)) {
 				ACastUtil.playItem(mediaBinder, item);
-				ACastUtil.queueItems(mediaBinder, feed.getItems(), item.getId());
+				ACastUtil.queueItems(mediaBinder, items, item.id);
 			}else{
 				Log.d(TAG, "isPlaying or mediaBinder == null");
 			}
@@ -294,12 +306,21 @@ public class FeedItemList extends ListActivity {
 		startActivity(i);
 	}
 
+	private void queueItem(FeedItem item){
+		boolean res = ACastUtil.queueItem(mediaBinder, item);
+		if(res){
+			Util.showToastShort(this, "Queued "+item.title);
+		}else{
+			Util.showToastShort(this, "Failed to queue "+item.title);
+		}
+	}
+
 	private void downloadItem(FeedItem item){
-		String file = item.getMp3file();
-		if(file == null || item.getMp3uri() == null){
+		String file = item.mp3file;
+		if(file == null || item.mp3uri == null){
 			Util.showToastShort(this, "Feed item has no audio to download!");
 			return;
-		}else if(item.isDownloaded()){
+		}else if(item.downloaded){
 			Util.showToastShort(this, "Already downloaded: "+file);
 			return;
 		}else if(downloadBinder == null){
@@ -307,9 +328,9 @@ public class FeedItemList extends ListActivity {
 			return;
 		}
 		
-		String srcuri = item.getMp3uri().replace(' ', '+');
+		String srcuri = item.mp3uri.replace(' ', '+');
 		try {
-			downloadBinder.download(item.getId(), srcuri, item.getMp3file());
+			downloadBinder.download(item.id, srcuri, item.mp3file);
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage());
 			return;
@@ -319,12 +340,12 @@ public class FeedItemList extends ListActivity {
 	}
 
 	private void deleteItem(final FeedItem item){
-		if(item != null && item.getMp3file() != null){
+		if(item != null && item.mp3file != null){
 			Util.showConfirmationDialog(this, "Are you sure?", new OnClickListener(){
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					new File(item.getMp3file()).delete();
-					item.setDownloaded(false);
+					new File(item.mp3file).delete();
+					item.downloaded = false;
 					mDbHelper.updateFeedItem(item);
 					populateFields();
 				}
@@ -348,8 +369,8 @@ public class FeedItemList extends ListActivity {
 				@Override
 				public void handleMessage(Message msg) {
 					try {
-						Feed feed1 = new RssUtil().parse(feed.getUri());
-						mDbHelper.updateFeed(mFeedId, feed1);
+						Map<Feed, List<FeedItem>> result = new RssUtil().parse(feed.uri);
+						mDbHelper.updateFeed(mFeedId, result);
 						runOnUiThread(new Runnable(){
 							@Override
 							public void run() {
@@ -420,29 +441,29 @@ public class FeedItemList extends ListActivity {
 	private static class FeedItemAdapter extends BaseAdapter {
 		
 		private LayoutInflater mInflater;
-		private Feed feed;
+		private List<FeedItem> items;
 
-		public FeedItemAdapter(Context cxt, Feed feed){
-			this.feed = feed;
+		public FeedItemAdapter(Context cxt, List<FeedItem> items){
 			mInflater = LayoutInflater.from(cxt);
+			this.items = items;
 		}
 		@Override
 		public int getCount() {
-			return feed.getItems().size();
+			return items.size();
 		}
 		@Override
 		public FeedItem getItem(int position) {
 			if(position == -1){
 				return null;
 			}
-			return feed.getItems().get(position);
+			return items.get(position);
 		}
 		@Override
 		public long getItemId(int position) {
 			if(position == -1){
 				return -1;
 			}
-			return getItem(position).getId();
+			return getItem(position).id;
 		}
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
@@ -473,36 +494,36 @@ public class FeedItemList extends ListActivity {
 
             // Bind the data efficiently with the holder.
 
-            FeedItem item = feed.getItems().get(position);
-            if(item.getMp3uri() == null){
-            	if(item.isCompleted()){
+            FeedItem item = items.get(position);
+            if(item.mp3uri == null){
+            	if(item.completed){
     	            holder.icon.setImageResource(R.drawable.textonly_done);
             	}else{
     	            holder.icon.setImageResource(R.drawable.textonly);
             	}
-            }else if(item.isDownloaded()){
-				if(item.isCompleted()){
-					if(item.getBookmark() > 0){
+            }else if(item.downloaded){
+				if(item.completed){
+					if(item.bookmark > 0){
 			            holder.icon.setImageResource(R.drawable.downloaded_done_bm);
 					}else{
 						holder.icon.setImageResource(R.drawable.downloaded_done);
 					}
 				}else{
-					if(item.getBookmark() > 0){
+					if(item.bookmark > 0){
 						holder.icon.setImageResource(R.drawable.downloaded_bm);
 					}else{
 						holder.icon.setImageResource(R.drawable.downloaded);
 					}
 				}
 			}else{
-				if(item.isCompleted()){
-					if(item.getBookmark() > 0){
+				if(item.completed){
+					if(item.bookmark > 0){
 						holder.icon.setImageResource(R.drawable.notdownloaded_done_bm);
 					}else{
 						holder.icon.setImageResource(R.drawable.notdownloaded_done);
 					}
 				}else{
-					if(item.getBookmark() > 0){
+					if(item.bookmark > 0){
 						holder.icon.setImageResource(R.drawable.notdownloaded_bm);
 					}else{
 						holder.icon.setImageResource(R.drawable.notdownloaded);
@@ -510,11 +531,11 @@ public class FeedItemList extends ListActivity {
 				}
 			}
 
-            holder.text.setText(item.getTitle());
-            String author = item.getAuthor();
+            holder.text.setText(item.title);
+            String author = item.author;
             holder.text2.setText((author != null ? author : ""));
-	        String pubDate = item.getPubdate();
-	        holder.text3.setText((pubDate != null ? pubDate : ""));
+	        String pubDate = new Date(item.pubdate).toString();
+	        holder.text3.setText((item.pubdate != 0 ? pubDate : ""));
 
             return convertView;
 		}

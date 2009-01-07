@@ -6,6 +6,7 @@ interface IMediaService {
   void initItem(long id);
   void queue(long id);
   void clearQueue();
+  void clearQueueItem(long id);
   void play();
   void pause();
   void stop();
