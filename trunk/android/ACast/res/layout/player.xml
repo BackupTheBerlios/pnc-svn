@@ -6,6 +6,12 @@
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent" >
 
+<!-- 
+	<SurfaceView android:id="@+id/surface"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content" />
+ -->
+
 	<LinearLayout android:orientation="vertical" 
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
@@ -76,12 +82,6 @@
 			android:scaleType="fitXY" 
 			android:layout_width="fill_parent"
 			android:layout_height="60sp" />
-
-<!-- 	
-		<SurfaceView android:id="@+id/surface"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
- -->
 
 	</LinearLayout>
 

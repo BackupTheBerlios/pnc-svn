@@ -44,9 +44,9 @@ public class FeedAdd extends ListActivity {
 	private static final String OPMLLOCALFILE = File.separator + "sdcard"
 			+ File.separator + "acast" + File.separator + "acast.opml";
 
-	private static final int IMPORT_OPML = 0;
+	private static final int MENU_IMPORTLOCALOPML = 0;
 
-	private static final int EXPORT_OPML = 1;
+	private static final int MENU_EXPORTLOCALOPML = 1;
 
     private ACastDbAdapter mDbHelper;
 	
@@ -174,37 +174,19 @@ public class FeedAdd extends ListActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
-		MenuItem item = menu.add(Menu.NONE, IMPORT_OPML, Menu.NONE, R.string.importlocalopml);
+		MenuItem item = menu.add(Menu.NONE, MENU_IMPORTLOCALOPML, Menu.NONE, R.string.importlocalopml);
 		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(Menu.NONE, EXPORT_OPML, Menu.NONE, R.string.exportlocalopml);
+		item = menu.add(Menu.NONE, MENU_EXPORTLOCALOPML, Menu.NONE, R.string.exportlocalopml);
 		item.setIcon(android.R.drawable.stat_sys_download);
 		return true;
 	}
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		if(IMPORT_OPML == item.getItemId()){
-			try {
-				items = new OpmlUtil().parse(new File(OPMLLOCALFILE));
-				thread.hideProgessAndUpdateResultList("Local import found "+items.size()+" results");
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage(), e);
-				Util.showToastShort(this, "Exception: "+e.getMessage());
-			}
-		}else if(EXPORT_OPML == item.getItemId()){
-			OpmlUtil.Opml opml = new OpmlUtil.Opml(getString(R.string.app_name));
-			List<Feed> feeds = mDbHelper.fetchAllFeeds();
-			for (Feed feed : feeds) {
-				opml.add(new OpmlUtil.OpmlItem(feed.title, feed.uri));
-			}
-			String export = OpmlUtil.exportOpml(opml);
-			try {
-				new FileOutputStream(OPMLLOCALFILE).write(export.getBytes());
-				Util.showToastShort(this, "Export done");
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage(), e);
-				Util.showToastShort(this, "Exception: "+e.getMessage());
-			}
+		if(MENU_IMPORTLOCALOPML == item.getItemId()){
+			thread.importLocalOpml();
+		}else if(MENU_EXPORTLOCALOPML == item.getItemId()){
+			thread.exportLocalOpml();
 		}
 		//return super.onOptionsItemSelected(item);
 		return true;
@@ -216,7 +198,10 @@ public class FeedAdd extends ListActivity {
 		private static final int SEARCHPODGROVE = 1;
 		private static final int SEARCHDIGITALPODCAST = 2;
 		private static final int TOP50PODCASTALLEY = 3;
-		private static final int IMPORTOPML = 4;
+		private static final int IMPORTITEMS = 4;
+		private static final int IMPORTOPML = 5;
+		private static final int IMPORTLOCALOPML = 6;
+		private static final int EXPORTLOCALOPML = 7;
 
 		private Handler parsehandler;
 		
@@ -243,15 +228,29 @@ public class FeedAdd extends ListActivity {
 			setProgressBarIndeterminateVisibility(true);
 			parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTOPML, uristr));
 		}
+		
+		public void importLocalOpml(){
+			setProgressBarIndeterminateVisibility(true);
+			parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTLOCALOPML));
+		}
+
+		public void exportLocalOpml(){
+			setProgressBarIndeterminateVisibility(true);
+			parsehandler.sendMessage(parsehandler.obtainMessage(EXPORTLOCALOPML));
+		}
+
+		public void importItems(){
+			setProgressBarIndeterminateVisibility(true);
+			parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTITEMS));
+		}
 
 		public void hideProgessAndUpdateResultList(String resultstr){
 			runOnUiThread(new HideProgessAndUpdateResultList(resultstr));
 		}
-
+		
 		@Override
 		public void run() {
 			Looper.prepare();
-			
 			parsehandler = new Handler(){
 				@Override
 				public void handleMessage(Message msg) {
@@ -298,17 +297,79 @@ public class FeedAdd extends ListActivity {
 						// obj is URI
 						try {
 							items = new OpmlUtil().parse(msg.obj.toString());
-							resultstr = "Import OPML found "+items.size()+" results";
-							Log.d(TAG, resultstr);
+							final String res = Util.buildString(
+									"Import OPML found ", items.size(),
+									" results. Import all items directly?");
+							Log.d(TAG, res);
+							runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									Util.showConfirmationDialog(FeedAdd.this, res, new OnClickListener(){
+										@Override
+										public void onClick(DialogInterface dialog, int which) {
+											importItems();
+										}
+									});
+								}
+							});
 						} catch (Exception e) {
 							Log.e(TAG, e.getMessage(), e);
 							resultstr = e.getMessage();
 						}
 						hideProgessAndUpdateResultList(resultstr);
+					}else if(IMPORTLOCALOPML == msg.what){
+						try {
+							items = new OpmlUtil().parse(new File(OPMLLOCALFILE));
+							final String res = Util.buildString(
+									"Import local OPML found ", items.size(),
+									" results. Import all items directly?");
+							Log.d(TAG, res);
+							runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									Util.showConfirmationDialog(FeedAdd.this, res, new OnClickListener(){
+										@Override
+										public void onClick(DialogInterface dialog, int which) {
+											importItems();
+										}
+									});
+								}
+							});
+						} catch (Exception e) {
+							Log.e(TAG, e.getMessage(), e);
+							resultstr = e.getMessage();
+						}
+						hideProgessAndUpdateResultList(resultstr);
+					}else if(EXPORTLOCALOPML == msg.what){
+						try {
+							OpmlUtil.Opml opml = new OpmlUtil.Opml(getString(R.string.app_name));
+							List<Feed> feeds = mDbHelper.fetchAllFeeds();
+							for (Feed feed : feeds) {
+								opml.add(new OpmlUtil.OpmlItem(feed.title, feed.uri));
+							}
+							String export = OpmlUtil.exportOpml(opml);
+							new FileOutputStream(OPMLLOCALFILE).write(export.getBytes());
+							resultstr = "Export done";
+						} catch (Exception e) {
+							resultstr = e.getMessage();
+							Log.e(TAG, resultstr, e);
+						}
+						hideProgessAndUpdateResultList(resultstr);
+					} else if(IMPORTITEMS == msg.what) {
+						for (SearchItem item : items) {
+							try {
+								Map<Feed, List<FeedItem>> result = new RssUtil().parse(item.getUri());
+    							Feed resfeed = result.keySet().toArray(new Feed[0])[0];
+    							mDbHelper.createFeed(resfeed, result.get(resfeed));
+    							Util.showToastShort(FeedAdd.this, "Added "+resfeed.title);
+							} catch (Exception e) {
+								Log.e(TAG, resultstr, e);
+							}
+						}
+						hideProgessAndUpdateResultList(resultstr);
 					}
 				}
 			};
-			
 			Looper.loop();
 		}
 

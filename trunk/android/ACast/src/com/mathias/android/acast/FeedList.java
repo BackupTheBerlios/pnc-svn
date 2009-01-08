@@ -14,7 +14,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -62,13 +61,11 @@ public class FeedList extends ListActivity {
 	
 	private WorkerThread thread;
 
-	private Bitmap defaultIcon;
-
 	private IDownloadService downloadBinder;
 
 	private ServiceConnection downloadServiceConn;
 	
-	private Map<Long, String> metaDataMap= new HashMap<Long, String>();
+	private Map<Long, ValueHolder> metaDataMap= new HashMap<Long, ValueHolder>();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -85,9 +82,6 @@ public class FeedList extends ListActivity {
 		
 		thread = new WorkerThread();
 		thread.start();
-
-		defaultIcon = BitmapFactory.decodeResource(getResources(),
-				R.drawable.question);
 
 		getListView().setLongClickable(true);
 		getListView().setOnLongClickListener(new OnLongClickListener(){
@@ -169,6 +163,13 @@ public class FeedList extends ListActivity {
 	protected void onResume() {
 		super.onResume();
 		fillData();
+
+		uiHandler.postDelayed(new Runnable(){
+			@Override
+			public void run() {
+		    	updateViewWithMetaData(getListView());
+			}
+		}, 1000);
 	}
 
 	@Override
@@ -191,6 +192,8 @@ public class FeedList extends ListActivity {
 		adapter = new FeedAdapter(this, feeds);
 		setListAdapter(adapter);
 	}
+	
+	private Handler uiHandler = new Handler();
 
 	private class WorkerThread extends Thread {
 		
@@ -205,7 +208,7 @@ public class FeedList extends ListActivity {
 			handler.sendEmptyMessage(REFRESHFEEDS);
 		}
 		
-		private void updateFeedMetaData(int position, long feedId, TextView textView){
+		private void updateFeedMetaData(int position, long feedId, ViewHolder textView){
 			handler.sendMessage(handler.obtainMessage(UPDATEFEEDMETADATA,
 					position, (int) feedId, textView));
 		}
@@ -239,45 +242,35 @@ public class FeedList extends ListActivity {
 						}else if(msg.what == UPDATEFEEDMETADATA){
 //							int position = msg.arg1;
 							long feedId = msg.arg2;
-							final TextView textView = (TextView) msg.obj;
+							final ViewHolder holder = (ViewHolder) msg.obj;
 							if(mDbHelper != null){
 								List<FeedItemLight> items = mDbHelper.fetchAllFeedItemLights(feedId);
-								int total = items.size();
-								int completed = 0;
-								int downloaded = 0;
-								int bookmarked = 0;
-								int latest = 0;
+								Collections.sort(items, ACastUtil.FEEDITEMLIGHT_BYDATE);
+								final ValueHolder values = new ValueHolder();
+								values.sum = items.size();
 								boolean touched = false;
-//								Collections.sort(items, ACastUtil.FEEDITEMLIGHT_BYDATE);
 								for (FeedItemLight item : items) {
 									if(item.completed){
-										completed++;
+										values.completed++;
 										touched = true;
 									}
 									if(item.downloaded){
-										downloaded++;
+										values.downloaded++;
 										touched = true;
 									}
 									if(item.bookmark > 0){
-										bookmarked++;
+										values.bookmarked++;
 										touched = true;
 									}
 									if(!touched){
-										latest++;
+										values.newitems++;
 									}
 								}
-								final String text = Util.buildString("Total=", total,
-										" New=", latest,
-										" Completed=", completed,
-										" Downloaded=", downloaded,
-										" Bookmarked=", bookmarked);
-								metaDataMap.put(feedId, text);
+								metaDataMap.put(feedId, values);
 								runOnUiThread(new Runnable(){
 									@Override
 									public void run() {
-										if(textView != null){
-											textView.setText(text);
-										}
+			                			updateViewWithValues(holder, values);
 									}
 								});
 							}
@@ -376,6 +369,10 @@ public class FeedList extends ListActivity {
 				holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
 				holder.text3 = (TextView) convertView.findViewById(R.id.feedrowtext3);
 				holder.newitems = (TextView) convertView.findViewById(R.id.newitems);
+				holder.bookmarked = (TextView) convertView.findViewById(R.id.bookmarked);
+				holder.completed = (TextView) convertView.findViewById(R.id.completed);
+				holder.downloaded = (TextView) convertView.findViewById(R.id.downloaded);
+				holder.sum = (TextView) convertView.findViewById(R.id.total);
 
 				convertView.setTag(holder);
 			} else {
@@ -387,7 +384,11 @@ public class FeedList extends ListActivity {
 			// Bind the data efficiently with the holder.
 			String iconPath = feed.icon;
 			Bitmap icon = BitmapCache.instance().get(iconPath);
-			holder.icon.setImageBitmap(icon != null ? icon : defaultIcon);
+			if(icon != null){
+				holder.icon.setImageBitmap(icon);
+			}else{
+				holder.icon.setImageResource(R.drawable.question);
+			}
 			holder.text.setText(feed.title);
 			String author = feed.author;
 			holder.text2.setText((author != null ? author : ""));
@@ -413,12 +414,24 @@ public class FeedList extends ListActivity {
 
 	}
 
+    private static class ValueHolder {
+    	int sum;
+    	int downloaded;
+    	int completed;
+    	int newitems;
+    	int bookmarked;
+    }
+    
     private static class ViewHolder {
         ImageView icon;
         TextView text;
         TextView text2;
         TextView text3;
         TextView newitems;
+        TextView downloaded;
+        TextView completed;
+        TextView bookmarked;
+        TextView sum;
     }
     
     private ListView.OnScrollListener scrollListener = new ListView.OnScrollListener() {
@@ -432,22 +445,7 @@ public class FeedList extends ListActivity {
     	public void onScrollStateChanged(AbsListView view, int scrollState) {
             switch (scrollState) {
             case OnScrollListener.SCROLL_STATE_IDLE:
-
-                int first = view.getFirstVisiblePosition();
-                int count = view.getChildCount();
-                for (int i = 0; i < count; i++) {
-                	View convertView = view.getChildAt(i);
-                	ViewHolder holder = (ViewHolder) convertView.getTag();
-                	if(holder != null){
-                		long itemId = adapter.getItemId(first+i);
-                		String str = metaDataMap.get(itemId);
-                		if(str == null){
-                			thread.updateFeedMetaData(first+i, itemId, holder.newitems);
-                		}else{
-                    		holder.newitems.setText(str);
-                		}
-                	}
-                }
+            	updateViewWithMetaData(view);
                 break;
             case OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
                 break;
@@ -457,5 +455,33 @@ public class FeedList extends ListActivity {
     	}
 
     };
+    
+    private void updateViewWithMetaData(AbsListView view){
+        int first = view.getFirstVisiblePosition();
+        int count = view.getChildCount();
+        for (int i = 0; i < count; i++) {
+        	View convertView = view.getChildAt(i);
+        	ViewHolder holder = (ViewHolder) convertView.getTag();
+        	if(holder != null){
+        		long itemId = adapter.getItemId(first+i);
+        		ValueHolder values = metaDataMap.get(itemId);
+        		if(values == null){
+        			thread.updateFeedMetaData(first+i, itemId, holder);
+        		}else{
+        			updateViewWithValues(holder, values);
+        		}
+        	}
+        }
+    }
+
+    private static void updateViewWithValues(ViewHolder holder, ValueHolder values){
+		if(holder != null){
+			holder.newitems.setText(""+values.newitems);
+			holder.bookmarked.setText(""+values.bookmarked);
+			holder.completed.setText(""+values.completed);
+			holder.downloaded.setText(""+values.downloaded);
+			holder.sum.setText(""+values.sum);
+		}
+    }
 
 }

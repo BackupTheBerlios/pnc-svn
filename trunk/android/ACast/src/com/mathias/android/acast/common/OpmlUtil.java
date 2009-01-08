@@ -142,7 +142,7 @@ public class OpmlUtil implements ContentHandler {
 		sb.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
 		sb.append("<opml version=\"1.1\">");
 		sb.append(" <head>");
-		sb.append("  <title>"+inp.title+"</title>");
+		sb.append("  <title>"+escape(inp.title)+"</title>");
 		sb.append("  <dateCreated>"+new Date()+"</dateCreated>");
 		sb.append("  <dateModified>"+new Date()+"</dateModified>");
 		sb.append("  <ownerName>"+inp.ownerName+"</ownerName>");
@@ -156,7 +156,7 @@ public class OpmlUtil implements ContentHandler {
 		sb.append(" </head>");
 		sb.append(" <body>");
 		for (OpmlItem item : inp.items) {
-			sb.append("  <outline text=\""+item.text+"\" count=\""+item.count+"\" xmlUrl=\""+item.xmlUri+"\"/>");
+			sb.append("  <outline text=\""+escape(item.text)+"\" count=\""+item.count+"\" xmlUrl=\""+item.xmlUri+"\"/>");
 		}
 		sb.append(" </body>");
 		sb.append("</opml>");
@@ -202,6 +202,10 @@ public class OpmlUtil implements ContentHandler {
 			this.count = count;
 			this.xmlUri = xmlUri;
 		}
+	}
+
+	public static String escape(String s){
+		return s.replace("&", "&amp;");
 	}
 
 }

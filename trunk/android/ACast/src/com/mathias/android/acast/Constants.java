@@ -1,11 +1,15 @@
+//TODO 5: Create play notification icon orange-right-arrow.
+//TODO 4: save playlists
+//TODO 6: Bug: Media player in locked loop consuming resources
+//TODO 5: Broadcast instead of callback interface?
+//TODO 5: Preview in feed list of latest feed item title.
+//TODO 5: Keep phone alive when downloading. System tools - prevent phone from sleeping
 //TODO 5: Switch between pubdate and asc title order in feed list.
 //TODO 4: Mark feed item as read
 //TODO 5: Setting: only auto queue downloaded
 //TODO 5: Setting: only auto queue completed
 //TODO 5: Playlist feed icon and status icon
-//TODO 7: Lazy fetch feeds in feed list
 //TODO 5: Queue item in playlist from feed item list options menu
-//TODO 5: Move "Add item" next to importOPML in search view.
 //TODO 6: Add status icon in downloaded list view.
 //TODO 6: Media button should only trigger acast and not music player, or consume intent.
 //TODO 6: Library icon and text buttons.
@@ -77,6 +81,8 @@
 //TODO 5: Low: show kb/s for download progress window
 //TODO 5: Low: Username/password protected RSS
 //TODO 5: Low: Use default media player with broadcast sender.
+// Move "Add item" next to importOPML in search view.
+// Lazy fetch feeds in feed list
 // Date in feed item view
 // Search in search results. Display Search button after a result is presented.
 // Loading on refresh all feeds, show status bar processing circle

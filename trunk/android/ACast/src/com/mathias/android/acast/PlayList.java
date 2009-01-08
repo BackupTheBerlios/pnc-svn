@@ -5,10 +5,8 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -16,16 +14,12 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
 
+import com.mathias.android.acast.adapter.DetailFeedItemAdapter;
 import com.mathias.android.acast.common.ACastUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.media.IMediaService;
@@ -44,7 +38,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 
 	private ACastDbAdapter mDbHelper;
 
-	private MediaAdapter adapter;
+	private DetailFeedItemAdapter adapter;
 
 	private Integer currPos;
 
@@ -175,7 +169,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 							runOnUiThread(new Runnable(){
 								@Override
 								public void run() {
-									adapter = new MediaAdapter(PlayList.this, items);
+									adapter = new DetailFeedItemAdapter(PlayList.this, mDbHelper, items);
 									setListAdapter(adapter);
 								}
 							});
@@ -197,82 +191,6 @@ public class PlayList extends ListActivity implements ServiceConnection {
 			Looper.loop();
 		}
 	}
-
-	private class MediaAdapter extends BaseAdapter {
-		
-		private LayoutInflater mInflater;
-		private List<FeedItem> items;
-
-		public MediaAdapter(Context cxt, List<FeedItem> items){
-			this.items = items;
-			mInflater = LayoutInflater.from(cxt);
-		}
-		public FeedItem getByExternalId(long externalId){
-			for (FeedItem item : items) {
-				if(externalId == item.id){
-					return item;
-				}
-			}
-			return null;
-		}
-		@Override
-		public int getCount() {
-			return items.size();
-		}
-		@Override
-		public FeedItem getItem(int position) {
-			return items.get(position);
-		}
-		@Override
-		public long getItemId(int position) {
-			return getItem(position).id;
-		}
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-            // A ViewHolder keeps references to children views to avoid unneccessary calls
-            // to findViewById() on each row.
-            ViewHolder holder;
-
-            // When convertView is not null, we can reuse it directly, there is no need
-            // to reinflate it. We only inflate a new View when the convertView supplied
-            // by ListView is null.
-            if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.play_row, null);
-
-                // Creates a ViewHolder and store references to the two children views
-                // we want to bind data to.
-                holder = new ViewHolder();
-                holder.icon = (ImageView) convertView.findViewById(R.id.icon);
-                holder.title = (TextView) convertView.findViewById(R.id.title);
-                holder.author = (TextView) convertView.findViewById(R.id.author);
-
-                convertView.setTag(holder);
-            } else {
-                // Get the ViewHolder back to get fast access to the TextView
-                // and the ImageView.
-                holder = (ViewHolder) convertView.getTag();
-            }
-
-            // Bind the data efficiently with the holder.
-            Log.d(TAG, "getView; position="+position+" items="+items.size());
-            FeedItem item = items.get(position);
-            if(item == null) {
-            	return null;
-            }
-            holder.title.setText(item.title);
-            holder.author.setText(item.author);
-			holder.icon.setImageResource(R.drawable.notdownloaded);
-
-            return convertView;
-		}
-
-	}
-
-    private static class ViewHolder {
-        ImageView icon;
-        TextView title;
-        TextView author;
-    }
 
 	private void infoItem(FeedItem item){
 		Intent i = new Intent(this, FeedItemInfo.class);

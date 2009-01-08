@@ -1,6 +1,7 @@
 package com.mathias.android.acast;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -162,6 +163,7 @@ public class FeedItemList extends ListActivity {
 		if (mDbHelper != null && mFeedId != null) {
 			feed = mDbHelper.fetchFeed(mFeedId);
 			items = mDbHelper.fetchAllFeedItems(mFeedId);
+			Collections.sort(items, ACastUtil.FEEDITEM_BYDATE);
 
 			String iconStr = feed.icon;
 			ImageView icon = (ImageView) findViewById(R.id.feedrowicon);
@@ -493,44 +495,8 @@ public class FeedItemList extends ListActivity {
             }
 
             // Bind the data efficiently with the holder.
-
             FeedItem item = items.get(position);
-            if(item.mp3uri == null){
-            	if(item.completed){
-    	            holder.icon.setImageResource(R.drawable.textonly_done);
-            	}else{
-    	            holder.icon.setImageResource(R.drawable.textonly);
-            	}
-            }else if(item.downloaded){
-				if(item.completed){
-					if(item.bookmark > 0){
-			            holder.icon.setImageResource(R.drawable.downloaded_done_bm);
-					}else{
-						holder.icon.setImageResource(R.drawable.downloaded_done);
-					}
-				}else{
-					if(item.bookmark > 0){
-						holder.icon.setImageResource(R.drawable.downloaded_bm);
-					}else{
-						holder.icon.setImageResource(R.drawable.downloaded);
-					}
-				}
-			}else{
-				if(item.completed){
-					if(item.bookmark > 0){
-						holder.icon.setImageResource(R.drawable.notdownloaded_done_bm);
-					}else{
-						holder.icon.setImageResource(R.drawable.notdownloaded_done);
-					}
-				}else{
-					if(item.bookmark > 0){
-						holder.icon.setImageResource(R.drawable.notdownloaded_bm);
-					}else{
-						holder.icon.setImageResource(R.drawable.notdownloaded);
-					}
-				}
-			}
-
+            holder.icon.setImageResource(ACastUtil.getStatusIcon(item));
             holder.text.setText(item.title);
             String author = item.author;
             holder.text2.setText((author != null ? author : ""));

@@ -11,19 +11,43 @@
 		android:layout_width="fill_parent"
 		android:layout_height="fill_parent">
  
-		<Button android:id="@+id/library"
-			android:src="@drawable/pause"
-			android:text="Feeds"
+		<LinearLayout android:orientation="vertical" 
 			android:layout_weight="1"
 			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" />
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/library"
+				android:src="@drawable/android:ic_menu_gallery"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+		
+		  	<TextView android:gravity="center"
+	  			android:text="Feeds"
+				android:layout_marginBottom="10sp"
+				android:layout_width="fill_parent"
+	        	android:layout_height="wrap_content" />
 	
-		<Button android:id="@+id/playlist" 
-			android:src="@drawable/stop"
-			android:text="Playlist"
+		</LinearLayout>
+
+		<LinearLayout android:orientation="vertical" 
 			android:layout_weight="1"
 			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" />
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/playlist" 
+				android:src="@drawable/android:ic_menu_agenda"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+
+		  	<TextView android:gravity="center"
+	  			android:text="Playlist"
+				android:layout_marginBottom="10sp"
+				android:layout_width="fill_parent"
+	        	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
 
 	</LinearLayout>
 
@@ -32,19 +56,43 @@
 		android:layout_width="fill_parent"
 		android:layout_height="fill_parent">
 
-		<Button android:id="@+id/downloaded" 
-			android:src="@drawable/rewind" 
-			android:text="Downloaded"
+		<LinearLayout android:orientation="vertical" 
 			android:layout_weight="1"
 			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" />
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/downloaded" 
+				android:src="@drawable/android:ic_menu_save" 
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+	
+		  	<TextView android:gravity="center"
+				android:text="Downloaded"
+				android:layout_marginBottom="10sp"
+				android:layout_width="fill_parent"
+	        	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
 
-		<Button android:id="@+id/queue" 
-			android:src="@drawable/forward" 
-			android:text="Download Queue"
+		<LinearLayout android:orientation="vertical" 
 			android:layout_weight="1"
 			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" />
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/queue" 
+				android:src="@drawable/android:stat_sys_download" 
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+
+		  	<TextView android:gravity="center"
+				android:text="Download Queue"
+				android:layout_marginBottom="10sp"
+				android:layout_width="fill_parent"
+	        	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
 
 	</LinearLayout>
 	
@@ -53,22 +101,51 @@
 		android:layout_width="fill_parent"
 		android:layout_height="fill_parent">
 
-		<Button android:id="@+id/search" 
-			android:src="@drawable/rewind" 
-			android:text="Search"
+		<LinearLayout android:orientation="vertical" 
 			android:layout_weight="1"
 			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" />
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/search" 
+				android:src="@drawable/android:ic_search_category_default" 
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+	
+		  	<TextView android:gravity="center"
+				android:text="Search"
+				android:layout_marginBottom="10sp"
+				android:layout_width="fill_parent"
+	        	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
 
-		<Button android:id="@+id/player" 
-			android:src="@drawable/forward" 
-			android:text="Player"
+		<LinearLayout android:orientation="vertical" 
 			android:layout_weight="1"
 			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" />
+			android:layout_height="fill_parent">
+	 
+			<ImageButton android:id="@+id/player" 
+				android:src="@drawable/android:ic_media_play" 
+				android:layout_weight="1"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" />
+
+		  	<TextView android:gravity="center"
+				android:text="Player"
+				android:layout_marginBottom="10sp"
+				android:layout_width="fill_parent"
+	        	android:layout_height="wrap_content" />
+	
+		</LinearLayout>
 
 	</LinearLayout>
 	
+	<View
+		android:layout_width="fill_parent"
+		android:layout_height="2dip"
+		android:background="#FFFFFFFF" />
+
 	<LinearLayout android:orientation="horizontal" 
 		android:layout_width="fill_parent"
 		android:layout_height="50sp">

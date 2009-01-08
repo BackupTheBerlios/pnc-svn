@@ -63,18 +63,20 @@ public class MediaService extends Service {
 
 		mDbHandler = new ACastDbAdapter(this);
 		mDbHandler.open();
-		
+
 		receiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				Log.d(TAG, "MEDIA_BUTTON pressed");
 				try {
 					if(binder != null && mp != null){
-						if(binder.isPlaying()) {
-							binder.pause();
-						}else{
-							binder.play();
-						}
+						//TODO
+//						if(binder.isPlaying()) {
+//							binder.pause();
+//						}else{
+//							binder.play();
+//						}
+						binder.pause();
 					}
 				} catch (RemoteException e) {
 					Log.e(TAG, e.getMessage(), e);

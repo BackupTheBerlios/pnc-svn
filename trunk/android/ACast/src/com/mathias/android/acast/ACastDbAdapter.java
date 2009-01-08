@@ -51,9 +51,9 @@ public class ACastDbAdapter {
 	public static final String SETTING_VALUE = "value";
 
 	private static final String DATABASE_NAME = "acast";
-	private static final String DATABASE_TABLE_FEED = "feed";
-	private static final String DATABASE_TABLE_FEEDITEM = "feeditem";
-	private static final String DATABASE_TABLE_SETTING = "setting";
+	public static final String DATABASE_TABLE_FEED = "feed";
+	public static final String DATABASE_TABLE_FEEDITEM = "feeditem";
+	public static final String DATABASE_TABLE_SETTING = "setting";
 
 	private static final String DATABASE_CREATE_FEED = "create table feed ("
 			+ FEED_ID+" integer primary key autoincrement, "
@@ -158,7 +158,7 @@ public class ACastDbAdapter {
 			Log.w(TAG, "Could not insert feed!");
 			return false;
 		}
-		deleteFeedItems(id);
+		deleteNotDownloadedFeedItems(id);
 		for (FeedItem item : items) {
 			if(addFeedItem(id, item) == -1){
 				Log.w(TAG, "Could not insert feed item!");
@@ -169,7 +169,7 @@ public class ACastDbAdapter {
 	}
 
 	public boolean deleteFeed(long id) {
-		mDb.delete(DATABASE_TABLE_FEEDITEM, FEEDITEM_FEEDID + "=" + id, null);
+		deleteFeedItems(id);
 		return mDb.delete(DATABASE_TABLE_FEED, FEED_ID + "=" + id, null) > 0;
 	}
 
@@ -353,40 +353,6 @@ public class ACastDbAdapter {
 		return items;
 	}
 
-	public FeedItem fetchFeedItem(long feedId, long feedItemId) throws SQLException {
-		FeedItem item = null;
-		Cursor c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
-				FEEDITEM_TITLE, FEEDITEM_MP3URI, FEEDITEM_MP3FILE,
-				FEEDITEM_SIZE, FEEDITEM_BOOKMARK, FEEDITEM_COMPLETED,
-				FEEDITEM_DOWNLOADED, FEEDITEM_LINK, FEEDITEM_PUBDATE,
-				FEEDITEM_CATEGORY, FEEDITEM_AUTHOR, FEEDITEM_COMMENTS,
-				FEEDITEM_DESCRIPTION }, FEEDITEM_FEEDID + "=" + feedId
-				+ " and " + FEEDITEM_ID + "=" + feedItemId, null, null, null,
-				null, null);
-		if (c == null || !c.moveToFirst()) {
-			Log.w(TAG, "No feed item for: "+feedId+" "+feedItemId);
-		}else{
-			String title = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
-			String mp3uri = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3URI));
-			String mp3file = c.getString(c.getColumnIndexOrThrow(FEEDITEM_MP3FILE));
-			long size = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_SIZE));
-			int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
-			short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
-			short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
-			String link = c.getString(c.getColumnIndexOrThrow(FEEDITEM_LINK));
-			long pubdate = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
-			String category = c.getString(c.getColumnIndexOrThrow(FEEDITEM_CATEGORY));
-			String author = c.getString(c.getColumnIndexOrThrow(FEEDITEM_AUTHOR));
-			String comments = c.getString(c.getColumnIndexOrThrow(FEEDITEM_COMMENTS));
-			String description = c.getString(c.getColumnIndexOrThrow(FEEDITEM_DESCRIPTION));
-			item = new FeedItem(feedItemId, feedId, title, mp3uri, mp3file,
-					size, bookmark, completed != 0, downloaded != 0, link,
-					pubdate, category, author, comments, description);
-		}
-		Util.closeCursor(c);
-		return item;
-	}
-
 	public FeedItem fetchFeedItem(long feedItemId) throws SQLException {
 		FeedItem item = null;
 		Cursor c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
@@ -445,7 +411,7 @@ public class ACastDbAdapter {
 			}
 		}
 		//Log.d(TAG, "deleteFeedItems: "+id);
-		deleteFeedItems(id);
+		deleteNotDownloadedFeedItems(id);
 		for (FeedItem item : newitems) {
 			//Log.d(TAG, "addFeedItem: "+id);
 			if(addFeedItem(id, item) == -1){
@@ -494,20 +460,6 @@ public class ACastDbAdapter {
 				+ item.id, null) > 0;
 	}
 
-//	public boolean updateFeedItemBookmark(long id, int bookmark) {
-//		ContentValues args = new ContentValues();
-//		args.put(FEEDITEM_BOOKMARK, bookmark);
-//		return mDb.update(DATABASE_TABLE_FEEDITEM, args,
-//				FEEDITEM_ID + "=" + id, null) > 0;
-//	}
-//
-//	public boolean updateFeedItemCompleted(long id, boolean completed) {
-//		ContentValues args = new ContentValues();
-//		args.put(FEEDITEM_COMPLETED, (completed ? 1 : 0));
-//		return mDb.update(DATABASE_TABLE_FEEDITEM, args,
-//				FEEDITEM_ID + "=" + id, null) > 0;
-//	}
-
 	public boolean updateFeedItem(long id, String column, Object value) {
 		ContentValues args = new ContentValues();
 		if (value instanceof Integer) {
@@ -526,7 +478,30 @@ public class ACastDbAdapter {
 				FEEDITEM_ID + "=" + id, null) > 0;
 	}
 
-	public boolean deleteFeedItems(long id) {
+	public boolean update(String table, String idcolumn, long id, String column, Object value) {
+		ContentValues args = new ContentValues();
+		if (value instanceof Integer) {
+			args.put(column, (Integer) value);
+		} else if (value instanceof Long) {
+			args.put(column, (Long) value);
+		} else if (value instanceof Short) {
+			args.put(column, (Short) value);
+		} else if (value instanceof Boolean) {
+			args.put(column, (short) (((Boolean) value) ? 1 : 0));
+		} else {
+			throw new RuntimeException(Util.buildString(
+					"Could not store value=", value, " in column=", column,
+					", table=" + table));
+		}
+		return mDb.update(table, args,
+				idcolumn + "=" + id, null) > 0;
+	}
+
+	public boolean deleteNotDownloadedFeedItems(long id) {
+		return mDb.delete(DATABASE_TABLE_FEEDITEM, FEEDITEM_FEEDID + "=" + id + " and "+FEEDITEM_DOWNLOADED+"=0", null) > 0;
+	}
+
+	private boolean deleteFeedItems(long id) {
 		return mDb.delete(DATABASE_TABLE_FEEDITEM, FEEDITEM_FEEDID + "=" + id, null) > 0;
 	}
 

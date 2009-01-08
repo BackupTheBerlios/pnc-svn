@@ -12,7 +12,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -68,7 +67,7 @@ public class ACastMenu extends Activity {
 		}
 
 		// LIBRARY
-		((Button) findViewById(R.id.library))
+		((ImageButton) findViewById(R.id.library))
 				.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -78,7 +77,7 @@ public class ACastMenu extends Activity {
 				});
 
 		// PLAYLIST
-		((Button) findViewById(R.id.playlist))
+		((ImageButton) findViewById(R.id.playlist))
 				.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -88,7 +87,7 @@ public class ACastMenu extends Activity {
 				});
 
 		// DOWNLOADED
-		((Button) findViewById(R.id.downloaded))
+		((ImageButton) findViewById(R.id.downloaded))
 				.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -98,7 +97,7 @@ public class ACastMenu extends Activity {
 				});
 
 		// DOWNLOADQUEUE
-		((Button) findViewById(R.id.queue))
+		((ImageButton) findViewById(R.id.queue))
 				.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -108,7 +107,7 @@ public class ACastMenu extends Activity {
 				});
 
 		// SEARCH
-		((Button) findViewById(R.id.search))
+		((ImageButton) findViewById(R.id.search))
 				.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -118,7 +117,7 @@ public class ACastMenu extends Activity {
 				});
 
 		// PLAYER
-		((Button) findViewById(R.id.player))
+		((ImageButton) findViewById(R.id.player))
 				.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {

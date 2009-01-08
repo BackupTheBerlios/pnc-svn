@@ -74,8 +74,10 @@ public abstract class ACastUtil {
 			boolean found = false;
 			for (FeedItem item : items) {
 				if(found){
-					Log.d(TAG, "queue: "+item.id);
+					if(!item.completed){
+						Log.d(TAG, "queue: "+item.id);
 						mediaBinder.queue(item.id);
+					}
 				}else if(afterid == item.id){
 					found = true;
 				}
@@ -149,11 +151,51 @@ public abstract class ACastUtil {
 	public static int compareLong(long a0, long a1){
 		if(a0 != 0 && a1 != 0){
 			if(a0 > a1){
-				return 1;
-			}else{
 				return -1;
+			}else{
+				return 1;
 			}
 		}
 		return 0;
 	}
+
+	public static int getStatusIcon(FeedItem item){
+        if(item.mp3uri == null){
+        	if(item.completed){
+	            return R.drawable.textonly_done;
+        	}else{
+	            return R.drawable.textonly;
+        	}
+        }else if(item.downloaded){
+			if(item.completed){
+				if(item.bookmark > 0){
+		            return R.drawable.downloaded_done_bm;
+				}else{
+					return R.drawable.downloaded_done;
+				}
+			}else{
+				if(item.bookmark > 0){
+					return R.drawable.downloaded_bm;
+				}else{
+					return R.drawable.downloaded;
+				}
+			}
+		}else{
+			if(item.completed){
+				if(item.bookmark > 0){
+					return R.drawable.notdownloaded_done_bm;
+				}else{
+					return R.drawable.notdownloaded_done;
+				}
+			}else{
+				if(item.bookmark > 0){
+					return R.drawable.notdownloaded_bm;
+				}else{
+					return R.drawable.notdownloaded;
+				}
+			}
+		}
+        //return R.drawable.question;
+	}
+
 }

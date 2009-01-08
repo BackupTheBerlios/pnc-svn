@@ -1,35 +1,24 @@
 package com.mathias.android.acast;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import android.app.ListActivity;
 import android.app.NotificationManager;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
 
+import com.mathias.android.acast.adapter.DetailFeedItemAdapter;
 import com.mathias.android.acast.common.ACastUtil;
-import com.mathias.android.acast.common.BitmapCache;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
@@ -47,7 +36,7 @@ public class DownloadedList extends ListActivity {
 
 	private ACastDbAdapter mDbHelper;
 
-	private DownloadAdapter adapter;
+	private DetailFeedItemAdapter adapter;
 
 	private IMediaService mediaBinder;
 	
@@ -58,8 +47,6 @@ public class DownloadedList extends ListActivity {
 	private ServiceConnection downloadServiceConn;
 
 	private List<FeedItem> downloads = new ArrayList<FeedItem>();
-	
-	private Map<Long, Bitmap> iconCache = new HashMap<Long, Bitmap>();
 
     private NotificationManager mNM;
 
@@ -133,7 +120,7 @@ public class DownloadedList extends ListActivity {
 			public void run() {
 				if(mDbHelper != null) {
 					downloads = mDbHelper.fetchDownloadedFeedItems();
-					adapter = new DownloadAdapter(DownloadedList.this, downloads);
+					adapter = new DetailFeedItemAdapter(DownloadedList.this, mDbHelper, downloads);
 					setListAdapter(adapter);
 				}
 			}
@@ -232,96 +219,5 @@ public class DownloadedList extends ListActivity {
 		public void onProgress(long externalid, long diff) throws RemoteException {
 		}
 	};
-
-	private class DownloadAdapter extends BaseAdapter {
-		
-		private LayoutInflater mInflater;
-		private List<FeedItem> items;
-
-		public DownloadAdapter(Context cxt, List<FeedItem> items){
-			Collections.sort(items, ACastUtil.FEEDITEM_BYDATE);
-			this.items = items;
-			mInflater = LayoutInflater.from(cxt);
-		}
-		public FeedItem getByExternalId(long externalId){
-			for (FeedItem item : items) {
-				if(externalId == item.id){
-					return item;
-				}
-			}
-			return null;
-		}
-		@Override
-		public int getCount() {
-			return items.size();
-		}
-		@Override
-		public FeedItem getItem(int position) {
-			return items.get(position);
-		}
-		@Override
-		public long getItemId(int position) {
-			return getItem(position).id;
-		}
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-            // A ViewHolder keeps references to children views to avoid unneccessary calls
-            // to findViewById() on each row.
-            ViewHolder holder;
-
-            // When convertView is not null, we can reuse it directly, there is no need
-            // to reinflate it. We only inflate a new View when the convertView supplied
-            // by ListView is null.
-            if (convertView == null) {
-                //Log.d(TAG, "getView; convertView=null position="+position+" items="+items.size());
-
-                convertView = mInflater.inflate(R.layout.downloaded_row, null);
-
-                // Creates a ViewHolder and store references to the two children views
-                // we want to bind data to.
-                holder = new ViewHolder();
-                holder.icon = (ImageView) convertView.findViewById(R.id.icon);
-                holder.title = (TextView) convertView.findViewById(R.id.title);
-                holder.author = (TextView) convertView.findViewById(R.id.author);
-                holder.pubdate = (TextView) convertView.findViewById(R.id.pubdate);
-
-                convertView.setTag(holder);
-            } else {
-                // Get the ViewHolder back to get fast access to the TextView
-                // and the ImageView.
-                holder = (ViewHolder) convertView.getTag();
-            }
-
-            // Bind the data efficiently with the holder.
-            FeedItem item = items.get(position);
-            if(item == null) {
-            	return null;
-            }
-            Bitmap bm = getIcon(item.feedId);
-			holder.icon.setImageBitmap(bm);
-            holder.title.setText(item.title);
-            holder.author.setText(item.author);
-            holder.pubdate.setText(new Date(item.pubdate).toString());
-
-            return convertView;
-		}
-
-	}
-
-	private static class ViewHolder {
-        ImageView icon;
-        TextView title;
-        TextView author;
-        TextView pubdate;
-    }
-
-    private Bitmap getIcon(long feedid) {
-		Bitmap icon = iconCache.get(feedid);
-		if (icon == null) {
-			icon = BitmapCache.instance().get(mDbHelper.fetchFeedIcon(feedid));
-			iconCache.put(feedid, icon);
-		}
-		return icon;
-	}
 
 }
