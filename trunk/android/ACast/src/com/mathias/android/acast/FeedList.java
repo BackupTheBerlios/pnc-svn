@@ -21,14 +21,17 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnLongClickListener;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -50,10 +53,14 @@ public class FeedList extends ListActivity {
 
 	private static final String TAG = FeedList.class.getSimpleName();
 
-	private static final int DELETE_ID = Menu.FIRST + 0;
-	private static final int REFRESH_ID = Menu.FIRST + 1;
+	private static final int REFRESHALL_ID = Menu.FIRST + 0;
+	private static final int DOWNLOADALLLAST_ID = Menu.FIRST + 1;
+
 	private static final int INFO_ID = Menu.FIRST + 2;
-	private static final int DOWNLOADLAST_ID = Menu.FIRST + 3;
+	private static final int REFRESH_ID = Menu.FIRST + 3;
+	private static final int DELETE_ID = Menu.FIRST + 4;
+	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
+	private static final int CANCEL_ID = Menu.FIRST + 6;
 
 	private ACastDbAdapter mDbHelper;
 
@@ -114,43 +121,72 @@ public class FeedList extends ListActivity {
 		}
 
 		getListView().setOnScrollListener(scrollListener);
+		
+		getListView().setOnCreateContextMenuListener(this);
+	}
+	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		MenuItem item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
+		item.setIcon(android.R.drawable.ic_menu_info_details);
+		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refreshall);
+		item.setIcon(android.R.drawable.ic_menu_rotate);
+		item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.removefeed);
+		item.setIcon(android.R.drawable.ic_menu_delete);
+		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
+		item.setIcon(android.R.drawable.stat_sys_download);
+		item = menu.add(Menu.NONE, CANCEL_ID, Menu.NONE, R.string.cancel);
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		super.onCreateOptionsMenu(menu);
-		MenuItem item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.removefeed);
-		item.setIcon(android.R.drawable.ic_menu_delete);
-		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refreshall);
+		MenuItem item = menu.add(Menu.NONE, REFRESHALL_ID, Menu.NONE, R.string.refreshall);
 		item.setIcon(android.R.drawable.ic_menu_rotate);
-		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
-		item.setIcon(android.R.drawable.ic_menu_info_details);
-		item = menu.add(Menu.NONE, DOWNLOADLAST_ID, Menu.NONE, R.string.downloadlast);
+		item = menu.add(Menu.NONE, DOWNLOADALLLAST_ID, Menu.NONE, R.string.downloadlast);
 		item.setIcon(android.R.drawable.stat_sys_download);
-		return true;
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterView.AdapterContextMenuInfo menuInfo = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
+		int id = item.getItemId();
+		int pos = menuInfo.position;
+		if(pos != ListView.INVALID_POSITION){
+			if(INFO_ID == id){
+				infoFeed(adapter.getItem(pos));
+				return true;
+			}else if(REFRESH_ID == id){
+				thread.refreshFeed(adapter.getItem(pos));
+				return true;
+			}else if(DELETE_ID == id){
+				deleteFeed(adapter.getItem(pos));
+				return true;
+			}else if(DOWNLOADALL_ID == id){
+				downloadAllFeedItems(adapter.getItem(pos));
+				return true;
+			}else if(CANCEL_ID == id){
+				return true;
+			}
+		}
+		return super.onContextItemSelected(item);
 	}
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		if(REFRESH_ID == item.getItemId()){
+		//Options menu
+		int id = item.getItemId();
+		if(REFRESH_ID == id){
 			thread.refreshFeeds();
-		}else if(DOWNLOADLAST_ID == item.getItemId()){
+			return true;
+		}else if(DOWNLOADALLLAST_ID == id){
 			downloadLatest();
-		}else{
-			// items which needs position
-			int pos = getSelectedItemPosition();
-			if(pos < 0){
-				Util.showToastShort(this, "No item selected!");
-			}else if(INFO_ID == item.getItemId()){
-				infoFeed(adapter.getItem(pos));
-			}else if(DELETE_ID == item.getItemId()){
-				deleteFeed(adapter.getItem(pos));
-			}
+			return true;
 		}
-		//return super.onMenuItemSelected(featureId, item);
-		return true;
+		return super.onMenuItemSelected(featureId, item);
 	}
-
+	
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
@@ -199,13 +235,20 @@ public class FeedList extends ListActivity {
 		
 		private final static int REFRESHFEEDS = 0;
 
-		private final static int UPDATEFEEDMETADATA = 1;
+		private final static int REFRESHFEED = 1;
+
+		private final static int UPDATEFEEDMETADATA = 2;
 
 		private Handler handler;
 
 		private void refreshFeeds(){
 	        setProgressBarIndeterminateVisibility(true);
 			handler.sendEmptyMessage(REFRESHFEEDS);
+		}
+		
+		private void refreshFeed(Feed feed){
+	        setProgressBarIndeterminateVisibility(true);
+			handler.sendMessage(handler.obtainMessage(REFRESHFEED, feed));
 		}
 		
 		private void updateFeedMetaData(int position, long feedId, ViewHolder textView){
@@ -228,6 +271,7 @@ public class FeedList extends ListActivity {
 								Log.d(TAG, "Parsing "+title);
 								Map<Feed, List<FeedItem>> result = new RssUtil().parse(feed.uri);
 								mDbHelper.updateFeed(rowId, result);
+						        Util.showToastShort(FeedList.this, "Updated "+title);
 							}
 							mDbHelper.setSetting(SettingEnum.LASTFULLUPDATE, new Date());
 							Log.d(TAG, "Done");
@@ -237,6 +281,21 @@ public class FeedList extends ListActivity {
 									fillData();
 							        setProgressBarIndeterminateVisibility(false);
 							        Util.showToastShort(FeedList.this, "Feeds updated");
+								}
+							});
+						}else if(msg.what == REFRESHFEED){
+							Feed feed = (Feed) msg.obj;
+							final String title = feed.title;
+							Log.d(TAG, "Parsing "+title);
+							Map<Feed, List<FeedItem>> result = new RssUtil().parse(feed.uri);
+							mDbHelper.updateFeed(feed.id, result);
+							Log.d(TAG, "Done");
+							runOnUiThread(new Runnable(){
+								@Override
+								public void run() {
+									fillData();
+							        setProgressBarIndeterminateVisibility(false);
+							        Util.showToastShort(FeedList.this, "Updated "+title);
 								}
 							});
 						}else if(msg.what == UPDATEFEEDMETADATA){
@@ -312,6 +371,24 @@ public class FeedList extends ListActivity {
 			}
 		}
 		Util.showToastShort(this, "Downloading "+count+" items");
+	}
+
+	private void downloadAllFeedItems(Feed feed){
+		List<FeedItem> items = mDbHelper.fetchAllFeedItems(feed.id);
+		for (FeedItem feeditem : items) {
+			if (feeditem.mp3uri != null
+					&& feeditem.mp3file != null) {
+				try {
+					if (!feeditem.downloaded) {
+						downloadBinder.download(feeditem.id, feeditem
+								.mp3uri, feeditem.mp3file);
+					}
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		}
+		Util.showToastShort(this, "Downloading all items for "+feed.title);
 	}
 
 	private void deleteFeed(final Feed feed) {

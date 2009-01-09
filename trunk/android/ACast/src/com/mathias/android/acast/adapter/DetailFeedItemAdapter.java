@@ -89,7 +89,11 @@ public class DetailFeedItemAdapter extends BaseAdapter {
         	return null;
         }
         Bitmap bm = BitmapCache.instance().get(item.feedId, dbHelper);
-		holder.feedicon.setImageBitmap(bm);
+        if(bm != null){
+    		holder.feedicon.setImageBitmap(bm);
+		}else{
+			holder.feedicon.setImageResource(R.drawable.question);
+        }
 		holder.statusicon.setImageResource(ACastUtil.getStatusIcon(item));
         holder.title.setText(item.title);
         holder.author.setText(item.author);

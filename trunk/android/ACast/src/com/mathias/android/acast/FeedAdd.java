@@ -235,7 +235,6 @@ public class FeedAdd extends ListActivity {
 		}
 
 		public void exportLocalOpml(){
-			setProgressBarIndeterminateVisibility(true);
 			parsehandler.sendMessage(parsehandler.obtainMessage(EXPORTLOCALOPML));
 		}
 
@@ -244,8 +243,19 @@ public class FeedAdd extends ListActivity {
 			parsehandler.sendMessage(parsehandler.obtainMessage(IMPORTITEMS));
 		}
 
-		public void hideProgessAndUpdateResultList(String resultstr){
-			runOnUiThread(new HideProgessAndUpdateResultList(resultstr));
+		public void hideProgessAndUpdateResultList(final String resultstr) {
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					Log.d(TAG, "adapter.notifyDataSetChanged()");
+					selected = 0;
+					adapter.notifyDataSetChanged();
+					setProgressBarIndeterminateVisibility(false);
+					if (resultstr != null) {
+						Util.showToastLong(FeedAdd.this, resultstr);
+					}
+				}
+			});
 		}
 		
 		@Override
@@ -341,19 +351,25 @@ public class FeedAdd extends ListActivity {
 						}
 						hideProgessAndUpdateResultList(resultstr);
 					}else if(EXPORTLOCALOPML == msg.what){
-						try {
-							OpmlUtil.Opml opml = new OpmlUtil.Opml(getString(R.string.app_name));
-							List<Feed> feeds = mDbHelper.fetchAllFeeds();
-							for (Feed feed : feeds) {
-								opml.add(new OpmlUtil.OpmlItem(feed.title, feed.uri));
+						Util.showConfirmationDialog(FeedAdd.this, "Are you sure?", new OnClickListener(){
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								try {
+									setProgressBarIndeterminateVisibility(true);
+									OpmlUtil.Opml opml = new OpmlUtil.Opml(getString(R.string.app_name));
+									List<Feed> feeds = mDbHelper.fetchAllFeeds();
+									for (Feed feed : feeds) {
+										opml.add(new OpmlUtil.OpmlItem(feed.title, feed.uri));
+									}
+									String export = OpmlUtil.exportOpml(opml);
+									new FileOutputStream(OPMLLOCALFILE).write(export.getBytes());
+									setProgressBarIndeterminateVisibility(false);
+									Util.showToastShort(FeedAdd.this, "Export done");
+								} catch (Exception e) {
+									Log.e(TAG, e.getMessage(), e);
+								}
 							}
-							String export = OpmlUtil.exportOpml(opml);
-							new FileOutputStream(OPMLLOCALFILE).write(export.getBytes());
-							resultstr = "Export done";
-						} catch (Exception e) {
-							resultstr = e.getMessage();
-							Log.e(TAG, resultstr, e);
-						}
+						});
 						hideProgessAndUpdateResultList(resultstr);
 					} else if(IMPORTITEMS == msg.what) {
 						for (SearchItem item : items) {
@@ -371,23 +387,6 @@ public class FeedAdd extends ListActivity {
 				}
 			};
 			Looper.loop();
-		}
-
-		private class HideProgessAndUpdateResultList implements Runnable {
-			private String resultstr;
-			public HideProgessAndUpdateResultList(String resultstr){
-				this.resultstr = resultstr;
-			}
-			@Override
-			public void run() {
-				Log.d(TAG, "adapter.notifyDataSetChanged()");
-				selected = 0;
-				adapter.notifyDataSetChanged();
-				setProgressBarIndeterminateVisibility(false);
-				if (resultstr != null) {
-			        Util.showToastLong(FeedAdd.this, resultstr);
-				}
-			}
 		}
 
 	}

@@ -38,9 +38,10 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 
 	private static final long UPDATE_DELAY = 3000;
 
-	private static final int CANCEL_ID = Menu.FIRST;
-	private static final int CANCELALL_ID = Menu.FIRST + 1;
-	private static final int REFRESH_ID = Menu.FIRST + 2;
+	private static final int CANCELALL_ID = Menu.FIRST + 0;
+	private static final int REFRESH_ID = Menu.FIRST + 1;
+
+	private static final int CANCEL_ID = Menu.FIRST + 2;
 	private static final int INFO_ID = Menu.FIRST + 3;
 
 	private ACastDbAdapter mDbHelper;
@@ -70,47 +71,9 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 
 		// start progress handler loop
 		progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
+		
+		getListView().setOnCreateContextMenuListener(this);
 	}
-
-	private Handler progressHandler = new Handler(){
-		@Override
-		public void handleMessage(Message not_used) {
-			if(visible){
-				if(binder != null){
-					try {
-						long currId = binder.getCurrentDownload();
-						FeedItem item = mDbHelper.fetchFeedItem(currId);
-						TextView title = (TextView) findViewById(R.id.title);
-						TextView author = (TextView) findViewById(R.id.author);
-						ProgressBar progress = (ProgressBar) findViewById(R.id.progressbar);
-						if(item != null){
-							title.setText(item.title);
-							author.setText(item.author);
-							progress.setMax((int)item.size);
-							progress.setProgress((int)binder.getProgress());
-						}else{
-							title.setText("No current download");
-							author.setText("No current download");
-							progress.setVisibility(View.GONE);
-						}
-						List<DownloadItem> downloads = binder.getDownloads();
-						for (DownloadItem downloadItem : downloads) {
-							if(item.id == downloadItem.getExternalId()){
-								populateList();
-								break;
-							}
-						}
-					} catch (RemoteException e) {
-						Log.e(TAG, e.getMessage(), e);
-						Util.showDialog(DownloadQueueList.this, e.getClass().getSimpleName(), e.getMessage());
-					}
-				}else{
-					Log.d(TAG, "binder is null!!");
-				}
-				sendEmptyMessageDelayed(0, UPDATE_DELAY);
-			}
-		}
-	};
 
 	@Override
 	protected void onResume() {
@@ -240,6 +203,46 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		}
 		binder = null;
 	}
+
+	private Handler progressHandler = new Handler(){
+		@Override
+		public void handleMessage(Message not_used) {
+			if(visible){
+				if(binder != null){
+					try {
+						long currId = binder.getCurrentDownload();
+						FeedItem item = mDbHelper.fetchFeedItem(currId);
+						TextView title = (TextView) findViewById(R.id.title);
+						TextView author = (TextView) findViewById(R.id.author);
+						ProgressBar progress = (ProgressBar) findViewById(R.id.progressbar);
+						if(item != null){
+							title.setText(item.title);
+							author.setText(item.author);
+							progress.setMax((int)item.size);
+							progress.setProgress((int)binder.getProgress());
+						}else{
+							title.setText("No current download");
+							author.setText("No current download");
+							progress.setVisibility(View.GONE);
+						}
+						List<DownloadItem> downloads = binder.getDownloads();
+						for (DownloadItem downloadItem : downloads) {
+							if(item.id == downloadItem.getExternalId()){
+								populateList();
+								break;
+							}
+						}
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+						Util.showDialog(DownloadQueueList.this, e.getClass().getSimpleName(), e.getMessage());
+					}
+				}else{
+					Log.d(TAG, "binder is null!!");
+				}
+				sendEmptyMessageDelayed(0, UPDATE_DELAY);
+			}
+		}
+	};
 
 	private final IDownloadServiceCallback downloadCallback = new IDownloadServiceCallback.Stub() {
 		@Override

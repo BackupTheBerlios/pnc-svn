@@ -24,12 +24,15 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -52,13 +55,14 @@ public class FeedItemList extends ListActivity {
 
 	private static final String TAG = FeedItemList.class.getSimpleName();
 
-	private static final int PLAY_ID = Menu.FIRST;
-	private static final int QUEUE_ID = Menu.FIRST+1;
-	private static final int DOWNLOAD_ID = Menu.FIRST + 2;
-	private static final int DELETE_ID = Menu.FIRST + 3;
-	private static final int REFRESH_ID = Menu.FIRST + 4;
-	private static final int INFO_ID = Menu.FIRST + 5;
-	private static final int DOWNLOADALL_ID = Menu.FIRST + 6;
+	private static final int REFRESH_ID = Menu.FIRST + 0;
+	private static final int DOWNLOADALL_ID = Menu.FIRST + 1;
+
+	private static final int QUEUE_ID = Menu.FIRST + 2;
+	private static final int DOWNLOAD_ID = Menu.FIRST + 3;
+	private static final int INFO_ID = Menu.FIRST + 4;
+	private static final int DELETE_ID = Menu.FIRST + 5;
+	private static final int CANCEL_ID = Menu.FIRST + 6;
 
 	private Long mFeedId;
 
@@ -109,6 +113,8 @@ public class FeedItemList extends ListActivity {
 				R.drawable.question);
 
 		populateFields();
+		
+		getListView().setOnCreateContextMenuListener(this);
 
 		Intent i = new Intent(this, DownloadService.class);
 		startService(i);
@@ -159,6 +165,89 @@ public class FeedItemList extends ListActivity {
 		}
 	}
 
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putLong(Constants.FEEDID, mFeedId);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		populateFields();
+	}
+
+	@Override
+	protected void onListItemClick(ListView l, View v, int position, long id) {
+		FeedItem item = adapter.getItem(position);
+		if(item.mp3uri == null){
+			infoItem(item);
+		}else{
+			ACastUtil.playQueueItem(this, mediaBinder, item, items);
+		}
+	}
+	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		MenuItem item = menu.add(Menu.NONE, QUEUE_ID, Menu.NONE, R.string.queueitem);
+		item.setIcon(android.R.drawable.stat_sys_download);
+		item = menu.add(Menu.NONE, DOWNLOAD_ID, Menu.NONE, R.string.downloaditem);
+		item.setIcon(android.R.drawable.stat_sys_download);
+		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
+		item.setIcon(android.R.drawable.ic_menu_info_details);
+		item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.deleteitem);
+		item.setIcon(android.R.drawable.ic_menu_delete);
+		item = menu.add(Menu.NONE, CANCEL_ID, Menu.NONE, R.string.cancel);
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuItem item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refresh);
+		item.setIcon(android.R.drawable.ic_menu_rotate);
+		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
+		item.setIcon(android.R.drawable.stat_sys_download);
+		return super.onCreateOptionsMenu(menu);
+	}
+	
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterView.AdapterContextMenuInfo menuInfo = (AdapterView.AdapterContextMenuInfo) item
+				.getMenuInfo();
+		int id = item.getItemId();
+		int pos = menuInfo.position;
+		if(pos != ListView.INVALID_POSITION){
+			if(QUEUE_ID == id){
+				queueItem(adapter.getItem(pos));
+				return true;
+			}else if(DOWNLOAD_ID == id){
+				downloadItem(adapter.getItem(pos));
+				return true;
+			}else if(DELETE_ID == id){
+				deleteItem(adapter.getItem(pos));
+				return true;
+			}else if(INFO_ID == id){
+				infoItem(adapter.getItem(pos));
+				return true;
+			}else if(CANCEL_ID == id){
+				return true;
+			}
+		}
+		return super.onContextItemSelected(item);
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
+		if(REFRESH_ID == menuitem.getItemId()){
+			thread.refreshFeed();
+			return true;
+		}else if(DOWNLOADALL_ID == menuitem.getItemId()){
+			downloadAll(adapter.items);
+			return true;
+		}
+		return super.onMenuItemSelected(featureId, menuitem);
+	}
+
 	private void populateFields() {
 		if (mDbHelper != null && mFeedId != null) {
 			feed = mDbHelper.fetchFeed(mFeedId);
@@ -181,80 +270,6 @@ public class FeedItemList extends ListActivity {
 			adapter = new FeedItemAdapter(this, items);
 			setListAdapter(adapter);
 		}
-	}
-
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putLong(Constants.FEEDID, mFeedId);
-	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
-		populateFields();
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		super.onCreateOptionsMenu(menu);
-		MenuItem item = menu.add(0, PLAY_ID, 0, R.string.playitem);
-		item.setIcon(android.R.drawable.ic_media_play);
-		item = menu.add(0, QUEUE_ID, 0, R.string.queueitem);
-		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(0, DOWNLOAD_ID, 0, R.string.downloaditem);
-		item.setIcon(android.R.drawable.stat_sys_download);
-		item = menu.add(0, DELETE_ID, 0, R.string.deleteitem);
-		item.setIcon(android.R.drawable.ic_menu_delete);
-		item = menu.add(0, REFRESH_ID, 0, R.string.refresh);
-		item.setIcon(android.R.drawable.ic_menu_rotate);
-		item = menu.add(0, INFO_ID, 0, R.string.info);
-		item.setIcon(android.R.drawable.ic_menu_info_details);
-		item = menu.add(Menu.NONE, DOWNLOADALL_ID, Menu.NONE, R.string.downloadall);
-		item.setIcon(android.R.drawable.stat_sys_download);
-		return true;
-	}
-
-	@Override
-	protected void onListItemClick(ListView l, View v, int position, long id) {
-		FeedItem item = adapter.getItem(position);
-		if(item.mp3uri == null){
-			infoItem(item);
-		}else{
-			playItem(item);
-		}
-	}
-
-	@Override
-	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
-		if(REFRESH_ID == menuitem.getItemId()){
-			thread.refreshFeed();
-		}else if(DOWNLOADALL_ID == menuitem.getItemId()){
-			downloadAll(adapter.items);
-		}else{
-			// items which needs position
-			int pos = getSelectedItemPosition();
-			if(pos < 0){
-				Util.showToastShort(this, "No item selected!");
-			}else if(PLAY_ID == menuitem.getItemId()){
-				FeedItem item = adapter.getItem(pos);
-				playItem(item);
-			}else if(QUEUE_ID == menuitem.getItemId()){
-				FeedItem item = adapter.getItem(pos);
-				queueItem(item);
-			}else if(DOWNLOAD_ID == menuitem.getItemId()){
-				FeedItem item = adapter.getItem(pos);
-				downloadItem(item);
-			}else if(DELETE_ID == menuitem.getItemId()){
-				FeedItem item = adapter.getItem(pos);
-				deleteItem(item);
-			}else if(INFO_ID == menuitem.getItemId()){
-				FeedItem item = adapter.getItem(pos);
-				infoItem(item);
-			}
-		}
-		//return super.onMenuItemSelected(featureId, menuitem);
-		return true;
 	}
 
 	private void downloadAll(List<FeedItem> items) {
@@ -287,24 +302,6 @@ public class FeedItemList extends ListActivity {
 		}
 		Intent i = new Intent(this, FeedItemInfo.class);
 		i.putExtra(Constants.FEEDITEM, item);
-		startActivity(i);
-	}
-
-	private void playItem(FeedItem item){
-		try {
-			if (mediaBinder != null
-					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item
-							.id)) {
-				ACastUtil.playItem(mediaBinder, item);
-				ACastUtil.queueItems(mediaBinder, items, item.id);
-			}else{
-				Log.d(TAG, "isPlaying or mediaBinder == null");
-			}
-		} catch (Exception e) {
-			String msg = e.getMessage();
-			Log.e(TAG, (msg != null ? msg : e.toString()), e);
-		}
-		Intent i = new Intent(this, Player.class);
 		startActivity(i);
 	}
 

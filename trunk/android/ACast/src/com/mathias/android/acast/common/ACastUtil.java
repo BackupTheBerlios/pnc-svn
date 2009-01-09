@@ -6,10 +6,13 @@ import java.util.Date;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 import android.view.Window;
 import android.widget.TextView;
 
+import com.mathias.android.acast.Player;
 import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.services.media.IMediaService;
 import com.mathias.android.acast.podcast.Feed;
@@ -62,6 +65,25 @@ public abstract class ACastUtil {
 		}
 	}
 
+	public static void playQueueItem(Context cxt, IMediaService mediaBinder,
+			FeedItem item, List<FeedItem> items) {
+		try {
+			if (item != null
+					&& mediaBinder != null
+					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item.id)) {
+				playItem(mediaBinder, item);
+				queueItems(mediaBinder, items, item.id);
+			} else {
+				Log.d(TAG, "isPlaying or mediaBinder == null");
+			}
+		} catch (Exception e) {
+			String msg = e.getMessage();
+			Log.e(TAG, (msg != null ? msg : e.toString()), e);
+		}
+		Intent i = new Intent(cxt, Player.class);
+		cxt.startActivity(i);
+	}
+
 	public static void queueItems(IMediaService mediaBinder, List<FeedItem> items, long afterid){
 		if(mediaBinder == null){
 			Log.e(TAG, "binder is null. No connection to media service!");
@@ -74,7 +96,7 @@ public abstract class ACastUtil {
 			boolean found = false;
 			for (FeedItem item : items) {
 				if(found){
-					if(!item.completed){
+					if(!item.completed && item.downloaded){
 						Log.d(TAG, "queue: "+item.id);
 						mediaBinder.queue(item.id);
 					}
@@ -117,7 +139,7 @@ public abstract class ACastUtil {
 			return arg0.title.compareTo(arg1.title);
 		}
 	};
-	
+
 	public static Date getPubdateAsDate(Feed feed, List<FeedItem> items) {
 		Date date = new Date(feed.pubdate);
 		if (date == null) {

@@ -1,11 +1,23 @@
-//TODO 5: Create play notification icon orange-right-arrow.
+//TODO 5: Put a progress bar beside feed item which is downloading
+// Confirmation for export local opml
+//TODO 5: Search/Add feed; if already exists, skip it. Check by Uri/Title.
+//TODO 5: Resume does not use/remember correct item. Should player be used instead of resume button? Naaa
+//TODO 4: Separate videoplayer
+//TODO 5: Remeber feed item and go back to that one after resume activity for info, player....
+//TODO 5: Refresh all feeds, do reread from db, clear cache, of metadata
+// Play_list.xml should be fill parent so icons are right aligned
+// Info should have all info on scrollable view, not just description.
+// Unknown icon in downloaded view for feeditems without one
+//TODO 5: Clicking a feeditem should display a menu for that item. Pressing menu should display a menu with options for all items.
+//TODO 5: Longpress may start default action in feed item list. Own handler with shorter long press.
+//TODO 4: Create play notification icon orange-right-arrow.
 //TODO 4: save playlists
 //TODO 6: Bug: Media player in locked loop consuming resources
 //TODO 5: Broadcast instead of callback interface?
 //TODO 5: Preview in feed list of latest feed item title.
-//TODO 5: Keep phone alive when downloading. System tools - prevent phone from sleeping
+// Keep phone alive when downloading. System tools - prevent phone from sleeping
 //TODO 5: Switch between pubdate and asc title order in feed list.
-//TODO 4: Mark feed item as read
+//TODO 4: Menu option to mark feed item as read
 //TODO 5: Setting: only auto queue downloaded
 //TODO 5: Setting: only auto queue completed
 //TODO 5: Playlist feed icon and status icon
@@ -15,7 +27,7 @@
 //TODO 6: Library icon and text buttons.
 //TODO 6: No mp3uri/downoad icon for text only feed items.
 //TODO 6: Download latest from every feed
-//TODO 6: Export OPML to sdcard/acast/acast.opml
+// Export OPML to sdcard/acast/acast.opml
 //TODO 6: Playlist, queue, view, remove, reorder.
 //TODO 5: Sort by date, unsorted, title, size, ...
 //TODO 6: Remove notification when opening download list

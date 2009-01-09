@@ -420,7 +420,7 @@ public class MediaService extends Service {
 		CharSequence title = getText(R.string.playing);
 		String text = filename;
 
-		Notification notification = new Notification(R.drawable.icon, ticker,
+		Notification notification = new Notification(R.drawable.not_play, ticker,
 				System.currentTimeMillis());
 
 		Intent i = new Intent(this, Player.class);
@@ -434,7 +434,7 @@ public class MediaService extends Service {
 	private void showErrorNotification(String error) {
 		Log.d(TAG, "showErrorNotification()");
 
-		Notification notification = new Notification(R.drawable.icon, "Exception",
+		Notification notification = new Notification(R.drawable.not_play, "Exception",
 				System.currentTimeMillis());
 
 		Intent i = new Intent(this, Player.class);
