@@ -1,5 +1,6 @@
 package com.mathias.android.acast.common;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -20,6 +21,15 @@ public class ChoiceArrayAdapter<T> extends ArrayAdapter<T> {
     private LayoutInflater mInflater;
     private int mResource;
     private String mChoiceRenderer;
+
+    public ChoiceArrayAdapter(Context context, int textViewResourceId,
+			List<T> objects, String choiceRenderer) {
+		super(context, textViewResourceId, objects);
+        mResource = textViewResourceId;
+        mFieldId = 0;
+        mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mChoiceRenderer = choiceRenderer;
+	}
 
     public ChoiceArrayAdapter(Context context, int resource, int textViewResourceId,
 			List<T> objects, String choiceRenderer) {
@@ -67,6 +77,19 @@ public class ChoiceArrayAdapter<T> extends ArrayAdapter<T> {
 	}
 
 	private String getProperty(Object obj){
+		Field[] fields = obj.getClass().getFields();
+		for (Field field : fields) {
+			String name = field.getName();
+			if(name.equalsIgnoreCase(mChoiceRenderer)){
+				try {
+					return field.get(obj).toString();
+				} catch (IllegalArgumentException e) {
+					Log.e(TAG, e.getMessage(), e);
+				} catch (IllegalAccessException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		}
 		Method[] methods = obj.getClass().getMethods();
 		for (Method method : methods) {
 			String name = method.getName();
