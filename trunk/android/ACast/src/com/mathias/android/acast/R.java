@@ -52,7 +52,7 @@ public final class R {
         public static final int completed=0x7f050012;
         public static final int description=0x7f05000a;
         public static final int downloaded=0x7f050011;
-        public static final int duration=0x7f050027;
+        public static final int duration=0x7f050028;
         public static final int feedicon=0x7f050000;
         public static final int feedrowicon=0x7f05000c;
         public static final int feedrowtext=0x7f05000d;
@@ -62,35 +62,34 @@ public final class R {
         public static final int forward=0x7f05002b;
         public static final int icon=0x7f050005;
         public static final int importopml=0x7f05001a;
-        public static final int left_text=0x7f05002f;
+        public static final int left_text=0x7f05002e;
         public static final int library=0x7f05001f;
         public static final int link=0x7f050007;
         public static final int newitems=0x7f050010;
-        public static final int path=0x7f050032;
-        public static final int pause=0x7f050034;
-        public static final int play=0x7f050033;
+        public static final int next=0x7f050026;
+        public static final int path=0x7f050031;
+        public static final int pause=0x7f050033;
+        public static final int play=0x7f050032;
         public static final int player=0x7f050023;
         public static final int playlist=0x7f050020;
-        public static final int playpause=0x7f050028;
+        public static final int playpause=0x7f050025;
         public static final int progressbar=0x7f050006;
         public static final int pubdate=0x7f050003;
         public static final int queue=0x7f050021;
-        public static final int reset=0x7f050035;
-        public static final int resume=0x7f050024;
-        public static final int resumedesc=0x7f050026;
-        public static final int resumetitle=0x7f050025;
+        public static final int reset=0x7f050034;
+        public static final int resumetitle=0x7f050024;
         public static final int rewind=0x7f05002a;
-        public static final int right_text=0x7f050030;
-        public static final int screen=0x7f05002e;
+        public static final int right_text=0x7f05002f;
+        public static final int screen=0x7f05002d;
         public static final int search=0x7f050022;
         public static final int searchdigitalpodcast=0x7f050017;
         public static final int searchpodgrove=0x7f050016;
-        public static final int seekbar=0x7f05002c;
-        public static final int selected=0x7f05002d;
+        public static final int seekbar=0x7f050027;
+        public static final int selected=0x7f05002c;
         public static final int size=0x7f05001e;
         public static final int statusicon=0x7f050004;
         public static final int stop=0x7f050029;
-        public static final int surface=0x7f050031;
+        public static final int surface=0x7f050030;
         public static final int text=0x7f050015;
         public static final int title=0x7f050001;
         public static final int top50podcastalley=0x7f050018;
@@ -132,21 +131,21 @@ public final class R {
         public static final int bookmark=0x7f040009;
         /**  download_list 
          */
-        public static final int cancel=0x7f04001d;
-        public static final int cancelall=0x7f04001e;
-        public static final int deleteitem=0x7f040015;
-        public static final int downloadall=0x7f04000e;
-        public static final int downloaditem=0x7f040014;
-        public static final int downloadlast=0x7f040011;
-        public static final int downloadlist=0x7f040010;
-        public static final int downloadqueue=0x7f04000f;
+        public static final int cancel=0x7f04001e;
+        public static final int cancelall=0x7f04001f;
+        public static final int deleteitem=0x7f040016;
+        public static final int downloadall=0x7f04000f;
+        public static final int downloaditem=0x7f040015;
+        public static final int downloadlast=0x7f040012;
+        public static final int downloadlist=0x7f040011;
+        public static final int downloadqueue=0x7f040010;
         public static final int editfeed=0x7f04000b;
-        public static final int exportlocalopml=0x7f040020;
+        public static final int exportlocalopml=0x7f040021;
         public static final int gotolink=0x7f040001;
         /**  feed_add 
          */
-        public static final int importlocalopml=0x7f04001f;
-        public static final int info=0x7f040017;
+        public static final int importlocalopml=0x7f040020;
+        public static final int info=0x7f040018;
         /**  feed_list 
          */
         public static final int nofeeditems=0x7f040008;
@@ -155,24 +154,25 @@ public final class R {
         public static final int nofeeds=0x7f040005;
         public static final int noresults=0x7f040004;
         public static final int noresume=0x7f040006;
-        public static final int pause=0x7f040019;
+        public static final int pause=0x7f04001a;
         /**  videoplayer 
          */
-        public static final int play=0x7f040018;
+        public static final int play=0x7f040019;
         /**  player 
  media service 
          */
-        public static final int playing=0x7f04001c;
+        public static final int playing=0x7f04001d;
         /**  feeditem_list menu items 
          */
-        public static final int playitem=0x7f040012;
-        public static final int queueitem=0x7f040013;
-        public static final int refresh=0x7f040016;
-        public static final int refreshall=0x7f04000d;
-        public static final int removefeed=0x7f04000c;
-        public static final int reset=0x7f04001a;
+        public static final int playitem=0x7f040013;
+        public static final int queueitem=0x7f040014;
+        public static final int refresh=0x7f040017;
+        public static final int refreshall=0x7f04000e;
+        public static final int remove=0x7f04000c;
+        public static final int removefeed=0x7f04000d;
+        public static final int reset=0x7f04001b;
         public static final int settings=0x7f040007;
-        public static final int stop=0x7f04001b;
+        public static final int stop=0x7f04001c;
         /**  feed_edit 
          */
         public static final int url=0x7f040002;

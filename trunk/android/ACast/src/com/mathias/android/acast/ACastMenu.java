@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,7 +16,6 @@ import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
-import com.mathias.android.acast.common.ACastUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.media.IMediaService;
 import com.mathias.android.acast.common.services.media.MediaService;
@@ -52,8 +52,34 @@ public class ACastMenu extends Activity {
 		mediaServiceConn = new ServiceConnection(){
 			@Override
 			public void onServiceConnected(ComponentName name, IBinder service) {
+				String title = null;
 				Log.d(TAG, "onServiceConnected: "+name);
 				mediaBinder = IMediaService.Stub.asInterface(service);
+				FeedItem item = null;
+				try {
+					long id = mediaBinder.getId();
+					if(id >= 0){
+						item = mDbHelper.fetchFeedItem(id);
+					}
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+				if (item == null) {
+					String lastid = mDbHelper
+							.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
+					if (lastid != null) {
+						item = mDbHelper.fetchFeedItem(Long.parseLong(lastid));
+					}
+				}
+				if (item != null) {
+					title = item.title;
+				} else {
+					Log.w(TAG, "No resume item...");
+				}
+				if (title != null) {
+					TextView resumetitle = (TextView) findViewById(R.id.resumetitle);
+					resumetitle.setText(title);
+				}
 			}
 
 			@Override
@@ -125,34 +151,6 @@ public class ACastMenu extends Activity {
 						startActivity(i);
 					}
 				});
-
-		// RESUME
-		ImageButton resume = (ImageButton) findViewById(R.id.resume);
-		resume.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View v) {
-				String lastid = mDbHelper.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
-				if(lastid != null){
-					FeedItem item = mDbHelper.fetchFeedItem(Long.parseLong(lastid));
-					ACastUtil.resumeItem(mediaBinder, item);
-					Intent i = new Intent(ACastMenu.this, Player.class);
-					startActivity(i);
-				}
-			}
-		});
-		String lastid = mDbHelper.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
-		if(lastid != null){
-			FeedItem item = mDbHelper.fetchFeedItem(Long.parseLong(lastid));
-			if(item != null){
-				TextView resumetitle = (TextView) findViewById(R.id.resumetitle);
-				resumetitle.setText(item.title);
-				TextView resumedesc = (TextView) findViewById(R.id.resumedesc);
-				resumedesc.setText(item.author);
-			}else{
-				Log.w(TAG, "No resume item for lastid="+lastid);
-			}
-		}
-
 	}
 
 	@Override

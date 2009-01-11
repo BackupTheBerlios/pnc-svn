@@ -4,12 +4,14 @@ import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
 
 interface IMediaService {
   void initItem(long id);
+  void playQueueItem(long id);
   void queue(long id);
   void clearQueue();
   void clearQueueItem(long id);
   void play();
   void pause();
   void stop();
+  void next();
   void seek(int msec);
   int getCurrentPosition();
   void setCurrentPosition(int position);

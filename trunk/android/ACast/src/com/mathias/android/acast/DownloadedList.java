@@ -20,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.mathias.android.acast.adapter.DetailFeedItemAdapter;
@@ -129,7 +130,7 @@ public class DownloadedList extends ListActivity {
 	protected void onResume() {
 		super.onResume();
 		populateList();
-		mNM.cancel(Constants.NOTIFICATION_DOWNLOADSERVICE_ID);
+		mNM.cancel(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID);
 	}
 
 	@Override
@@ -163,8 +164,10 @@ public class DownloadedList extends ListActivity {
 	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
-		int pos = getSelectedItemPosition();
+		AdapterView.AdapterContextMenuInfo menuInfo = (AdapterView.AdapterContextMenuInfo) item
+				.getMenuInfo();
 		int id = item.getItemId();
+		int pos = menuInfo.position;
 		if(pos != ListView.INVALID_POSITION){
 			if(QUEUE_ID == id){
 				ACastUtil.queueItem(mediaBinder, adapter.getItem(pos));
@@ -221,7 +224,7 @@ public class DownloadedList extends ListActivity {
 	private void infoItem(FeedItem item){
 		Intent i = new Intent(this, FeedItemInfo.class);
 		i.putExtra(Constants.FEEDITEM, item);
-		startActivityForResult(i, 0);
+		startActivity(i);
 	}
 
 	private void deleteItem(final FeedItem item){

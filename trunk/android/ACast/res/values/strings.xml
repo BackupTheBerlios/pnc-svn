@@ -18,6 +18,7 @@
 	<!-- feeds_list menu items -->
 	<string name="addfeed">Add feed</string>
 	<string name="editfeed">Edit feed</string>
+	<string name="remove">Remove</string>
 	<string name="removefeed">Remove feed</string>
 	<string name="refreshall">Refresh all</string>
 	<string name="downloadall">Download all</string>

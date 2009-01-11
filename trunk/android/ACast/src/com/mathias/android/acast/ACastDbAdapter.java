@@ -1,6 +1,7 @@
 package com.mathias.android.acast;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -403,11 +404,16 @@ public class ACastDbAdapter {
 				.author, feed.description);
 
 		List<FeedItem> olditems = fetchAllFeedItems(id);
-		for (FeedItem item : newitems) {
+		for (Iterator<FeedItem> it = newitems.iterator(); it.hasNext();) {
+			FeedItem item = it.next();
 			FeedItem olditem = FeedItemHelper.getByTitle(olditems, item.title);
 			if(olditem != null){
-				item.completed = olditem.completed;
-				item.bookmark = olditem.bookmark;
+				if(olditem.downloaded){
+					it.remove();
+				}else{
+					item.completed = olditem.completed;
+					item.bookmark = olditem.bookmark;
+				}
 			}
 		}
 		//Log.d(TAG, "deleteFeedItems: "+id);

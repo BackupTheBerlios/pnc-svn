@@ -148,36 +148,13 @@
 
 	<LinearLayout android:orientation="horizontal" 
 		android:layout_width="fill_parent"
-		android:layout_height="50sp">
+		android:layout_height="wrap_content">
 
-		<LinearLayout android:orientation="horizontal" 
-			android:layout_marginTop="6sp"
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content">
-	 
-			<ImageButton android:id="@+id/resume"
-				android:src="@drawable/android:ic_media_play" 
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content" />
-
-			<LinearLayout android:orientation="horizontal" 
+	  	<TextView android:id="@+id/resumetitle"
 				android:layout_width="fill_parent"
-				android:layout_height="wrap_content">
-		 
-			  	<TextView android:id="@+id/resumetitle"
-						android:layout_width="fill_parent"
-			        	android:layout_height="wrap_content"
-			        	android:text="@string/noresume"/>
-		
-			  	<TextView android:id="@+id/resumedesc"
-						android:layout_width="fill_parent"
-			        	android:layout_height="wrap_content"
-			        	android:text="@string/noresume"/>
-	
-			</LinearLayout>
-		
-		</LinearLayout>
-	
+	        	android:layout_height="wrap_content"
+	        	android:text="@string/noresume"/>
+
 	</LinearLayout>
 	
 </LinearLayout>

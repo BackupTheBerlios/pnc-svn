@@ -19,7 +19,6 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.Message;
 import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
@@ -32,10 +31,13 @@ import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
+import com.mathias.android.acast.podcast.Settings.SettingEnum;
 
 public class MediaService extends Service {
 	
 	private static final String TAG = MediaService.class.getSimpleName();
+	
+	private static final int UPDATE_DELAY = 1000;
 
 	private MediaPlayer mp;
 
@@ -53,6 +55,10 @@ public class MediaService extends Service {
 	
 	private BroadcastReceiver receiver;
 
+	private long lastPress = 0;
+	
+	private PositionThread posThread;
+
     @Override
 	public void onCreate() {
 
@@ -63,45 +69,69 @@ public class MediaService extends Service {
 
 		mDbHandler = new ACastDbAdapter(this);
 		mDbHandler.open();
-
+		
 		receiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				Log.d(TAG, "MEDIA_BUTTON pressed");
-				try {
-					if(binder != null && mp != null){
-						//TODO
-//						if(binder.isPlaying()) {
-//							binder.pause();
-//						}else{
-//							binder.play();
-//						}
-						binder.pause();
+				long newPress = System.currentTimeMillis();
+				if(newPress < lastPress + 500){
+					try {
+						if(binder != null && mp != null){
+							if(binder.isPlaying()) {
+								binder.pause();
+							}else{
+								binder.play();
+							}
+						}
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
 					}
-				} catch (RemoteException e) {
-					Log.e(TAG, e.getMessage(), e);
 				}
+				lastPress = newPress;
 			}
 		};
 		registerReceiver(receiver, new IntentFilter("android.intent.action.MEDIA_BUTTON"));
+
+		posThread = new PositionThread();
+		posThread.start();
 	}
     
-    private class WorkerThread extends Thread {
+    private class PositionThread extends Thread {
     	
-		public Handler handler;
-		
-		public void play(){
-			showNotification();
-			handler.sendEmptyMessage(0);
-		}
+    	private final String TAG = PositionThread.class.getSimpleName();
+
+    	private int currentPosition = 0;
 
 		@Override
 		public void run() {
-			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
-			Looper.prepare();
-			handler = new Handler(){
+			while(true){
+				try {
+					Log.d(TAG, "Sleeping for "+UPDATE_DELAY+" ms");
+					sleep(UPDATE_DELAY);
+					int newpos = (mp != null ? mp.getCurrentPosition() : 0);
+					if(newpos == currentPosition){
+						Log.d(TAG, "suspending current pos thread!");
+						sleep(Long.MAX_VALUE);
+					}
+					currentPosition = newpos;
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+    }
+    
+    private class WorkerThread extends Thread {
+
+		public Handler handler;
+		
+		public void play(){
+			Log.d(TAG, "play() resuming current pos thread!");
+			posThread.interrupt();
+			showNotification();
+			handler.post(new Runnable(){
 				@Override
-				public void handleMessage(Message msg) {
+				public void run() {
 					if (mp != null) {
 						if (!mp.isPlaying()) {
 							Log.d(TAG, "mp.start()");
@@ -109,14 +139,24 @@ public class MediaService extends Service {
 						}
 					}else{
 						// reinit mp
-						if(currentItem == null && !queue.isEmpty()){
+						if (currentItem == null && queue != null
+								&& !queue.isEmpty()) {
 							currentItem = queue.remove();
 						}
 						if(currentItem != null){
 							try {
 								initItem(currentItem);
-								binder.setCurrentPosition(currentItem.bookmark);
-								binder.play();
+								broadcastTrackCompleted();
+							} catch (Exception e) {
+								Log.d(TAG, e.getMessage());
+							}
+						}else{
+							try {
+								String lastId = mDbHandler.getSetting(SettingEnum.LASTFEEDITEMID);
+								FeedItem item = mDbHandler.fetchFeedItem(Long.parseLong(lastId));
+								if(item != null){
+									initItem(item);
+								}
 								broadcastTrackCompleted();
 							} catch (Exception e) {
 								Log.d(TAG, e.getMessage());
@@ -124,10 +164,22 @@ public class MediaService extends Service {
 						}
 					}
 				}
-			};
+			});
+		}
+
+		@Override
+		public void run() {
+			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
+			Looper.prepare();
+			handler = new Handler();
 			Looper.loop();
 		}
     }
+
+	private int getCurrentPositionSync(){
+		return posThread.currentPosition;
+		//return (mp != null ? mp.getCurrentPosition() : 0);
+	}
 
 	@Override
 	public void onStart(Intent intent, int startId) {
@@ -170,7 +222,7 @@ public class MediaService extends Service {
 		public void seek(int msec) throws RemoteException {
 			Log.d(TAG, "seek(msec) mp="+mp);
 			if(mp != null){
-				mp.seekTo(mp.getCurrentPosition()+msec);
+				mp.seekTo(getCurrentPositionSync()+msec);
 			}
 		}
 		@Override
@@ -182,7 +234,7 @@ public class MediaService extends Service {
 		}
 		@Override
 		public int getCurrentPosition() throws RemoteException {
-			return (mp != null ? mp.getCurrentPosition() : 0);
+			return getCurrentPositionSync();
 		}
 		@Override
 		public int getDuration() throws RemoteException {
@@ -198,8 +250,12 @@ public class MediaService extends Service {
 		}
 		@Override
 		public void queue(long id) throws RemoteException {
-			FeedItem item = mDbHandler.fetchFeedItem(id);
-			queue.offer(item);
+			if(id != -1){
+				FeedItem item = mDbHandler.fetchFeedItem(id);
+				if(item != null){
+					queue.offer(item);
+				}
+			}
 		}
 		@Override
 		public void initItem(long newid) throws RemoteException {
@@ -253,15 +309,44 @@ public class MediaService extends Service {
 				}
 			}
 		}
+		@Override
+		public void next() throws RemoteException {
+			if(!queue.isEmpty()){
+				FeedItem item = queue.remove();
+				if(item != null){
+					try {
+						MediaService.this.initItem(item);
+						broadcastTrackCompleted();
+					} catch (Exception e) {
+						Log.d(TAG, e.getMessage());
+					}
+				}
+			}
+		}
+		@Override
+		public void playQueueItem(long id) throws RemoteException {
+			while(!queue.isEmpty()){
+				FeedItem item = queue.remove();
+				if(item != null && item.id == id){
+					try {
+						MediaService.this.initItem(item);
+						broadcastTrackCompleted();
+					} catch (Exception e) {
+						Log.d(TAG, e.getMessage());
+					}
+					break;
+				}
+			}
+		}
 	};
 	
 	private void bookmark(boolean completed){
 		try {
 			long oldid = binder.getId();
-			int currpos = (mp != null ? mp.getCurrentPosition() : -1);
-			int dur = (mp != null ? mp.getDuration(): -1);
-			Log.d(TAG, "Storing bookmark: "+currpos+"/"+dur+" for: "+oldid);
-			if(oldid != -1 && currpos != -1 && dur != -1){
+			if(oldid != -1 && mp != null){
+				int currpos = getCurrentPositionSync();
+				int dur = mp.getDuration();
+				Log.d(TAG, "Storing bookmark: "+currpos+"/"+dur+" for: "+oldid);
 				if (completed && currpos + 100 >= dur) {
 					mDbHandler.updateFeedItem(oldid,
 							ACastDbAdapter.FEEDITEM_COMPLETED, true);
@@ -271,6 +356,8 @@ public class MediaService extends Service {
 					mDbHandler.updateFeedItem(oldid,
 							ACastDbAdapter.FEEDITEM_BOOKMARK, currpos);
 				}
+			}else{
+				Log.d(TAG, "bookmark: mp == null or id == -1");
 			}
 		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -278,6 +365,10 @@ public class MediaService extends Service {
 	}
 
 	public void initItem(FeedItem item) throws RemoteException {
+		if(item == null){
+			Log.e(TAG, "initItem: item is null");
+			return;
+		}
 		Log.d(TAG, "initItem, id="+item.id);
 
 		bookmark(false);
@@ -331,6 +422,7 @@ public class MediaService extends Service {
 					return;
 				}
 			}
+			mp.seekTo(item.bookmark);
 		}
 
 		mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
@@ -340,13 +432,12 @@ public class MediaService extends Service {
 					bookmark(true);
 					if(queue.isEmpty()){
 						mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
+						broadcastTrackCompleted();
 						broadcastPlaylistCompleted();
 						stopSelf();
 					}else{
 						currentItem = queue.remove();
 						initItem(currentItem);
-						binder.setCurrentPosition(currentItem.bookmark);
-						thread.play();
 						broadcastTrackCompleted();
 					}
 				} catch (Exception e) {
@@ -354,6 +445,8 @@ public class MediaService extends Service {
 				}
 			}
 		});
+
+		thread.play();
 		showNotification();
 	}
 

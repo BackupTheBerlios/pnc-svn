@@ -21,8 +21,8 @@ import android.util.Log;
 
 import com.mathias.android.acast.ACastDbAdapter;
 import com.mathias.android.acast.Constants;
+import com.mathias.android.acast.DownloadQueueList;
 import com.mathias.android.acast.DownloadedList;
-import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.Util.ProgressListener;
 
@@ -76,7 +76,7 @@ public class DownloadService extends Service {
 		private DownloadItem currentItem;
 
 		public void download(DownloadItem item){
-			Log.d(TAG, "Queing: "+item.getDestfile());
+			Log.d(TAG, "Queing: "+item.destfile);
 			queue.offer(item);
 		}
 		
@@ -86,7 +86,7 @@ public class DownloadService extends Service {
 		 */
 		public void cancelAndRemoveCurrent(){
 			if(currentItem != null){
-				new File(currentItem.getDestfile()).delete();
+				new File(currentItem.destfile).delete();
 				currentItem = null;
 			}
 		}
@@ -94,8 +94,8 @@ public class DownloadService extends Service {
 		public void cancelAndRemove(long externalid){
 			for (Iterator<DownloadItem> it = queue.iterator(); it.hasNext();) {
 				DownloadItem item = it.next();
-				if(item.getExternalId() == externalid){
-					new File(item.getDestfile()).delete();
+				if(item.externalId == externalid){
+					new File(item.destfile).delete();
 					it.remove();
 					break;
 				}
@@ -104,7 +104,7 @@ public class DownloadService extends Service {
 		
 		public void cancelAndRemoveAll(){
 			for (Iterator<DownloadItem> it = queue.iterator(); it.hasNext();) {
-				new File(it.next().getDestfile()).delete();
+				new File(it.next().destfile).delete();
 				it.remove();
 			}
 			cancelAndRemoveCurrent();
@@ -124,8 +124,8 @@ public class DownloadService extends Service {
 
 		@Override
 		public void progressDiff(long externalid, long size) {
-			if(currentItem != null && currentItem.getExternalId() == externalid){
-				currentItem.setProgress(currentItem.getProgress()+size);
+			if(currentItem != null && currentItem.externalId == externalid){
+				currentItem.progress = currentItem.progress+size;
 			}
 	        final int N = mCallbacks.beginBroadcast();
 			for (int i = 0; i < N; i++) {
@@ -150,12 +150,13 @@ public class DownloadService extends Service {
 					currentItem = queue.take();
 					Log.d(TAG, "Got item from queue: "+currentItem);
 					if(currentItem != null){
-						final int externalId = (int) currentItem.getExternalId();
+						final int externalId = (int) currentItem.externalId;
 						try {
-							File f = new File(currentItem.getDestfile());
+							showDownloadingNotification();
+							File f = new File(currentItem.destfile);
 							Log.d(TAG, "Downloading file: "+f.getName());
 							mPWL.acquire();
-							Util.downloadFile(externalId, currentItem.getSrcuri(), f, WorkerThread.this);
+							Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
 							mPWL.release();
 							Log.d(TAG, "Done downloading file: "+f.getName());
 	
@@ -163,8 +164,6 @@ public class DownloadService extends Service {
 								mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
 							}
 
-							showNotification();
-	
 							final int N = mCallbacks.beginBroadcast();
 							for (int i = 0; i < N; i++) {
 								try {
@@ -188,8 +187,12 @@ public class DownloadService extends Service {
 							}
 							mCallbacks.finishBroadcast();		
 						}
+						mNM.cancel(Constants.NOTIFICATION_DOWNLOADING_ID);
 					}
-				} catch (InterruptedException e2) {
+					if(queue.isEmpty()){
+						showDownloadCompleteNotification();
+					}
+				} catch (Throwable e2) {
 					mPWL.release();
 					Log.e(TAG, e2.getMessage(), e2);
 				}
@@ -235,14 +238,14 @@ public class DownloadService extends Service {
 		public long getCurrentDownload() throws RemoteException {
 			DownloadItem item = thread.getCurrentDownload();
 			if(item != null) {
-				return item.getExternalId();
+				return item.externalId;
 			}
 			return -1;
 		}
 		@Override
 		public long getProgress() throws RemoteException {
 			DownloadItem item = thread.getCurrentDownload();
-			return (item != null ? item.getProgress() : 0);
+			return (item != null ? item.progress : 0);
 		}
 	};
 
@@ -260,21 +263,40 @@ public class DownloadService extends Service {
 		super.onDestroy();
 	}
 
-	private void showNotification() {
-		Log.d(TAG, "showNotification()");
+	private void showDownloadCompleteNotification() {
+		Log.d(TAG, "showDownloadCompleteNotification()");
 		String ticker = "Download complete";
 		CharSequence title = "Download complete";
 		String text = "Download complete";
 
-		Notification notification = new Notification(R.drawable.downloaded,
-				ticker, System.currentTimeMillis());
+		Notification notification = new Notification(
+				android.R.drawable.stat_sys_download_done, ticker, System
+						.currentTimeMillis());
 
 		Intent i = new Intent(this, DownloadedList.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
 		notification.setLatestEventInfo(this, title, text, contentIntent);
 
-		mNM.notify(Constants.NOTIFICATION_DOWNLOADSERVICE_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID, notification);
+	}
+
+	private void showDownloadingNotification() {
+		Log.d(TAG, "showDownloadingNotification()");
+		String ticker = "Downloading...";
+		CharSequence title = "Downloading "+new File(thread.currentItem.srcuri).getName();
+		String text = "Downloading...";
+
+		Notification notification = new Notification(
+				android.R.drawable.stat_sys_download, ticker, System
+						.currentTimeMillis());
+
+		Intent i = new Intent(this, DownloadQueueList.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
+
+		notification.setLatestEventInfo(this, title, text, contentIntent);
+
+		mNM.notify(Constants.NOTIFICATION_DOWNLOADING_ID, notification);
 	}
 
 }

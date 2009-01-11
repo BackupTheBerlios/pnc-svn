@@ -13,11 +13,14 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -25,6 +28,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.mathias.android.acast.common.ACastUtil;
+import com.mathias.android.acast.common.BitmapCache;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.download.DownloadItem;
 import com.mathias.android.acast.common.services.download.DownloadService;
@@ -48,11 +52,9 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 
 	private DownloadAdapter adapter;
 
-	private Integer currPos;
-
 	private IDownloadService binder;
 
-	private boolean visible = false;
+	private ViewHolder header = new ViewHolder();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -68,66 +70,65 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		if(!bindService(i, this, BIND_AUTO_CREATE)) {
 			Util.showDialog(this, "Could not start download!");
 		}
-
-		// start progress handler loop
-		progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
 		
+		header.icon = (ImageView) findViewById(R.id.icon);
+		header.title = (TextView) findViewById(R.id.title);
+		header.author = (TextView) findViewById(R.id.author);
+		header.progress = (ProgressBar) findViewById(R.id.progressbar);
+
 		getListView().setOnCreateContextMenuListener(this);
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		visible = true;
-		progressHandler.sendEmptyMessage(0);
+		populateList();
 	}
-	
+
 	@Override
-	protected void onPause() {
-		super.onPause();
-		visible = false;
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		MenuItem item = menu.add(Menu.NONE, CANCEL_ID, Menu.NONE, R.string.cancel);
+		item.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
+		item.setIcon(android.R.drawable.ic_menu_info_details);
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		super.onCreateOptionsMenu(menu);
-		MenuItem item = menu.add(Menu.NONE, CANCEL_ID, Menu.NONE, R.string.cancel);
-		item.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
-		item = menu.add(Menu.NONE, CANCELALL_ID, Menu.NONE, R.string.cancelall);
+		MenuItem item = menu.add(Menu.NONE, CANCELALL_ID, Menu.NONE, R.string.cancelall);
 		item.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refresh);
 		item.setIcon(android.R.drawable.ic_menu_rotate);
-		item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
-		item.setIcon(android.R.drawable.ic_menu_info_details);
-		return true;
+		return super.onCreateOptionsMenu(menu);
 	}
 
 	@Override
-	protected void onListItemClick(ListView l, View v, int position, long id) {
-		currPos = position;
-		openOptionsMenu();
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterView.AdapterContextMenuInfo menuInfo = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
+		int menuid = item.getItemId();
+		int listpos = menuInfo.position;
+		if(listpos != ListView.INVALID_POSITION){
+			if(INFO_ID == menuid){
+				FeedItem fi = mDbHelper.fetchFeedItem(adapter
+						.getItemId(listpos));
+				infoItem(fi);
+				return true;
+			}else if(CANCEL_ID == menuid){
+				cancelAndRemove(adapter.getItemId(listpos));
+				return true;
+			}
+		}
+		return super.onContextItemSelected(item);
 	}
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
-		int pos = getSelectedItemPosition();
-		if(currPos != null){
-			pos = currPos;
-			currPos = null;
-		}
-		if(pos >= 0 && CANCEL_ID == menuitem.getItemId()){
-			cancelAndRemove(adapter.getItemId(pos));
-			return true;
-		}else if(CANCELALL_ID == menuitem.getItemId()){
+		if(CANCELALL_ID == menuitem.getItemId()){
 			cancelAndRemoveAll();
 			return true;
 		}else if(REFRESH_ID == menuitem.getItemId()){
-			progressHandler.sendEmptyMessage(0);
-			return true;
-		}else if(pos >= 0 && INFO_ID == menuitem.getItemId()){
-			DownloadItem item = adapter.getItem(pos);
-			FeedItem feedItem = mDbHelper.fetchFeedItem(item.getExternalId());
-			infoItem(feedItem);
+			populateList();
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, menuitem);
@@ -167,18 +168,26 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		super.onDestroy();
 	}
 	
-	private void populateList() throws RemoteException {
-		final List<DownloadItem> downloads = binder.getDownloads();
-		Log.d(TAG, "downloads.length="+downloads.size());
-		runOnUiThread(new Runnable(){
-			@Override
-			public void run() {
-				adapter = new DownloadAdapter(DownloadQueueList.this, downloads);
-				setListAdapter(adapter);
+	private void populateList() {
+		try{
+			if(binder != null){
+				final List<DownloadItem> downloads = binder.getDownloads();
+				Log.d(TAG, "downloads.length="+downloads.size());
+				runOnUiThread(new Runnable(){
+					@Override
+					public void run() {
+						adapter = new DownloadAdapter(DownloadQueueList.this, downloads);
+						setListAdapter(adapter);
 
-				progressHandler.sendEmptyMessage(0);
+						progressHandler.sendEmptyMessage(0);
+					}
+				});
+			}else{
+				Log.d(TAG, "populateList: binder is null");
 			}
-		});
+		}catch(RemoteException e){
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	@Override
@@ -204,42 +213,48 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		binder = null;
 	}
 
-	private Handler progressHandler = new Handler(){
+//	private static class WorkerThread extends Thread {
+//		private Handler handler;
+//		@Override
+//		public void run() {
+//			Looper.prepare();
+//			handler = new Handler(){
+//				@Override
+//				public void handleMessage(Message msg) {
+//				}
+//			};
+//			Looper.loop();
+//		}
+//	}
+
+	private Handler progressHandler = new Handler() {
 		@Override
 		public void handleMessage(Message not_used) {
-			if(visible){
-				if(binder != null){
-					try {
-						long currId = binder.getCurrentDownload();
-						FeedItem item = mDbHelper.fetchFeedItem(currId);
-						TextView title = (TextView) findViewById(R.id.title);
-						TextView author = (TextView) findViewById(R.id.author);
-						ProgressBar progress = (ProgressBar) findViewById(R.id.progressbar);
-						if(item != null){
-							title.setText(item.title);
-							author.setText(item.author);
-							progress.setMax((int)item.size);
-							progress.setProgress((int)binder.getProgress());
-						}else{
-							title.setText("No current download");
-							author.setText("No current download");
-							progress.setVisibility(View.GONE);
-						}
-						List<DownloadItem> downloads = binder.getDownloads();
-						for (DownloadItem downloadItem : downloads) {
-							if(item.id == downloadItem.getExternalId()){
-								populateList();
-								break;
-							}
-						}
-					} catch (RemoteException e) {
-						Log.e(TAG, e.getMessage(), e);
-						Util.showDialog(DownloadQueueList.this, e.getClass().getSimpleName(), e.getMessage());
+			Log.d(TAG, "progressHandler...");
+			if(binder != null && mDbHelper != null){
+				try {
+					long currId = binder.getCurrentDownload();
+					FeedItem item = mDbHelper.fetchFeedItem(currId);
+					if(item != null){
+						header.icon.setImageBitmap(BitmapCache.instance()
+								.get(item.feedId, mDbHelper));
+						header.title.setText(item.title);
+						header.author.setText(item.author);
+						header.progress.setMax((int)item.size);
+						header.progress.setProgress((int)binder.getProgress());
+					}else{
+						header.icon.setImageResource(R.drawable.question);
+						header.title.setText("No current download");
+						header.author.setText("No current download");
+						header.progress.setVisibility(View.GONE);
 					}
-				}else{
-					Log.d(TAG, "binder is null!!");
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+					Util.showDialog(DownloadQueueList.this, e.getClass().getSimpleName(), e.getMessage());
 				}
 				sendEmptyMessageDelayed(0, UPDATE_DELAY);
+			}else{
+				Log.d(TAG, "binder or dbhelper is null!!");
 			}
 		}
 	};
@@ -257,7 +272,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					Util.showDialog(DownloadQueueList.this, "Download failed: "+exception);
+					Util.showToastLong(DownloadQueueList.this, "Download failed: "+exception);
 				}
 			});
 		}
@@ -278,7 +293,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		}
 		public DownloadItem getByExternalId(long externalId){
 			for (DownloadItem item : items) {
-				if(externalId == item.getExternalId()){
+				if(externalId == item.externalId){
 					return item;
 				}
 			}
@@ -294,7 +309,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		}
 		@Override
 		public long getItemId(int position) {
-			return getItem(position).getExternalId();
+			return getItem(position).externalId;
 		}
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
@@ -325,7 +340,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
             // Bind the data efficiently with the holder.
             Log.d(TAG, "getView; position="+position+" items="+items.size());
             DownloadItem downloadItem = items.get(position);
-			FeedItem item = mDbHelper.fetchFeedItem(downloadItem.getExternalId());
+			FeedItem item = mDbHelper.fetchFeedItem(downloadItem.externalId);
             if(item == null) {
             	return null;
             }
@@ -342,6 +357,7 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
         ImageView icon;
         TextView title;
         TextView author;
+        ProgressBar progress;
     }
 
 }

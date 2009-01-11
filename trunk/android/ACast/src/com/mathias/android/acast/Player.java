@@ -25,6 +25,7 @@ import com.mathias.android.acast.common.services.media.IMediaService;
 import com.mathias.android.acast.common.services.media.IMediaServiceCallback;
 import com.mathias.android.acast.common.services.media.MediaService;
 import com.mathias.android.acast.podcast.FeedItem;
+import com.mathias.android.acast.podcast.Settings;
 
 public class Player extends Activity implements ServiceConnection {
 
@@ -36,7 +37,7 @@ public class Player extends Activity implements ServiceConnection {
 
 	private static final long UPDATE_DELAY = 1000;
 
-	private Boolean tracking = false;
+	private boolean tracking = false;
 
 	private TextView duration;
 
@@ -287,6 +288,12 @@ public class Player extends Activity implements ServiceConnection {
 		try {
 			if(mediaBinder != null){
 				long id = mediaBinder.getId();
+				if(id < 0){
+					String lastid = mDbHandler.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
+					if(lastid != null){
+						id = Long.parseLong(lastid);
+					}
+				}
 				FeedItem item = mDbHandler.fetchFeedItem(id);
 
 				TextView title = (TextView) findViewById(R.id.title);
@@ -314,7 +321,7 @@ public class Player extends Activity implements ServiceConnection {
 			}
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
-			Util.showDialog(Player.this, e.getMessage());
+			Util.showDialog(this, e.getMessage());
 		}
 	}
 

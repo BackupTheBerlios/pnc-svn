@@ -130,7 +130,7 @@ public class FeedList extends ListActivity {
 			ContextMenuInfo menuInfo) {
 		MenuItem item = menu.add(Menu.NONE, INFO_ID, Menu.NONE, R.string.info);
 		item.setIcon(android.R.drawable.ic_menu_info_details);
-		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refreshall);
+		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, R.string.refresh);
 		item.setIcon(android.R.drawable.ic_menu_rotate);
 		item = menu.add(Menu.NONE, DELETE_ID, Menu.NONE, R.string.removefeed);
 		item.setIcon(android.R.drawable.ic_menu_delete);
@@ -177,7 +177,7 @@ public class FeedList extends ListActivity {
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 		//Options menu
 		int id = item.getItemId();
-		if(REFRESH_ID == id){
+		if(REFRESHALL_ID == id){
 			thread.refreshFeeds();
 			return true;
 		}else if(DOWNLOADALLLAST_ID == id){

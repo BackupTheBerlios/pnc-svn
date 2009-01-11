@@ -1,8 +1,11 @@
 package com.mathias.android.acast.common;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +21,9 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Bitmap.CompressFormat;
 import android.util.Log;
 import android.util.Xml;
 import android.util.Xml.Encoding;
@@ -26,6 +32,10 @@ import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 
 public class RssUtil implements ContentHandler {
+	
+	private static final int BITMAP_MAX_WIDTH = 96;
+
+	private static final int BITMAP_MAX_HEIGHT = 96;
 
 	private static final String TAG = RssUtil.class.getSimpleName();
 	
@@ -56,14 +66,10 @@ public class RssUtil implements ContentHandler {
 //		Encoding enc = Encoding.valueOf(entity.getContentEncoding().getValue());
 		Xml.parse(entity.getContent(), Encoding.UTF_8, this);
 		Map<Feed, List<FeedItem>> result = new HashMap<Feed, List<FeedItem>>();
+		Collections.sort(items, ACastUtil.FEEDITEM_BYDATE);
 		if(feed.pubdate == 0){
-			Date latest = null;
-			for (FeedItem item : items) {
-				Date date = new Date(item.pubdate);
-				if(latest == null || (date != null && date.after(latest))){
-					latest = date;
-					feed.pubdate = item.pubdate;
-				}
+			if(items.size() > 0 && items.get(0).pubdate != 0){
+				feed.pubdate = items.get(0).pubdate;
 			}
 		}
 		result.put(feed, items);
@@ -158,7 +164,9 @@ public class RssUtil implements ContentHandler {
 					try {
 						File file = buildFile(characters);
 						Util.downloadFile(0, characters, file, null);
-						feed.icon = file.getAbsolutePath();
+						String iconpath = scaleBitmap(file);
+						Log.d(TAG, "Icon path: "+iconpath);
+						feed.icon = iconpath;
 					} catch (Exception e) {
 						Log.e(TAG, e.getMessage(), e);
 						throw new SAXException(e);
@@ -234,6 +242,50 @@ public class RssUtil implements ContentHandler {
 	@Override
 	public void skippedEntity(String name) throws SAXException {
 		//Log.d(TAG, "skippedEntity() "+name);
+	}
+	
+	private static String scaleBitmap(File file){
+		Bitmap bitmap = null;
+		FileOutputStream out = null;
+		String path = file.getAbsolutePath();
+		try {
+			bitmap = BitmapFactory.decodeFile(path);
+			int x = bitmap.getWidth();
+			int y = bitmap.getHeight();
+			int r = x/y;
+			if(x <= BITMAP_MAX_WIDTH && y <= BITMAP_MAX_HEIGHT) {
+				return path;
+			}
+			if(x > BITMAP_MAX_WIDTH) {
+				x = BITMAP_MAX_WIDTH;
+				y = y/r;
+			}
+			if(y > BITMAP_MAX_HEIGHT) {
+				y = BITMAP_MAX_HEIGHT;
+				x = x*r;
+			}
+			String newpath = path+".png";
+			out = new FileOutputStream(newpath);
+			Bitmap newbitmap = Bitmap.createScaledBitmap(bitmap, x, y, false);
+			newbitmap.compress(CompressFormat.PNG, 80, out);
+			newbitmap.recycle();
+			Log.d(TAG, "x="+x+" y="+y+" path="+newpath);
+			return newpath;
+		} catch (FileNotFoundException e) {
+			Log.e(TAG, e.getMessage(), e);
+		} finally {
+			if(bitmap != null){
+				bitmap.recycle();
+			}
+			if(out != null){
+				try {
+					out.close();
+				} catch (IOException e) {
+				}
+			}
+		}
+		Log.e(TAG, "Error: "+path);
+		return path;
 	}
 	
 	private File buildFile(String uri){

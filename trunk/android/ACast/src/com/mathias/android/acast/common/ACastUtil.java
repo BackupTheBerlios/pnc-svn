@@ -33,46 +33,26 @@ public abstract class ACastUtil {
         right.setText(title);
 	}
 
-	public static void resumeItem(IMediaService mediaBinder, FeedItem item){
-		try {
-			if (item != null && mediaBinder != null
-					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item
-							.id)) {
-				playItem(mediaBinder, item);
-			}else{
-				Log.d(TAG, "isPlaying or mediaBinder == null or item == null");
-			}
-		} catch (Exception e) {
-			String msg = e.getMessage();
-			Log.e(TAG, (msg != null ? msg : e.toString()), e);
-		}
-	}
-
-	public static void playItem(IMediaService mediaBinder, FeedItem item){
-		if(mediaBinder == null){
-			Log.e(TAG, "binder is null. No connection to media service!");
-			return;
-		}
-
-		try {
-			Log.d(TAG, "initItem: "+item.id);
-			mediaBinder.initItem(item.id);
-			mediaBinder.setCurrentPosition(item.bookmark);
-			mediaBinder.play();
-		} catch (Exception e) {
-			String msg = e.getMessage();
-			Log.e(TAG, (msg != null ? msg : e.toString()), e);
-		}
-	}
-
 	public static void playQueueItem(Context cxt, IMediaService mediaBinder,
 			FeedItem item, List<FeedItem> items) {
 		try {
 			if (item != null
 					&& mediaBinder != null
 					&& (!mediaBinder.isPlaying() || mediaBinder.getId() != item.id)) {
-				playItem(mediaBinder, item);
-				queueItems(mediaBinder, items, item.id);
+				mediaBinder.initItem(item.id);
+				//Queue
+				mediaBinder.clearQueue();
+				boolean found = false;
+				for (FeedItem fitem : items) {
+					if(found){
+						if(!fitem.completed && fitem.downloaded){
+							Log.d(TAG, "queue: "+fitem.id);
+							mediaBinder.queue(fitem.id);
+						}
+					}else if(item.id == fitem.id){
+						found = true;
+					}
+				}
 			} else {
 				Log.d(TAG, "isPlaying or mediaBinder == null");
 			}
@@ -82,32 +62,6 @@ public abstract class ACastUtil {
 		}
 		Intent i = new Intent(cxt, Player.class);
 		cxt.startActivity(i);
-	}
-
-	public static void queueItems(IMediaService mediaBinder, List<FeedItem> items, long afterid){
-		if(mediaBinder == null){
-			Log.e(TAG, "binder is null. No connection to media service!");
-			return;
-		}
-		
-		try {
-			mediaBinder.clearQueue();
-	
-			boolean found = false;
-			for (FeedItem item : items) {
-				if(found){
-					if(!item.completed && item.downloaded){
-						Log.d(TAG, "queue: "+item.id);
-						mediaBinder.queue(item.id);
-					}
-				}else if(afterid == item.id){
-					found = true;
-				}
-			}
-		} catch (Exception e) {
-			String msg = e.getMessage();
-			Log.e(TAG, (msg != null ? msg : e.toString()), e);
-		}
 	}
 
 	public static boolean queueItem(IMediaService mediaBinder, FeedItem item){
