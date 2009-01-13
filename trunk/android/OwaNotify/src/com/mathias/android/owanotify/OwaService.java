@@ -182,6 +182,8 @@ public class OwaService extends Service {
 
 		notification.setLatestEventInfo(this,
 				item.title, item.time+" "+item.title, contentIntent);
+		
+		notification.defaults = Notification.DEFAULT_ALL;
 
 		mNM.notify(NOTIFICATION_CALENDAR_ID, notification);
 	}

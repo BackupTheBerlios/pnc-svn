@@ -25,7 +25,6 @@ public final class R {
         public static final int mail8=0x7f02000b;
         public static final int mail9=0x7f02000c;
         public static final int mail9plus=0x7f02000d;
-        public static final int mail_num=0x7f02000e;
     }
     public static final class id {
         public static final int alwaysshowmailcount=0x7f050008;

@@ -355,7 +355,6 @@ public class FeedAdd extends ListActivity {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
 								try {
-									setProgressBarIndeterminateVisibility(true);
 									OpmlUtil.Opml opml = new OpmlUtil.Opml(getString(R.string.app_name));
 									List<Feed> feeds = mDbHelper.fetchAllFeeds();
 									for (Feed feed : feeds) {
@@ -363,14 +362,13 @@ public class FeedAdd extends ListActivity {
 									}
 									String export = OpmlUtil.exportOpml(opml);
 									new FileOutputStream(OPMLLOCALFILE).write(export.getBytes());
-									setProgressBarIndeterminateVisibility(false);
 									Util.showToastShort(FeedAdd.this, "Export done");
 								} catch (Exception e) {
 									Log.e(TAG, e.getMessage(), e);
+									Util.showToastShort(FeedAdd.this, e.getMessage());
 								}
 							}
 						});
-						hideProgessAndUpdateResultList(resultstr);
 					} else if(IMPORTITEMS == msg.what) {
 						for (SearchItem item : items) {
 							try {

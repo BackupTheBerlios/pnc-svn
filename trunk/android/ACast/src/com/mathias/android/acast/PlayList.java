@@ -67,7 +67,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		ACastUtil.customTitle(this, "Play", R.layout.play_list);
+		ACastUtil.customTitle(this, "PlayList", R.layout.play_list);
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();

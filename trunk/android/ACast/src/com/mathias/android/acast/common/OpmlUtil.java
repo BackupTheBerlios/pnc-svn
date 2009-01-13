@@ -139,27 +139,27 @@ public class OpmlUtil implements ContentHandler {
 	// EXPORT
 	public static String exportOpml(Opml inp){
 		StringBuilder sb = new StringBuilder();
-		sb.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
-		sb.append("<opml version=\"1.1\">");
-		sb.append(" <head>");
-		sb.append("  <title>"+escape(inp.title)+"</title>");
-		sb.append("  <dateCreated>"+new Date()+"</dateCreated>");
-		sb.append("  <dateModified>"+new Date()+"</dateModified>");
-		sb.append("  <ownerName>"+inp.ownerName+"</ownerName>");
-		sb.append("  <ownerEmail>"+inp.ownerEmail+"</ownerEmail>");
-		sb.append("  <expansionState></expansionState>");
-		sb.append("  <vertScrollState>1</vertScrollState>");
-		sb.append("  <windowTop>20</windowTop>");
-		sb.append("  <windowLeft>0</windowLeft>");
-		sb.append("  <windowBottom>120</windowBottom>");
-		sb.append("  <windowRight>147</windowRight>");
-		sb.append(" </head>");
-		sb.append(" <body>");
+		sb.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+		sb.append("<opml version=\"1.1\">\n");
+		sb.append(" <head>\n");
+		sb.append("  <title>"+escape(inp.title)+"</title>\n");
+		sb.append("  <dateCreated>"+new Date()+"</dateCreated>\n");
+		sb.append("  <dateModified>"+new Date()+"</dateModified>\n");
+		sb.append("  <ownerName>"+inp.ownerName+"</ownerName>\n");
+		sb.append("  <ownerEmail>"+inp.ownerEmail+"</ownerEmail>\n");
+		sb.append("  <expansionState></expansionState>\n");
+		sb.append("  <vertScrollState>1</vertScrollState>\n");
+		sb.append("  <windowTop>20</windowTop>\n");
+		sb.append("  <windowLeft>0</windowLeft>\n");
+		sb.append("  <windowBottom>120</windowBottom>\n");
+		sb.append("  <windowRight>147</windowRight>\n");
+		sb.append(" </head>\n");
+		sb.append(" <body>\n");
 		for (OpmlItem item : inp.items) {
-			sb.append("  <outline text=\""+escape(item.text)+"\" count=\""+item.count+"\" xmlUrl=\""+item.xmlUri+"\"/>");
+			sb.append("  <outline text=\""+escape(item.text)+"\" count=\""+item.count+"\" xmlUrl=\""+item.xmlUri+"\"/>\n");
 		}
-		sb.append(" </body>");
-		sb.append("</opml>");
+		sb.append(" </body>\n");
+		sb.append("</opml>\n");
 		return sb.toString();
 	}
 

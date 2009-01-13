@@ -182,16 +182,20 @@ public class MediaService extends Service {
 	}
 
 	@Override
-	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);
-		Log.d(TAG, "onStart" );
-	}
-
-	@Override
 	public IBinder onBind(Intent intent) {
 		return binder;
 	}
 
+	@Override
+	public void onDestroy() {
+		Log.d(TAG, "onDestroy() mp="+mp);
+		unregisterReceiver(receiver);
+		stopMediaPlayer();
+		mCallbacks.kill();
+		mDbHandler.close();
+		mDbHandler = null;
+	}
+	
     private final IMediaService.Stub binder = new IMediaService.Stub() {
 
 		@Override
@@ -476,16 +480,6 @@ public class MediaService extends Service {
 		mCallbacks.finishBroadcast();
 	}
 
-	@Override
-	public void onDestroy() {
-		Log.d(TAG, "onDestroy() mp="+mp);
-		unregisterReceiver(receiver);
-		stopMediaPlayer();
-		mCallbacks.kill();
-		mDbHandler.close();
-		mDbHandler = null;
-	}
-	
 	private void stopMediaPlayer(){
         mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
 		if(mp != null){

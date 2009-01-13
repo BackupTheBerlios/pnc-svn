@@ -33,53 +33,32 @@ public class ACastMenu extends Activity {
 	private IMediaService mediaBinder;
 	
 	private ServiceConnection mediaServiceConn;
+	
+	private TextView resumetitle;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
+		//since indeterminate progress is used custom title is unavailable
 		setContentView(R.layout.menu);
-		
 		setTitle("Menu");
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
+
+		resumetitle = (TextView) findViewById(R.id.resumetitle);
 
 		Intent i = new Intent(this, MediaService.class);
 		startService(i);
 		mediaServiceConn = new ServiceConnection(){
 			@Override
 			public void onServiceConnected(ComponentName name, IBinder service) {
-				String title = null;
 				Log.d(TAG, "onServiceConnected: "+name);
 				mediaBinder = IMediaService.Stub.asInterface(service);
-				FeedItem item = null;
-				try {
-					long id = mediaBinder.getId();
-					if(id >= 0){
-						item = mDbHelper.fetchFeedItem(id);
-					}
-				} catch (RemoteException e) {
-					Log.e(TAG, e.getMessage(), e);
-				}
-				if (item == null) {
-					String lastid = mDbHelper
-							.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
-					if (lastid != null) {
-						item = mDbHelper.fetchFeedItem(Long.parseLong(lastid));
-					}
-				}
-				if (item != null) {
-					title = item.title;
-				} else {
-					Log.w(TAG, "No resume item...");
-				}
-				if (title != null) {
-					TextView resumetitle = (TextView) findViewById(R.id.resumetitle);
-					resumetitle.setText(title);
-				}
+				populateView();
 			}
 
 			@Override
@@ -152,6 +131,12 @@ public class ACastMenu extends Activity {
 					}
 				});
 	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		populateView();
+	}
 
 	@Override
 	protected void onDestroy() {
@@ -179,6 +164,32 @@ public class ACastMenu extends Activity {
 		}
 		//return super.onOptionsItemSelected(item);
 		return true;
+	}
+
+	private void populateView(){
+		FeedItem item = null;
+		try {
+			if(mediaBinder != null && mDbHelper != null){
+				long id = mediaBinder.getId();
+				if(id >= 0){
+					item = mDbHelper.fetchFeedItem(id);
+				}
+			}
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		if (item == null) {
+			String lastid = mDbHelper
+					.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
+			if (lastid != null) {
+				item = mDbHelper.fetchFeedItem(Long.parseLong(lastid));
+			}
+		}
+		if (item != null) {
+			resumetitle.setText(item.title);
+		} else {
+			Log.w(TAG, "No resume item...");
+		}
 	}
 
 }

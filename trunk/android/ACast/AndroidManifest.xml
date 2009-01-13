@@ -24,6 +24,7 @@
         <activity android:name=".SettingsEdit"/>
         <service android:name=".common.services.media.MediaService"/>
         <service android:name=".common.services.download.DownloadService"/>
+        <service android:name=".common.services.update.UpdateService"/>
     </application>
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_WIFI_STATE"></uses-permission>

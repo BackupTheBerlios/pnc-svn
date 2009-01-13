@@ -250,27 +250,29 @@ public class RssUtil implements ContentHandler {
 		String path = file.getAbsolutePath();
 		try {
 			bitmap = BitmapFactory.decodeFile(path);
-			int x = bitmap.getWidth();
-			int y = bitmap.getHeight();
-			int r = x/y;
-			if(x <= BITMAP_MAX_WIDTH && y <= BITMAP_MAX_HEIGHT) {
-				return path;
+			if(bitmap != null){
+				int x = bitmap.getWidth();
+				int y = bitmap.getHeight();
+				int r = x/y;
+				if(x <= BITMAP_MAX_WIDTH && y <= BITMAP_MAX_HEIGHT) {
+					return path;
+				}
+				if(x > BITMAP_MAX_WIDTH) {
+					x = BITMAP_MAX_WIDTH;
+					y = y/r;
+				}
+				if(y > BITMAP_MAX_HEIGHT) {
+					y = BITMAP_MAX_HEIGHT;
+					x = x*r;
+				}
+				String newpath = path+".png";
+				out = new FileOutputStream(newpath);
+				Bitmap newbitmap = Bitmap.createScaledBitmap(bitmap, x, y, false);
+				newbitmap.compress(CompressFormat.PNG, 80, out);
+				newbitmap.recycle();
+				Log.d(TAG, "x="+x+" y="+y+" path="+newpath);
+				return newpath;
 			}
-			if(x > BITMAP_MAX_WIDTH) {
-				x = BITMAP_MAX_WIDTH;
-				y = y/r;
-			}
-			if(y > BITMAP_MAX_HEIGHT) {
-				y = BITMAP_MAX_HEIGHT;
-				x = x*r;
-			}
-			String newpath = path+".png";
-			out = new FileOutputStream(newpath);
-			Bitmap newbitmap = Bitmap.createScaledBitmap(bitmap, x, y, false);
-			newbitmap.compress(CompressFormat.PNG, 80, out);
-			newbitmap.recycle();
-			Log.d(TAG, "x="+x+" y="+y+" path="+newpath);
-			return newpath;
 		} catch (FileNotFoundException e) {
 			Log.e(TAG, e.getMessage(), e);
 		} finally {

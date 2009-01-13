@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import android.app.ListActivity;
 import android.content.ComponentName;
@@ -15,13 +14,8 @@ import android.content.ServiceConnection;
 import android.content.DialogInterface.OnClickListener;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -40,16 +34,17 @@ import android.widget.TextView;
 
 import com.mathias.android.acast.common.ACastUtil;
 import com.mathias.android.acast.common.BitmapCache;
-import com.mathias.android.acast.common.RssUtil;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.download.DownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadService;
 import com.mathias.android.acast.common.services.download.IDownloadServiceCallback;
 import com.mathias.android.acast.common.services.media.IMediaService;
 import com.mathias.android.acast.common.services.media.MediaService;
+import com.mathias.android.acast.common.services.update.IUpdateService;
+import com.mathias.android.acast.common.services.update.IUpdateServiceCallback;
+import com.mathias.android.acast.common.services.update.UpdateService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
-import com.mathias.android.acast.podcast.Settings.SettingEnum;
 
 public class FeedItemList extends ListActivity {
 
@@ -72,16 +67,18 @@ public class FeedItemList extends ListActivity {
 
 	private IDownloadService downloadBinder;
 
+	private ServiceConnection downloadServiceConn;
+
 	private IMediaService mediaBinder;
 	
 	private ServiceConnection mediaServiceConn;
 
-	private ServiceConnection downloadServiceConn;
+	private IUpdateService updateBinder;
+	
+	private ServiceConnection updateServiceConn;
 
 	private Bitmap defaultIcon;
-	
-	private WorkerThread thread;
-	
+
 	private Feed feed;
 
 	private List<FeedItem> items;
@@ -98,9 +95,6 @@ public class FeedItemList extends ListActivity {
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
-		
-		thread = new WorkerThread();
-		thread.start();
 
 		mFeedId = savedInstanceState != null ? savedInstanceState
 				.getLong(Constants.FEEDID) : null;
@@ -162,6 +156,36 @@ public class FeedItemList extends ListActivity {
 		};
 		if(!bindService(i, mediaServiceConn, BIND_AUTO_CREATE)) {
 			Util.showDialog(this, "Could not start media service!");
+		}
+
+		i = new Intent(this, UpdateService.class);
+		startService(i);
+		updateServiceConn = new ServiceConnection(){
+			@Override
+			public void onServiceConnected(ComponentName name, IBinder service) {
+				Log.d(TAG, "onServiceConnected: "+name);
+				updateBinder = IUpdateService.Stub.asInterface(service);
+				try {
+					updateBinder.registerCallback(updateCallback);
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+
+			@Override
+			public void onServiceDisconnected(ComponentName name) {
+				Log.d(TAG, "onServiceDisconnected: "+name);
+				try {
+					updateBinder.unregisterCallback(updateCallback);
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+				updateBinder = null;
+			}
+
+		};
+		if(!bindService(i, updateServiceConn, BIND_AUTO_CREATE)) {
+			Util.showDialog(this, "Could not start update service!");
 		}
 	}
 
@@ -239,13 +263,22 @@ public class FeedItemList extends ListActivity {
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem menuitem) {
 		if(REFRESH_ID == menuitem.getItemId()){
-			thread.refreshFeed();
+			updateFeed();
 			return true;
 		}else if(DOWNLOADALL_ID == menuitem.getItemId()){
 			downloadAll(adapter.items);
 			return true;
 		}
 		return super.onMenuItemSelected(featureId, menuitem);
+	}
+	
+	private void updateFeed(){
+		try {
+	        setProgressBarIndeterminateVisibility(true);
+			updateBinder.updateFeed(feed.id);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	private void populateFields() {
@@ -273,25 +306,16 @@ public class FeedItemList extends ListActivity {
 	}
 
 	private void downloadAll(List<FeedItem> items) {
-		WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-		WifiInfo info = wifiManager.getConnectionInfo();
-		boolean connected = info != null && info.getSSID() != null;
-		boolean onlyWifiDownload = Boolean.parseBoolean(mDbHelper
-				.getSetting(SettingEnum.ONLYWIFIDOWNLOAD));
-		if(!onlyWifiDownload || connected){
-			try {
-				for (FeedItem item : items) {
-					if(!item.downloaded){
-						downloadBinder.download(item.id, item.mp3uri,
-								item.mp3file);
-					}
+		try {
+			for (FeedItem item : items) {
+				if(!item.downloaded){
+					downloadBinder.download(item.id, item.mp3uri,
+							item.mp3file);
 				}
-				Util.showToastShort(this, "Downloading all " + feed.title);
-			} catch (RemoteException e) {
-				Util.showToastShort(this, e.getMessage());
 			}
-		}else{
-			Util.showToastShort(this, "Only Wifi download is allowed");
+			Util.showToastShort(this, "Downloading all " + feed.title);
+		} catch (RemoteException e) {
+			Util.showToastShort(this, e.getMessage());
 		}
 	}
 
@@ -351,49 +375,6 @@ public class FeedItemList extends ListActivity {
 			});
 		}
 	}
-	
-	private class WorkerThread extends Thread {
-		
-		private Handler handler;
-		
-		public void refreshFeed(){
-	        setProgressBarIndeterminateVisibility(true);
-			handler.sendEmptyMessage(0);
-		}
-
-		@Override
-		public void run() {
-			Looper.prepare();
-			handler = new Handler(){
-				@Override
-				public void handleMessage(Message msg) {
-					try {
-						Map<Feed, List<FeedItem>> result = new RssUtil().parse(feed.uri);
-						mDbHelper.updateFeed(mFeedId, result);
-						runOnUiThread(new Runnable(){
-							@Override
-							public void run() {
-								populateFields();
-						        setProgressBarIndeterminateVisibility(false);
-						        Util.showToastShort(FeedItemList.this, "Refreshed");
-							}
-						});
-					} catch (final Exception e) {
-						Log.e(TAG, e.getMessage(), e);
-						runOnUiThread(new Runnable(){
-							@Override
-							public void run() {
-								populateFields();
-						        setProgressBarIndeterminateVisibility(false);
-								Util.showDialog(FeedItemList.this, e.getMessage());
-							}
-						});
-					}
-				}
-			};
-			Looper.loop();
-		}
-	}
 
 	@Override
 	protected void onDestroy() {
@@ -404,6 +385,9 @@ public class FeedItemList extends ListActivity {
 		}
 		if(mediaBinder != null){
 			unbindService(mediaServiceConn);
+		}
+		if(updateBinder != null){
+			unbindService(updateServiceConn);
 		}
 		super.onDestroy();
 	}
@@ -434,6 +418,34 @@ public class FeedItemList extends ListActivity {
 		}
 		@Override
 		public void onProgress(long externalid, long diff) throws RemoteException {
+		}
+	};
+
+	private final IUpdateServiceCallback updateCallback = new IUpdateServiceCallback.Stub() {
+		@Override
+		public void onUpdateAllCompleted() throws RemoteException {}
+		@Override
+		public void onUpdateItemCompleted(final String title) throws RemoteException {
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					populateFields();
+			        setProgressBarIndeterminateVisibility(false);
+			        Util.showToastShort(FeedItemList.this, "Updated "+title);
+				}
+			});
+		}
+		@Override
+		public void onUpdateItemException(String title, final String error)
+				throws RemoteException {
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					populateFields();
+			        setProgressBarIndeterminateVisibility(false);
+			        Util.showToastShort(FeedItemList.this, error);
+				}
+			});
 		}
 	};
 

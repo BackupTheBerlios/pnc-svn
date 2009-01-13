@@ -1,4 +1,6 @@
 /*
+TODO 5: on download notification to downloaded, select downloaded podcast in downloaded list.
+TODO 5: delete downloaded which are X days or older
 TODO 5: settings: boolean use big button player or play list player as default
 TODO 5: problem when opening/removing sdcard
 TODO 5: notification during download. progressbar for notification.
@@ -203,5 +205,7 @@ public interface Constants {
 	public static final int NOTIFICATION_DOWNLOADCOMPLETE_ID = R.id.add;
 	public static final int NOTIFICATION_DOWNLOADING_ID = R.id.addresult;
 	public static final int NOTIFICATION_MEDIASERVICE_ID = R.id.author;
+	public static final int NOTIFICATION_UPDATECOMPLETE_ID = R.id.updatedate;
+	public static final int NOTIFICATION_UPDATING_ID = R.id.statusicon;
 
 }

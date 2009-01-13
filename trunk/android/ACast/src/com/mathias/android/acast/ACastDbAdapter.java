@@ -59,7 +59,7 @@ public class ACastDbAdapter {
 	private static final String DATABASE_CREATE_FEED = "create table feed ("
 			+ FEED_ID+" integer primary key autoincrement, "
 			+ FEED_TITLE+" text not null unique, " 
-			+ FEED_URI+" text not null unique, " 
+			+ FEED_URI+" text not null, " 
 			+ FEED_ICON+" text, "
 			+ FEED_LINK+" text, "
 			+ FEED_PUBDATE+" integer, "
@@ -70,7 +70,7 @@ public class ACastDbAdapter {
 	private static final String DATABASE_CREATE_FEEDITEM = "create table feeditem ("
 			+ FEEDITEM_ID+" integer primary key autoincrement, "
 			+ FEEDITEM_FEEDID+" integer not null, "
-			+ FEEDITEM_TITLE+" text not null unique, "
+			+ FEEDITEM_TITLE+" text not null, "
 			+ FEEDITEM_MP3URI+" text, "
 			+ FEEDITEM_MP3FILE+" text, "
 			+ FEEDITEM_SIZE+" long not null, "
@@ -88,6 +88,7 @@ public class ACastDbAdapter {
 			+ SETTING_KEY+" text primary key, "
 			+ SETTING_VALUE+" text);";
 
+	//TODO increase
 	private static final int DATABASE_VERSION = 34;
 
 	private static final String TAG = ACastDbAdapter.class.getSimpleName();
@@ -147,31 +148,30 @@ public class ACastDbAdapter {
 		return mDb.insert(DATABASE_TABLE_FEED, null, initialValues);
 	}
 
-	public boolean createFeed(Feed feed, List<FeedItem> items) {
+	public void createFeed(Feed feed, List<FeedItem> items) throws SQLException {
 		if(feed == null){
-			Log.w(TAG, "Feed is null!");
-			return false;
+			throw new SQLException("Feed is null!");
 		}
 		long id = createFeed(feed.title, feed.uri, feed.icon,
 				feed.link, feed.pubdate, feed.category, feed
 						.author, feed.description);
 		if(id == -1){
 			Log.w(TAG, "Could not insert feed!");
-			return false;
+			throw new SQLException("Could not insert feed!");
 		}
 		deleteNotDownloadedFeedItems(id);
 		for (FeedItem item : items) {
 			if(addFeedItem(id, item) == -1){
-				Log.w(TAG, "Could not insert feed item!");
-				return false;
+				throw new SQLException("Could not insert feed!");
 			}
 		}
-		return true;
 	}
 
-	public boolean deleteFeed(long id) {
+	public void deleteFeed(long id) throws SQLException {
 		deleteFeedItems(id);
-		return mDb.delete(DATABASE_TABLE_FEED, FEED_ID + "=" + id, null) > 0;
+		if(mDb.delete(DATABASE_TABLE_FEED, FEED_ID + "=" + id, null) == 0){
+			throw new SQLException("Could not remove feed");
+		}
 	}
 
 	public List<String> fetchAllFeedNames() {
@@ -388,15 +388,15 @@ public class ACastDbAdapter {
 		return item;
 	}
 
-	public boolean updateFeed(long id, Map<Feed, List<FeedItem>> result){
+	public void updateFeed(long id, Map<Feed, List<FeedItem>> result) throws SQLException {
 		Feed resfeed = result.keySet().toArray(new Feed[0])[0];
-		return updateFeed(id, resfeed, result.get(resfeed));
+		updateFeed(id, resfeed, result.get(resfeed));
 	}
 	
-	public boolean updateFeed(long id, Feed feed, List<FeedItem> newitems) {
+	public void updateFeed(long id, Feed feed, List<FeedItem> newitems) throws SQLException {
 		if(feed == null){
 			Log.w(TAG, "Feed is null!");
-			return false;
+			throw new SQLException("Feed is null!");
 		}
 		//Log.d(TAG, "updateFeed: "+id);
 		updateFeed(id, feed.title, feed.uri, feed.icon, feed
@@ -424,11 +424,10 @@ public class ACastDbAdapter {
 				Log.w(TAG, "Could not update/add feed item! "+id+" "+item.id);
 			}
 		}
-		return true;
 	}
 
-	public boolean updateFeed(long id, String title, String uri, String icon,
-			String link, long pubdate, String category, String author, String description) {
+	public void updateFeed(long id, String title, String uri, String icon,
+			String link, long pubdate, String category, String author, String description) throws SQLException {
 		ContentValues args = new ContentValues();
 		args.put(FEED_TITLE, title);
 		args.put(FEED_URI, uri);
@@ -438,13 +437,15 @@ public class ACastDbAdapter {
 		args.put(FEED_CATEGORY, category);
 		args.put(FEED_AUTHOR, author);
 		args.put(FEED_DESCRIPTION, description);
-		return mDb.update(DATABASE_TABLE_FEED, args, FEED_ID + "=" + id,
-				null) > 0;
+		if(mDb.update(DATABASE_TABLE_FEED, args, FEED_ID + "=" + id,
+				null) != 1){
+			throw new SQLException("Could not update feed!");
+		}
 	}
 
-	public boolean updateFeedItem(FeedItem item) {
+	public void updateFeedItem(FeedItem item) throws SQLException {
 		if(item == null){
-			return false;
+			throw new SQLException("Feed item is null");
 		}
 		ContentValues args = new ContentValues();
 		args.put(FEEDITEM_ID, item.id);
@@ -462,11 +463,13 @@ public class ACastDbAdapter {
 		args.put(FEEDITEM_AUTHOR, item.author);
 		args.put(FEEDITEM_COMMENTS, item.comments);
 		args.put(FEEDITEM_DESCRIPTION, item.description);
-		return mDb.update(DATABASE_TABLE_FEEDITEM, args, FEEDITEM_ID + "="
-				+ item.id, null) > 0;
+		if(mDb.update(DATABASE_TABLE_FEEDITEM, args, FEEDITEM_ID + "="
+				+ item.id, null) != 1){
+			throw new SQLException("Could not update feed item!");
+		}
 	}
 
-	public boolean updateFeedItem(long id, String column, Object value) {
+	public void updateFeedItem(long id, String column, Object value) throws SQLException {
 		ContentValues args = new ContentValues();
 		if (value instanceof Integer) {
 			args.put(column, (Integer) value);
@@ -480,11 +483,13 @@ public class ACastDbAdapter {
 			throw new RuntimeException("Could not store feeditem: " + value
 					+ " in " + column);
 		}
-		return mDb.update(DATABASE_TABLE_FEEDITEM, args,
-				FEEDITEM_ID + "=" + id, null) > 0;
+		if(mDb.update(DATABASE_TABLE_FEEDITEM, args,
+				FEEDITEM_ID + "=" + id, null) != 1){
+			throw new SQLException("Could not update feed item!");
+		}
 	}
 
-	public boolean update(String table, String idcolumn, long id, String column, Object value) {
+	public void update(String table, String idcolumn, long id, String column, Object value) throws SQLException {
 		ContentValues args = new ContentValues();
 		if (value instanceof Integer) {
 			args.put(column, (Integer) value);
@@ -499,16 +504,20 @@ public class ACastDbAdapter {
 					"Could not store value=", value, " in column=", column,
 					", table=" + table));
 		}
-		return mDb.update(table, args,
-				idcolumn + "=" + id, null) > 0;
+		if(mDb.update(table, args,
+				idcolumn + "=" + id, null) != 1){
+			throw new SQLException("Could not update column: "+column);
+		}
 	}
 
-	public boolean deleteNotDownloadedFeedItems(long id) {
-		return mDb.delete(DATABASE_TABLE_FEEDITEM, FEEDITEM_FEEDID + "=" + id + " and "+FEEDITEM_DOWNLOADED+"=0", null) > 0;
+	public void deleteNotDownloadedFeedItems(long id) throws SQLException {
+		if(mDb.delete(DATABASE_TABLE_FEEDITEM, FEEDITEM_FEEDID + "=" + id + " and "+FEEDITEM_DOWNLOADED+"=0", null) > 0){
+			throw new SQLException("Could not delete all feedItems!");
+		}
 	}
 
-	private boolean deleteFeedItems(long id) {
-		return mDb.delete(DATABASE_TABLE_FEEDITEM, FEEDITEM_FEEDID + "=" + id, null) > 0;
+	private int deleteFeedItems(long id) {
+		return mDb.delete(DATABASE_TABLE_FEEDITEM, FEEDITEM_FEEDID + "=" + id, null);
 	}
 
 	private long addFeedItem(long feedId, FeedItem item) {
@@ -546,7 +555,7 @@ public class ACastDbAdapter {
 		return value;
 	}
 
-	public boolean setSetting(Settings.SettingEnum setting, Object value) {
+	public void setSetting(Settings.SettingEnum setting, Object value) throws SQLException {
 		String key = setting.name();
 		ContentValues args = new ContentValues();
 		args.put(SETTING_KEY, key);
@@ -556,10 +565,9 @@ public class ACastDbAdapter {
 		if (!update) {
 			long id = mDb.insert(DATABASE_TABLE_SETTING, null, args);
 			if(id != 0){
-				return false;
+				throw new SQLException("Could not set setting: "+setting.name());
 			}
 		}
-		return true;
 	}
 
 }

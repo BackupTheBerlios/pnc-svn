@@ -12,6 +12,8 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.Process;
@@ -25,6 +27,7 @@ import com.mathias.android.acast.DownloadQueueList;
 import com.mathias.android.acast.DownloadedList;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.Util.ProgressListener;
+import com.mathias.android.acast.podcast.Settings.SettingEnum;
 
 /**
  * start service and bind interface and callback
@@ -52,6 +55,10 @@ public class DownloadService extends Service {
 	private WorkerThread thread;
 	
 	private LinkedBlockingQueue<DownloadItem> queue = new LinkedBlockingQueue<DownloadItem>();
+	
+	private boolean wifiConnected = false;
+	
+	private boolean waitingForWifi = false; 
 
 	@Override
 	public void onCreate() {
@@ -69,6 +76,25 @@ public class DownloadService extends Service {
 		
 		thread = new WorkerThread();
 		thread.start();
+		
+		new WifiConnectionThread().start();
+	}
+	
+	private class WifiConnectionThread extends Thread {
+		@Override
+		public void run() {
+			while(true){
+				WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+				WifiInfo info = wifiManager.getConnectionInfo();
+				boolean tempval = info != null && info.getSSID() != null;
+				if(waitingForWifi && tempval != wifiConnected){
+					thread.interrupt();
+				}
+				wifiConnected = tempval;
+
+				DownloadService.sleep(10000);
+			}
+		}
 	}
 
 	private class WorkerThread extends Thread implements ProgressListener {
@@ -146,18 +172,25 @@ public class DownloadService extends Service {
 		public void run() {
 			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
 			while(true){
+				boolean onlyWifiDownload = Boolean.parseBoolean(mDbHelper
+						.getSetting(SettingEnum.ONLYWIFIDOWNLOAD));
+				if(onlyWifiDownload && !wifiConnected){
+					waitingForWifi = true;
+					DownloadService.sleep(Long.MAX_VALUE);
+					waitingForWifi = false;
+					continue;
+				}
 				try {
 					currentItem = queue.take();
 					Log.d(TAG, "Got item from queue: "+currentItem);
 					if(currentItem != null){
 						final int externalId = (int) currentItem.externalId;
 						try {
+							mPWL.acquire();
 							showDownloadingNotification();
 							File f = new File(currentItem.destfile);
 							Log.d(TAG, "Downloading file: "+f.getName());
-							mPWL.acquire();
 							Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
-							mPWL.release();
 							Log.d(TAG, "Done downloading file: "+f.getName());
 	
 							if(mDbHelper != null){
@@ -173,6 +206,7 @@ public class DownloadService extends Service {
 								}
 							}
 							mCallbacks.finishBroadcast();
+							mPWL.release();
 						} catch (Exception e) {
 							mPWL.release();
 							String ret = "Exception: "+e.getMessage();
@@ -193,7 +227,6 @@ public class DownloadService extends Service {
 						showDownloadCompleteNotification();
 					}
 				} catch (Throwable e2) {
-					mPWL.release();
 					Log.e(TAG, e2.getMessage(), e2);
 				}
 			}
@@ -297,6 +330,13 @@ public class DownloadService extends Service {
 		notification.setLatestEventInfo(this, title, text, contentIntent);
 
 		mNM.notify(Constants.NOTIFICATION_DOWNLOADING_ID, notification);
+	}
+
+	private static void sleep(long time) {
+		try {
+			Thread.sleep(time);
+		} catch (InterruptedException e) {
+		}
 	}
 
 }
