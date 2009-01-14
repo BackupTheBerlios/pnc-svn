@@ -254,6 +254,12 @@ public class Player extends Activity implements ServiceConnection {
 		mediaBinder = IMediaService.Stub.asInterface(service);
 		try {
 			mediaBinder.registerCallback(mediaCallback);
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					populateView();
+				}
+			});
 		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
@@ -274,6 +280,12 @@ public class Player extends Activity implements ServiceConnection {
 		@Override
 		public void onPlaylistCompleted() throws RemoteException {
 			Log.d(TAG, "onPlaylistCompleted()");
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					populateView();
+				}
+			});
 		}
 		@Override
 		public void onTrackCompleted() throws RemoteException {

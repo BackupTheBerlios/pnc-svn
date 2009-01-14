@@ -227,6 +227,12 @@ public class PlayList extends ListActivity implements ServiceConnection {
 	}
 	
 	@Override
+	protected void onPause() {
+		super.onPause();
+		finish();
+	}
+	
+	@Override
 	protected void onResume() {
 		super.onResume();
 		thread.populateView();

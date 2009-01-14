@@ -1,4 +1,5 @@
 /*
+TODO 8: Player and PlayList keeps on geting current pos
 TODO 5: on download notification to downloaded, select downloaded podcast in downloaded list.
 TODO 5: delete downloaded which are X days or older
 TODO 5: settings: boolean use big button player or play list player as default
