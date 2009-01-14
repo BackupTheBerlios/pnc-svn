@@ -27,7 +27,7 @@ import com.mathias.android.acast.DownloadQueueList;
 import com.mathias.android.acast.DownloadedList;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.Util.ProgressListener;
-import com.mathias.android.acast.podcast.Settings.SettingEnum;
+import com.mathias.android.acast.podcast.Settings;
 
 /**
  * start service and bind interface and callback
@@ -153,14 +153,7 @@ public class DownloadService extends Service {
 			if(currentItem != null && currentItem.externalId == externalid){
 				currentItem.progress = currentItem.progress+size;
 			}
-	        final int N = mCallbacks.beginBroadcast();
-			for (int i = 0; i < N; i++) {
-				try {
-					mCallbacks.getBroadcastItem(i).onProgress(externalid, size);
-				} catch (RemoteException e) {
-				}
-			}
-			mCallbacks.finishBroadcast();		
+			broadcastDownloadProgress(externalid, size);
 		}
 
 		@Override
@@ -173,7 +166,7 @@ public class DownloadService extends Service {
 			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
 			while(true){
 				boolean onlyWifiDownload = Boolean.parseBoolean(mDbHelper
-						.getSetting(SettingEnum.ONLYWIFIDOWNLOAD));
+						.getSetting(Settings.ONLYWIFIDOWNLOAD));
 				if(onlyWifiDownload && !wifiConnected){
 					waitingForWifi = true;
 					DownloadService.sleep(Long.MAX_VALUE);
@@ -197,29 +190,13 @@ public class DownloadService extends Service {
 								mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
 							}
 
-							final int N = mCallbacks.beginBroadcast();
-							for (int i = 0; i < N; i++) {
-								try {
-									mCallbacks.getBroadcastItem(i)
-											.onCompleted(externalId);
-								} catch (RemoteException e) {
-								}
-							}
-							mCallbacks.finishBroadcast();
+							broadcastDownloadCompleted(externalId);
 							mPWL.release();
 						} catch (Exception e) {
 							mPWL.release();
 							String ret = "Exception: "+e.getMessage();
 							Log.e(TAG, ret);
-					        final int N = mCallbacks.beginBroadcast();
-							for (int i = 0; i < N; i++) {
-								try {
-									mCallbacks.getBroadcastItem(i).onException(
-											externalId, ret);
-								} catch (RemoteException e1) {
-								}
-							}
-							mCallbacks.finishBroadcast();		
+							broadcastDownloadException(externalId, ret);
 						}
 						mNM.cancel(Constants.NOTIFICATION_DOWNLOADING_ID);
 					}
@@ -231,6 +208,46 @@ public class DownloadService extends Service {
 				}
 			}
 		}
+	}
+
+	//
+	private void broadcastDownloadCompleted(long externalid){
+        final int N = mCallbacks.beginBroadcast();
+		for (int i = 0; i < N; i++) {
+			try {
+				mCallbacks.getBroadcastItem(i).onCompleted(externalid);
+			} catch (RemoteException e) {
+				// The RemoteCallbackList will take care of removing
+				// the dead object for us.
+			}
+		}
+		mCallbacks.finishBroadcast();
+	}
+
+	private void broadcastDownloadException(long externalid, String exception){
+        final int N = mCallbacks.beginBroadcast();
+		for (int i = 0; i < N; i++) {
+			try {
+				mCallbacks.getBroadcastItem(i).onException(externalid, exception);
+			} catch (RemoteException e) {
+				// The RemoteCallbackList will take care of removing
+				// the dead object for us.
+			}
+		}
+		mCallbacks.finishBroadcast();
+	}
+
+	private void broadcastDownloadProgress(long externalid, long diff){
+        final int N = mCallbacks.beginBroadcast();
+		for (int i = 0; i < N; i++) {
+			try {
+				mCallbacks.getBroadcastItem(i).onProgress(externalid, diff);
+			} catch (RemoteException e) {
+				// The RemoteCallbackList will take care of removing
+				// the dead object for us.
+			}
+		}
+		mCallbacks.finishBroadcast();
 	}
 
 	private final IDownloadService.Stub binder = new IDownloadService.Stub(){

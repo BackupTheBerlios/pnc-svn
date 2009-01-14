@@ -180,7 +180,7 @@ public class ACastMenu extends Activity {
 		}
 		if (item == null) {
 			String lastid = mDbHelper
-					.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
+					.getSetting(Settings.LASTFEEDITEMID);
 			if (lastid != null) {
 				item = mDbHelper.fetchFeedItem(Long.parseLong(lastid));
 			}

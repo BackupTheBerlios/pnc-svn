@@ -111,8 +111,8 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		holder.playpause.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				if(mediaBinder != null){
-					try {
+				try {
+					if(mediaBinder != null){
 						if(mediaBinder.isPlaying()){
 							mediaBinder.pause();
 							holder.playpause
@@ -122,9 +122,9 @@ public class PlayList extends ListActivity implements ServiceConnection {
 							holder.playpause
 									.setImageResource(android.R.drawable.ic_media_pause);
 						}
-					} catch (RemoteException e) {
-						Log.e(TAG, e.getMessage(), e);
 					}
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
 				}
 			}
 		});
@@ -132,12 +132,12 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		holder.next.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				if(mediaBinder != null){
-					try {
+				try {
+					if(mediaBinder != null){
 						mediaBinder.next();
-					} catch (RemoteException e) {
-						Log.e(TAG, e.getMessage(), e);
 					}
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
 				}
 			}
 		});
@@ -166,7 +166,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		item.setIcon(android.R.drawable.ic_menu_rotate);
 		return super.onCreateOptionsMenu(menu);
 	}
-	
+
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenuInfo menuInfo) {
@@ -179,7 +179,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		item = menu.add(Menu.NONE, CANCEL_ID, Menu.NONE, R.string.cancel);
 		item.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 	}
-	
+
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterView.AdapterContextMenuInfo menuInfo = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
@@ -190,8 +190,8 @@ public class PlayList extends ListActivity implements ServiceConnection {
 				infoItem(adapter.getItem(listpos));
 				return true;
 			}else if(INFO_ID == menuid){
-					infoItem(adapter.getItem(listpos));
-					return true;
+				infoItem(adapter.getItem(listpos));
+				return true;
 			}else if(REMOVE_ID == menuid){
 				removeFromQueue(adapter.getItemId(listpos));
 				return true;
@@ -215,7 +215,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		}
 		return super.onMenuItemSelected(featureId, menuitem);
 	}
-	
+
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
@@ -313,7 +313,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 								long id = mediaBinder.getId();
 								if(id < 0){
 									String lastid = mDbHelper
-											.getSetting(Settings.SettingEnum.LASTFEEDITEMID);
+											.getSetting(Settings.LASTFEEDITEMID);
 									if(lastid != null){
 										id = Long.parseLong(lastid);
 									}

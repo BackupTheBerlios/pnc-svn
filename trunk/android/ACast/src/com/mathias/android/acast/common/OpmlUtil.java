@@ -156,7 +156,7 @@ public class OpmlUtil implements ContentHandler {
 		sb.append(" </head>\n");
 		sb.append(" <body>\n");
 		for (OpmlItem item : inp.items) {
-			sb.append("  <outline text=\""+escape(item.text)+"\" count=\""+item.count+"\" xmlUrl=\""+item.xmlUri+"\"/>\n");
+			sb.append("  <outline text=\""+escape(item.text)+"\" count=\""+item.count+"\" xmlUrl=\""+escape(item.xmlUri)+"\"/>\n");
 		}
 		sb.append(" </body>\n");
 		sb.append("</opml>\n");
@@ -205,6 +205,7 @@ public class OpmlUtil implements ContentHandler {
 	}
 
 	public static String escape(String s){
+		//.replace("=", "<![CDATA[=]]>")
 		return s.replace("&", "&amp;");
 	}
 

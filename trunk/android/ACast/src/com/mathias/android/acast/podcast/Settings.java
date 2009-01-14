@@ -1,8 +1,7 @@
 package com.mathias.android.acast.podcast;
 
-public class Settings {
+public enum Settings {
 
-	public enum SettingEnum {
 		AUTODOWNLOAD(TypeEnum.BOOLEAN, false),
 		AUTOREFRESH(TypeEnum.BOOLEAN, false),
 		ONLYWIFIDOWNLOAD(TypeEnum.BOOLEAN, false),
@@ -24,16 +23,16 @@ public class Settings {
 		
 		String defaultVal;
 		
-		private SettingEnum(TypeEnum type){
+		private Settings(TypeEnum type){
 			this.type = type;
 		}
 		
-		private SettingEnum(TypeEnum type, boolean def){
+		private Settings(TypeEnum type, boolean def){
 			this.type = type;
 			this.defaultVal = ""+def;
 		}
 		
-		private SettingEnum(TypeEnum type, String def){
+		private Settings(TypeEnum type, String def){
 			this.type = type;
 			this.defaultVal = def;
 		}
@@ -41,8 +40,6 @@ public class Settings {
 		public TypeEnum getType(){
 			return type;
 		}
-
-	}
 
 	public enum SortbyEnum {
 		UNSORTED,

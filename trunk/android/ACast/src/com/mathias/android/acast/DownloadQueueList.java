@@ -269,12 +269,6 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		public void onException(long externalid, final String exception) throws RemoteException {
 			Log.d(TAG, "onException: externalid="+externalid+" exception="+exception);
 			populateList();
-			runOnUiThread(new Runnable(){
-				@Override
-				public void run() {
-					Util.showToastLong(DownloadQueueList.this, "Download failed: "+exception);
-				}
-			});
 		}
 		@Override
 		public void onProgress(long externalid, long diff) throws RemoteException {

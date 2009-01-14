@@ -202,10 +202,10 @@ public interface Constants {
 	public static final String FEEDITEMS = "feeditems";
 	public static final String FEEDITEMID = "feeditemid";
 
-	public static final int NOTIFICATION_DOWNLOADCOMPLETE_ID = R.id.add;
-	public static final int NOTIFICATION_DOWNLOADING_ID = R.id.addresult;
 	public static final int NOTIFICATION_MEDIASERVICE_ID = R.id.author;
-	public static final int NOTIFICATION_UPDATECOMPLETE_ID = R.id.updatedate;
-	public static final int NOTIFICATION_UPDATING_ID = R.id.statusicon;
+	public static final int NOTIFICATION_DOWNLOADING_ID = R.id.add;
+	public static final int NOTIFICATION_DOWNLOADCOMPLETE_ID = R.id.addresult;
+	public static final int NOTIFICATION_UPDATING_ID = R.id.updatedate;
+	public static final int NOTIFICATION_UPDATECOMPLETE_ID = R.id.bookmark;
 
 }

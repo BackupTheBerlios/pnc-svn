@@ -322,7 +322,11 @@ public class FeedItemList extends ListActivity {
 	private void infoItem(FeedItem item){
 		if(item.mp3uri == null && !item.completed){
 			item.completed = true;
-			mDbHelper.updateFeedItem(item);
+			try {
+				mDbHelper.updateFeedItem(item);
+			} catch (DatabaseException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
 		}
 		Intent i = new Intent(this, FeedItemInfo.class);
 		i.putExtra(Constants.FEEDITEM, item);
@@ -369,7 +373,11 @@ public class FeedItemList extends ListActivity {
 				public void onClick(DialogInterface dialog, int which) {
 					new File(item.mp3file).delete();
 					item.downloaded = false;
-					mDbHelper.updateFeedItem(item);
+					try {
+						mDbHelper.updateFeedItem(item);
+					} catch (DatabaseException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
 					populateFields();
 				}
 			});
@@ -431,7 +439,6 @@ public class FeedItemList extends ListActivity {
 				public void run() {
 					populateFields();
 			        setProgressBarIndeterminateVisibility(false);
-			        Util.showToastShort(FeedItemList.this, "Updated "+title);
 				}
 			});
 		}
@@ -443,7 +450,6 @@ public class FeedItemList extends ListActivity {
 				public void run() {
 					populateFields();
 			        setProgressBarIndeterminateVisibility(false);
-			        Util.showToastShort(FeedItemList.this, error);
 				}
 			});
 		}

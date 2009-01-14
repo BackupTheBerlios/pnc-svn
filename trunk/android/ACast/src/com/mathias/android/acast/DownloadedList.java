@@ -234,7 +234,12 @@ public class DownloadedList extends ListActivity {
 				public void onClick(DialogInterface dialog, int which) {
 					new File(item.mp3file).delete();
 					item.downloaded = false;
-					mDbHelper.updateFeedItem(item);
+					try {
+						mDbHelper.updateFeedItem(item);
+					} catch (DatabaseException e) {
+						Util.showToastShort(DownloadedList.this,
+										"Could not update feed item " + item.title);
+					}
 					populateList();
 				}
 			});

@@ -26,12 +26,12 @@ import android.util.Log;
 
 import com.mathias.android.acast.ACastDbAdapter;
 import com.mathias.android.acast.Constants;
+import com.mathias.android.acast.DatabaseException;
 import com.mathias.android.acast.Player;
 import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
-import com.mathias.android.acast.podcast.Settings.SettingEnum;
 
 public class MediaService extends Service {
 	
@@ -145,17 +145,17 @@ public class MediaService extends Service {
 						}
 						if(currentItem != null){
 							try {
-								initItem(currentItem);
+								initItem(currentItem, false);
 								broadcastTrackCompleted();
 							} catch (Exception e) {
 								Log.d(TAG, e.getMessage());
 							}
 						}else{
 							try {
-								String lastId = mDbHandler.getSetting(SettingEnum.LASTFEEDITEMID);
+								String lastId = mDbHandler.getSetting(Settings.LASTFEEDITEMID);
 								FeedItem item = mDbHandler.fetchFeedItem(Long.parseLong(lastId));
 								if(item != null){
-									initItem(item);
+									initItem(item, false);
 								}
 								broadcastTrackCompleted();
 							} catch (Exception e) {
@@ -202,8 +202,11 @@ public class MediaService extends Service {
 		public long getId() throws RemoteException {
 			if(currentItem != null){
 				return currentItem.id;
-			}else if(!queue.isEmpty()){
-				currentItem = queue.remove();
+			}else{
+				int lastId = mDbHandler.getSettingInt(Settings.LASTFEEDITEMID);
+				if(lastId != -1){
+					currentItem = mDbHandler.fetchFeedItem(lastId);
+				}
 			}
 			return (currentItem != null ? currentItem.id : -1);
 		}
@@ -264,7 +267,7 @@ public class MediaService extends Service {
 		@Override
 		public void initItem(long newid) throws RemoteException {
 			FeedItem item = mDbHandler.fetchFeedItem(newid);
-			MediaService.this.initItem(item);
+			MediaService.this.initItem(item, false);
 		}
 		@Override
 		public boolean isPlaying() throws RemoteException {
@@ -319,7 +322,7 @@ public class MediaService extends Service {
 				FeedItem item = queue.remove();
 				if(item != null){
 					try {
-						MediaService.this.initItem(item);
+						MediaService.this.initItem(item, false);
 						broadcastTrackCompleted();
 					} catch (Exception e) {
 						Log.d(TAG, e.getMessage());
@@ -333,7 +336,7 @@ public class MediaService extends Service {
 				FeedItem item = queue.remove();
 				if(item != null && item.id == id){
 					try {
-						MediaService.this.initItem(item);
+						MediaService.this.initItem(item, false);
 						broadcastTrackCompleted();
 					} catch (Exception e) {
 						Log.d(TAG, e.getMessage());
@@ -363,22 +366,26 @@ public class MediaService extends Service {
 			}else{
 				Log.d(TAG, "bookmark: mp == null or id == -1");
 			}
-		} catch (RemoteException e) {
+		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 
-	public void initItem(FeedItem item) throws RemoteException {
+	public void initItem(FeedItem item, boolean lastCompleted) throws RemoteException {
 		if(item == null){
 			Log.e(TAG, "initItem: item is null");
 			return;
 		}
 		Log.d(TAG, "initItem, id="+item.id);
 
-		bookmark(false);
+		bookmark(lastCompleted);
 
 		Log.d(TAG, "Storing last feed item: "+item.id+" title="+item.title);
-		mDbHandler.setSetting(Settings.SettingEnum.LASTFEEDITEMID, item.id);
+		try {
+			mDbHandler.setSetting(Settings.LASTFEEDITEMID, item.id);
+		} catch (DatabaseException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
 
 		currentItem = item;
 
@@ -433,16 +440,14 @@ public class MediaService extends Service {
 			@Override
 			public void onCompletion(MediaPlayer mediaplayer) {
 				try {
-					bookmark(true);
-					if(queue.isEmpty()){
+					if(!queue.isEmpty()){
+						initItem(queue.remove(), true);
+						broadcastTrackCompleted();
+					}else{
 						mNM.cancel(Constants.NOTIFICATION_MEDIASERVICE_ID);
 						broadcastTrackCompleted();
 						broadcastPlaylistCompleted();
 						stopSelf();
-					}else{
-						currentItem = queue.remove();
-						initItem(currentItem);
-						broadcastTrackCompleted();
 					}
 				} catch (Exception e) {
 					Log.e(TAG, e.getMessage(), e);

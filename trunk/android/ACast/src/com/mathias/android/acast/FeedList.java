@@ -29,7 +29,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.view.View.OnLongClickListener;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
@@ -49,7 +48,7 @@ import com.mathias.android.acast.common.services.update.UpdateService;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.FeedItemLight;
-import com.mathias.android.acast.podcast.Settings.SettingEnum;
+import com.mathias.android.acast.podcast.Settings;
 
 public class FeedList extends ListActivity {
 
@@ -64,6 +63,8 @@ public class FeedList extends ListActivity {
 	private static final int DOWNLOADALL_ID = Menu.FIRST + 5;
 	private static final int CANCEL_ID = Menu.FIRST + 6;
 
+    private NotificationManager mNM;
+    
 	private ACastDbAdapter mDbHelper;
 
 	private FeedAdapter adapter;
@@ -92,23 +93,13 @@ public class FeedList extends ListActivity {
 
 		setTitle("Feeds");
 		
-		NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-		nm.cancel(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID);
+    	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		
 		thread = new WorkerThread();
 		thread.start();
-
-		getListView().setLongClickable(true);
-		getListView().setOnLongClickListener(new OnLongClickListener(){
-			@Override
-			public boolean onLongClick(View v) {
-				Log.d(TAG, "onLongClick pressed!");
-				return false;
-			}
-		});
 
 		fillData();
 
@@ -193,7 +184,7 @@ public class FeedList extends ListActivity {
 				infoFeed(adapter.getItem(pos));
 				return true;
 			}else if(REFRESH_ID == id){
-				thread.refreshFeed(adapter.getItem(pos));
+				refreshFeed(adapter.getItem(pos));
 				return true;
 			}else if(DELETE_ID == id){
 				deleteFeed(adapter.getItem(pos));
@@ -213,7 +204,7 @@ public class FeedList extends ListActivity {
 		//Options menu
 		int id = item.getItemId();
 		if(REFRESHALL_ID == id){
-			thread.refreshFeeds();
+			refreshFeeds();
 			return true;
 		}else if(DOWNLOADALLLAST_ID == id){
 			downloadLatest();
@@ -235,6 +226,7 @@ public class FeedList extends ListActivity {
 	@Override
 	protected void onResume() {
 		super.onResume();
+		metaDataMap.clear();
 		visible = true;
 		fillData();
 
@@ -244,6 +236,8 @@ public class FeedList extends ListActivity {
 		    	updateViewWithMetaData(getListView());
 			}
 		}, 1000);
+
+		mNM.cancel(Constants.NOTIFICATION_UPDATECOMPLETE_ID);
 	}
 	
 	@Override
@@ -270,7 +264,7 @@ public class FeedList extends ListActivity {
 		if(mDbHelper == null){
 			Log.w(TAG, "mDbHelper is null");
 		}else{
-			String lfuStr = mDbHelper.getSetting(SettingEnum.LASTFULLUPDATE);
+			String lfuStr = mDbHelper.getSetting(Settings.LASTFULLUPDATE);
 			TextView updatedate = (TextView) findViewById(R.id.updatedate);
 			updatedate.setText((lfuStr != null ? lfuStr : "Unknown"));
 
@@ -280,33 +274,33 @@ public class FeedList extends ListActivity {
 		}
 	}
 
+	private void refreshFeeds(){
+		try {
+			if(updateBinder != null){
+				updateBinder.updateAll();
+			}
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+			Util.showToastShort(FeedList.this, e.getMessage());
+		}
+	}
+	
+	private void refreshFeed(Feed feed){
+        setProgressBarIndeterminateVisibility(true);
+		try {
+			if(updateBinder != null){
+				updateBinder.updateFeed(feed.id);
+			}
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+			Util.showToastShort(FeedList.this, e.getMessage());
+		}
+	}
+	
 	private class WorkerThread extends Thread {
 
 		private Handler handler;
 
-		private void refreshFeeds(){
-			try {
-				if(updateBinder != null){
-					updateBinder.updateAll();
-				}
-			} catch (RemoteException e) {
-				Log.e(TAG, e.getMessage(), e);
-				Util.showToastShort(FeedList.this, e.getMessage());
-			}
-		}
-		
-		private void refreshFeed(Feed feed){
-	        setProgressBarIndeterminateVisibility(true);
-			try {
-				if(updateBinder != null){
-					updateBinder.updateFeed(feed.id);
-				}
-			} catch (RemoteException e) {
-				Log.e(TAG, e.getMessage(), e);
-				Util.showToastShort(FeedList.this, e.getMessage());
-			}
-		}
-		
 		private void updateFeedMetaData(int position, final long feedId, final ViewHolder holder){
 			handler.post(new Runnable(){
 				@Override
@@ -402,10 +396,17 @@ public class FeedList extends ListActivity {
 			public void onClick(DialogInterface dialog, int which) {
 				List<FeedItem> items = mDbHelper.fetchAllFeedItems(feed.id);
 				for(FeedItem item : items){
-					boolean deleted = new File(item.mp3file).delete();
-					Log.d(TAG, "File deleted="+deleted+" file="+item.mp3file);
+					if(item.mp3file != null){
+						boolean deleted = new File(item.mp3file).delete();
+						Log.d(TAG, "Deleted="+deleted+" file="+item.mp3file);
+					}
 				}
-				mDbHelper.deleteFeed(feed.id);
+				try {
+					mDbHelper.deleteFeed(feed.id);
+				} catch (DatabaseException e) {
+					Log.e(TAG, e.getMessage(), e);
+					Util.showToastShort(FeedList.this, "Could not delete feed!");
+				}
 				fillData();
 			}
 		});
@@ -569,7 +570,6 @@ public class FeedList extends ListActivity {
 				public void run() {
 					fillData();
 			        setProgressBarIndeterminateVisibility(false);
-			        Util.showToastShort(FeedList.this, "Updated "+title);
 				}
 			});
 		}
@@ -582,7 +582,6 @@ public class FeedList extends ListActivity {
 					Log.w(TAG, title+": "+ error);
 					fillData();
 			        setProgressBarIndeterminateVisibility(false);
-			        Util.showToastShort(FeedList.this, title+": "+ error);
 				}
 			});
 		}

@@ -21,12 +21,14 @@ import android.util.Log;
 
 import com.mathias.android.acast.ACastDbAdapter;
 import com.mathias.android.acast.Constants;
+import com.mathias.android.acast.DatabaseException;
 import com.mathias.android.acast.FeedList;
 import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.RssUtil;
+import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
-import com.mathias.android.acast.podcast.Settings.SettingEnum;
+import com.mathias.android.acast.podcast.Settings;
 
 public class UpdateService extends Service {
 
@@ -55,7 +57,6 @@ public class UpdateService extends Service {
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
-		
 	}
 
 	@Override
@@ -186,13 +187,20 @@ public class UpdateService extends Service {
 						} catch (Throwable e) {
 							broadcastUpdateItemException(feed.title, e.getMessage());
 							Log.e(TAG, e.getMessage(), e);
+					        Util.showToastShort(UpdateService.this, "Could not update "+
+					        		title+" "+e.getMessage());
 						}
 					}
-					mDbHelper.setSetting(SettingEnum.LASTFULLUPDATE, new Date());
+					try {
+						mDbHelper.setSetting(Settings.LASTFULLUPDATE, new Date());
+					} catch (DatabaseException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
 					Log.d(TAG, "Done");
 					mNM.cancel(Constants.NOTIFICATION_UPDATING_ID);
 					showUpdateCompleteNotification();
 					broadcastUpdateAllCompleted();
+			        Util.showToastShort(UpdateService.this, "Update complete");
 					mPWL.release();
 				}
 			});
@@ -209,9 +217,12 @@ public class UpdateService extends Service {
 						title = resfeed.title;
 						mDbHelper.createFeed(resfeed, result.get(resfeed));
 						broadcastUpdateItemCompleted(title);
+				        Util.showToastShort(UpdateService.this, "Added "+title);
 					} catch (Exception e) {
 						Log.e(TAG, e.getMessage(), e);
 						broadcastUpdateItemException(title, e.getMessage());
+				        Util.showToastShort(UpdateService.this,
+								"Could not add " + title + " "+ e.getMessage());
 					}
 				}
 			});
@@ -230,9 +241,12 @@ public class UpdateService extends Service {
 						mDbHelper.updateFeed(feed.id, result);
 						Log.d(TAG, "Done");
 						broadcastUpdateItemCompleted(title);
+				        Util.showToastShort(UpdateService.this, "Updated "+title);
 					} catch (Exception e) {
 						broadcastUpdateItemException(title, e.getMessage());
 						Log.e(TAG, e.getMessage(), e);
+				        Util.showToastShort(UpdateService.this, "Could not update " + 
+				        		title + " " + e.getMessage());
 					}
 				}
 			});
