@@ -2,6 +2,7 @@ package com.mathias.android.acast;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import android.app.ListActivity;
@@ -59,9 +60,13 @@ public class DownloadedList extends ListActivity {
 	private List<FeedItem> downloads = new ArrayList<FeedItem>();
 
     private NotificationManager mNM;
+    
+    private long lastId = Constants.INVALID_ID;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		Log.d(TAG, "onCreate");
+
 		super.onCreate(savedInstanceState);
 
 		ACastUtil.customTitle(this, "Downloaded", R.layout.downloaded_list);
@@ -70,7 +75,7 @@ public class DownloadedList extends ListActivity {
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
-
+		
 		Intent i = new Intent(this, DownloadService.class);
 		startService(i);
 		downloadServiceConn = new ServiceConnection(){
@@ -121,13 +126,19 @@ public class DownloadedList extends ListActivity {
 		}
 
 		// start progress handler loop
+		lastId = (savedInstanceState != null ? savedInstanceState.getLong(
+				Constants.FEEDITEMID, Constants.INVALID_ID)
+				: Constants.INVALID_ID);
+
 		populateList();
 		
 		getListView().setOnCreateContextMenuListener(this);
+
 	}
 
 	@Override
 	protected void onResume() {
+		Log.d(TAG, "onResume: "+lastId);
 		super.onResume();
 		populateList();
 		mNM.cancel(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID);
@@ -135,6 +146,7 @@ public class DownloadedList extends ListActivity {
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
+		lastId = id;
 		FeedItem item = adapter.getItem(position);
 		if(item.mp3uri == null){
 			infoItem(item);
@@ -168,6 +180,7 @@ public class DownloadedList extends ListActivity {
 				.getMenuInfo();
 		int id = item.getItemId();
 		int pos = menuInfo.position;
+		lastId = adapter.getItemId(pos);
 		if(pos != ListView.INVALID_POSITION){
 			if(QUEUE_ID == id){
 				ACastUtil.queueItem(mediaBinder, adapter.getItem(pos));
@@ -216,6 +229,18 @@ public class DownloadedList extends ListActivity {
 					downloads = mDbHelper.fetchDownloadedFeedItems();
 					adapter = new DetailFeedItemAdapter(DownloadedList.this, mDbHelper, downloads);
 					setListAdapter(adapter);
+					
+					if(lastId != Constants.INVALID_ID){
+						int pos = 0;
+						for(Iterator<FeedItem> it = downloads.iterator(); it.hasNext(); ){
+							long itemId = it.next().id;
+							if(lastId == itemId){
+								getListView().setSelection(pos);
+								break;
+							}
+							pos++;
+						}
+					}
 				}
 			}
 		});

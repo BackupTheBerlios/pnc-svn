@@ -17,7 +17,6 @@ import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.FeedItemHelper;
 import com.mathias.android.acast.podcast.FeedItemLight;
-import com.mathias.android.acast.podcast.Settings;
 
 public class ACastDbAdapter {
 
@@ -299,18 +298,19 @@ public class ACastDbAdapter {
 	public List<FeedItemLight> fetchAllFeedItemLights(long feedId) {
 		List<FeedItemLight> items = new ArrayList<FeedItemLight>();
 		Cursor c = mDb.query(true, DATABASE_TABLE_FEEDITEM, new String[] {
-				FEEDITEM_BOOKMARK, FEEDITEM_COMPLETED,
+				FEEDITEM_TITLE, FEEDITEM_BOOKMARK, FEEDITEM_COMPLETED,
 				FEEDITEM_DOWNLOADED, FEEDITEM_PUBDATE }, FEEDITEM_FEEDID + "=" + feedId, null,
 				null, null, null, null);
 		if (c == null || !c.moveToFirst()) {
 			Log.w(TAG, "No feed items for: "+feedId);
 		}else{
 			do{
+				String title = c.getString(c.getColumnIndexOrThrow(FEEDITEM_TITLE));
 				int bookmark = c.getInt(c.getColumnIndexOrThrow(FEEDITEM_BOOKMARK));
 				short completed = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_COMPLETED));
 				short downloaded = c.getShort(c.getColumnIndexOrThrow(FEEDITEM_DOWNLOADED));
 				long pubdate = c.getLong(c.getColumnIndexOrThrow(FEEDITEM_PUBDATE));
-				FeedItemLight item = new FeedItemLight(bookmark, completed != 0, downloaded != 0, pubdate);
+				FeedItemLight item = new FeedItemLight(title, bookmark, completed != 0, downloaded != 0, pubdate);
 				items.add(item);
 			}while(c.moveToNext());
 		}

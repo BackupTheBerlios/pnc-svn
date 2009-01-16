@@ -141,11 +141,14 @@ public class RssUtil implements ContentHandler {
 						Log.e(TAG, e.getMessage(), e);
 					}
 				}else if("category".equalsIgnoreCase(localName)){
-					String category = feed.category;
-					if(!Util.isEmpty(category)){
-						feed.category = category + ", " + characters;
-					}else if(!Util.isEmpty(characters)){
-						feed.category = "Category: "+characters;
+					String oldcategory = feed.category;
+					String cat = characters.trim();
+					if(!Util.isEmpty(cat)){
+						if(!Util.isEmpty(oldcategory)){
+							feed.category = oldcategory + ", " + cat;
+						}else{
+							feed.category = "Category: "+cat;
+						}
 					}
 				}else if("author".equalsIgnoreCase(localName)){
 					//itunes:owner, itunes:author

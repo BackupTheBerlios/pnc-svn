@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -82,6 +83,8 @@ public class FeedList extends ListActivity {
 	private Map<Long, ValueHolder> metaDataMap= new HashMap<Long, ValueHolder>();
 	
 	private boolean visible = false;
+	
+	private long lastId = Constants.INVALID_ID;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -101,7 +104,11 @@ public class FeedList extends ListActivity {
 		thread = new WorkerThread();
 		thread.start();
 
-		fillData();
+		// start progress handler loop
+		lastId = (savedInstanceState != null ? savedInstanceState.getLong(
+				Constants.FEEDID, Constants.INVALID_ID) : Constants.INVALID_ID);
+
+		populateView();
 
 		Intent i = new Intent(this, DownloadService.class);
 		startService(i);
@@ -179,6 +186,7 @@ public class FeedList extends ListActivity {
 		AdapterView.AdapterContextMenuInfo menuInfo = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
 		int id = item.getItemId();
 		int pos = menuInfo.position;
+		lastId = adapter.getItemId(pos);
 		if(pos != ListView.INVALID_POSITION){
 			if(INFO_ID == id){
 				infoFeed(adapter.getItem(pos));
@@ -216,6 +224,9 @@ public class FeedList extends ListActivity {
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
+		
+		lastId = id;
+
 		Intent i = new Intent(this, FeedItemList.class);
 		i.putExtra(Constants.FEEDID, adapter.getItemId(position));
 		startActivity(i);
@@ -228,7 +239,7 @@ public class FeedList extends ListActivity {
 		super.onResume();
 		metaDataMap.clear();
 		visible = true;
-		fillData();
+		populateView();
 
 		uiHandler.postDelayed(new Runnable(){
 			@Override
@@ -260,7 +271,7 @@ public class FeedList extends ListActivity {
 		super.onDestroy();
 	}
 
-	private void fillData() {
+	private void populateView() {
 		if(mDbHelper == null){
 			Log.w(TAG, "mDbHelper is null");
 		}else{
@@ -271,6 +282,18 @@ public class FeedList extends ListActivity {
 			List<Feed> feeds = mDbHelper.fetchAllFeeds();
 			adapter = new FeedAdapter(this, feeds);
 			setListAdapter(adapter);
+
+			if(lastId != Constants.INVALID_ID){
+				int pos = 0;
+				for(Iterator<Feed> it = feeds.iterator(); it.hasNext(); ){
+					long feedId = it.next().id;
+					if(lastId == feedId){
+						getListView().setSelection(pos);
+						break;
+					}
+					pos++;
+				}
+			}
 		}
 	}
 
@@ -309,6 +332,7 @@ public class FeedList extends ListActivity {
 						List<FeedItemLight> items = mDbHelper.fetchAllFeedItemLights(feedId);
 						Collections.sort(items, ACastUtil.FEEDITEMLIGHT_BYDATE);
 						final ValueHolder values = new ValueHolder();
+						values.latesttitle = (items.size() > 0 ? items.get(0).title : null);
 						values.sum = items.size();
 						boolean touched = false;
 						for (FeedItemLight item : items) {
@@ -407,7 +431,7 @@ public class FeedList extends ListActivity {
 					Log.e(TAG, e.getMessage(), e);
 					Util.showToastShort(FeedList.this, "Could not delete feed!");
 				}
-				fillData();
+				populateView();
 			}
 		});
 	}
@@ -443,6 +467,7 @@ public class FeedList extends ListActivity {
 				holder.text = (TextView) convertView.findViewById(R.id.feedrowtext);
 				holder.text2 = (TextView) convertView.findViewById(R.id.feedrowtext2);
 				holder.text3 = (TextView) convertView.findViewById(R.id.feedrowtext3);
+				holder.latesttitle = (TextView) convertView.findViewById(R.id.latesttitle);
 				holder.newitems = (TextView) convertView.findViewById(R.id.newitems);
 				holder.bookmarked = (TextView) convertView.findViewById(R.id.bookmarked);
 				holder.completed = (TextView) convertView.findViewById(R.id.completed);
@@ -485,6 +510,7 @@ public class FeedList extends ListActivity {
 	}
 
     private static class ValueHolder {
+    	String latesttitle;
     	int sum;
     	int downloaded;
     	int completed;
@@ -497,6 +523,7 @@ public class FeedList extends ListActivity {
         TextView text;
         TextView text2;
         TextView text3;
+        TextView latesttitle;
         TextView newitems;
         TextView downloaded;
         TextView completed;
@@ -543,6 +570,7 @@ public class FeedList extends ListActivity {
 
     private static void updateViewWithValues(ViewHolder holder, ValueHolder values){
 		if(holder != null){
+			holder.latesttitle.setText(values.latesttitle);
 			holder.newitems.setText(""+values.newitems);
 			holder.bookmarked.setText(""+values.bookmarked);
 			holder.completed.setText(""+values.completed);
@@ -558,7 +586,7 @@ public class FeedList extends ListActivity {
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					fillData();
+					populateView();
 				}
 			});
 		}
@@ -568,7 +596,7 @@ public class FeedList extends ListActivity {
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					fillData();
+					populateView();
 			        setProgressBarIndeterminateVisibility(false);
 				}
 			});
@@ -580,7 +608,7 @@ public class FeedList extends ListActivity {
 				@Override
 				public void run() {
 					Log.w(TAG, title+": "+ error);
-					fillData();
+					populateView();
 			        setProgressBarIndeterminateVisibility(false);
 				}
 			});

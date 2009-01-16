@@ -218,7 +218,9 @@ public class Player extends Activity implements ServiceConnection {
 				Log.e(TAG, e.getMessage(), e);
 				Util.showToastLong(Player.this, e.getMessage());
 			}
-			sendEmptyMessageDelayed(0, UPDATE_DELAY);
+			if(mDbHandler != null){
+				sendEmptyMessageDelayed(0, UPDATE_DELAY);
+			}
 		}
 	};
 

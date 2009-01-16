@@ -39,6 +39,15 @@
 		        android:layout_height="wrap_content"
 		        android:textSize="10sp"
 		        android:paddingLeft="6dip" />
+
+		    <TextView android:id="@+id/latesttitle"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"
+		        android:textSize="10sp"
+		        android:textStyle="italic"
+		        android:textColor="#CCCCCC"
+		        android:paddingLeft="6dip" />
+
 	    </LinearLayout>
 
 		<LinearLayout

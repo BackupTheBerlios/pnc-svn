@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -145,7 +146,7 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		getListView().setOnCreateContextMenuListener(this);
 
 		// start progress update loop
-		thread.startProgressUpdate();
+		progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
 	}
 
 	@Override
@@ -277,35 +278,35 @@ public class PlayList extends ListActivity implements ServiceConnection {
 		}
 	};
 	
+	private Handler progressHandler = new Handler(){
+		@Override
+		public void handleMessage(Message msg) {
+			try {
+				int pos;
+				if(!tracking && mediaBinder != null){
+					pos = mediaBinder.getCurrentPosition();
+					holder.seekbar.setProgress(pos);
+				}else{
+					pos = holder.seekbar.getProgress();
+				}
+//				String dur = Util.convertDuration(pos);
+//				if(mediaBinder != null){
+//					dur += "/"+Util.convertDuration(itemDuration);
+//					duration.setText(dur);
+//				}
+			}catch(Exception e){
+				Log.e(TAG, e.getMessage(), e);
+				Util.showToastShort(PlayList.this, "Error: "+e.getMessage());
+			}
+			if(mDbHelper != null){
+				progressHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
+			}
+		}
+	};
+	
 	private class WorkerThread extends Thread {
 
 		private Handler handler;
-		
-		public void startProgressUpdate(){
-			handler.postDelayed(new Runnable(){
-				@Override
-				public void run() {
-					try {
-						int pos;
-						if(!tracking && mediaBinder != null){
-							pos = mediaBinder.getCurrentPosition();
-							holder.seekbar.setProgress(pos);
-						}else{
-							pos = holder.seekbar.getProgress();
-						}
-//						String dur = Util.convertDuration(pos);
-//						if(mediaBinder != null){
-//							dur += "/"+Util.convertDuration(itemDuration);
-//							duration.setText(dur);
-//						}
-					}catch(Exception e){
-						Log.e(TAG, e.getMessage(), e);
-						Util.showToastShort(PlayList.this, "Error: "+e.getMessage());
-					}
-					handler.postDelayed(this, UPDATE_DELAY);
-				}
-			}, UPDATE_DELAY);
-		}
 
 		public void populateView(){
 			handler.post(new Runnable(){

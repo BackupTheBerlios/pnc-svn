@@ -14,7 +14,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteCallbackList;
@@ -35,7 +37,7 @@ import com.mathias.android.acast.podcast.Settings;
  * sends notification when download is complete, no intent/activity will be started
  */
 public class DownloadService extends Service {
-
+	
 	private static final String TAG = DownloadService.class.getSimpleName();
 	
 	public static final String EXTERNALID = "EXTERNALID";
@@ -52,7 +54,9 @@ public class DownloadService extends Service {
 
 	private ACastDbAdapter mDbHelper;
 	
-	private WorkerThread thread;
+	private WorkerThread workThread;
+	
+	private UiThread uiThread;
 	
 	private LinkedBlockingQueue<DownloadItem> queue = new LinkedBlockingQueue<DownloadItem>();
 	
@@ -74,12 +78,15 @@ public class DownloadService extends Service {
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
 		
-		thread = new WorkerThread();
-		thread.start();
+		workThread = new WorkerThread();
+		workThread.start();
+		
+		uiThread = new UiThread();
+		uiThread.start();
 		
 		new WifiConnectionThread().start();
 	}
-	
+
 	private class WifiConnectionThread extends Thread {
 		@Override
 		public void run() {
@@ -88,7 +95,7 @@ public class DownloadService extends Service {
 				WifiInfo info = wifiManager.getConnectionInfo();
 				boolean tempval = info != null && info.getSSID() != null;
 				if(waitingForWifi && tempval != wifiConnected){
-					thread.interrupt();
+					workThread.interrupt();
 				}
 				wifiConnected = tempval;
 
@@ -175,13 +182,13 @@ public class DownloadService extends Service {
 				}
 				try {
 					currentItem = queue.take();
+					mPWL.acquire();
 					Log.d(TAG, "Got item from queue: "+currentItem);
 					if(currentItem != null){
-						final int externalId = (int) currentItem.externalId;
+						int externalId = (int) currentItem.externalId;
 						try {
-							mPWL.acquire();
-							showDownloadingNotification();
 							File f = new File(currentItem.destfile);
+							showDownloadingNotification(f.getName());
 							Log.d(TAG, "Downloading file: "+f.getName());
 							Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
 							Log.d(TAG, "Done downloading file: "+f.getName());
@@ -191,22 +198,59 @@ public class DownloadService extends Service {
 							}
 
 							broadcastDownloadCompleted(externalId);
-							mPWL.release();
 						} catch (Exception e) {
-							mPWL.release();
-							String ret = "Exception: "+e.getMessage();
-							Log.e(TAG, ret);
+							queue.clear();
+							String ret = "Download failed: "+e.getMessage();
+							Log.e(TAG, "broadcastDownloadException: "+e.getMessage(), e);
 							broadcastDownloadException(externalId, ret);
+							uiThread.showToastLong(ret);
 						}
 						mNM.cancel(Constants.NOTIFICATION_DOWNLOADING_ID);
 					}
 					if(queue.isEmpty()){
-						showDownloadCompleteNotification();
+						showDownloadCompleteNotification(currentItem);
 					}
+					mPWL.release();
 				} catch (Throwable e2) {
-					Log.e(TAG, e2.getMessage(), e2);
+					if(queue != null && !queue.isEmpty()){
+						queue.clear();
+					}
+					mPWL.release();
+					String str = "Error: "+e2.getMessage();
+					Log.e(TAG, str, e2);
+					showDownloadExceptionNotification();
+					broadcastDownloadException(-1, str);
+					uiThread.showToastLong(str);
 				}
 			}
+		}
+	}
+	
+	private class UiThread extends Thread {
+		
+		private Handler handler;
+		
+		public void showToastLong(final String text){
+			handler.post(new Runnable(){
+				@Override
+				public void run() {
+					Util.showToastLong(DownloadService.this, text);
+				}
+			});
+		}
+		public void showToastShort(final String text){
+			handler.post(new Runnable(){
+				@Override
+				public void run() {
+					Util.showToastShort(DownloadService.this, text);
+				}
+			});
+		}
+		@Override
+		public void run() {
+			Looper.prepare();
+			handler = new Handler();
+			Looper.loop();
 		}
 	}
 
@@ -254,19 +298,19 @@ public class DownloadService extends Service {
 		@Override
 		public void download(long externalid, String srcuri, String destfile)
 				throws RemoteException {
-			thread.download(new DownloadItem(externalid, srcuri, destfile, 0));
+			workThread.download(new DownloadItem(externalid, srcuri, destfile, 0));
 		}
 		@Override
 		public void cancelAndRemoveCurrent() throws RemoteException {
-			thread.cancelAndRemoveCurrent();
+			workThread.cancelAndRemoveCurrent();
 		}
 		@Override
 		public void cancelAndRemove(long externalid) throws RemoteException {
-			thread.cancelAndRemove(externalid);
+			workThread.cancelAndRemove(externalid);
 		}
 		@Override
 		public void cancelAndRemoveAll() throws RemoteException {
-			thread.cancelAndRemoveAll();
+			workThread.cancelAndRemoveAll();
 		}
 		@Override
 		public void registerCallback(IDownloadServiceCallback cb)
@@ -282,19 +326,19 @@ public class DownloadService extends Service {
 		@SuppressWarnings("unchecked")
 		@Override
 		public List getDownloads() throws RemoteException {
-			return thread.getQueue();
+			return workThread.getQueue();
 		}
 		@Override
 		public long getCurrentDownload() throws RemoteException {
-			DownloadItem item = thread.getCurrentDownload();
+			DownloadItem item = workThread.getCurrentDownload();
 			if(item != null) {
 				return item.externalId;
 			}
-			return -1;
+			return Constants.INVALID_ID;
 		}
 		@Override
 		public long getProgress() throws RemoteException {
-			DownloadItem item = thread.getCurrentDownload();
+			DownloadItem item = workThread.getCurrentDownload();
 			return (item != null ? item.progress : 0);
 		}
 	};
@@ -313,11 +357,11 @@ public class DownloadService extends Service {
 		super.onDestroy();
 	}
 
-	private void showDownloadCompleteNotification() {
-		Log.d(TAG, "showDownloadCompleteNotification()");
-		String ticker = "Download complete";
-		CharSequence title = "Download complete";
-		String text = "Download complete";
+	private void showDownloadExceptionNotification() {
+		Log.d(TAG, "showDownloadExceptionNotification()");
+		String ticker = "Download error";
+		CharSequence title = "Download error";
+		String text = "Download error occured";
 
 		Notification notification = new Notification(
 				android.R.drawable.stat_sys_download_done, ticker, System
@@ -331,11 +375,33 @@ public class DownloadService extends Service {
 		mNM.notify(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID, notification);
 	}
 
-	private void showDownloadingNotification() {
+	private void showDownloadCompleteNotification(DownloadItem item) {
+		Log.d(TAG, "showDownloadCompleteNotification()");
+		String ticker = "Download complete";
+		CharSequence title = "Download complete";
+		String text = "Download complete";
+
+		Notification notification = new Notification(
+				android.R.drawable.stat_sys_download_done, ticker, System
+						.currentTimeMillis());
+
+		Intent i = new Intent(this, DownloadedList.class);
+		i.putExtra(Constants.FEEDITEMID, (item != null ? item.externalId : Constants.INVALID_ID));
+
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
+
+		notification.setLatestEventInfo(this, title, text, contentIntent);
+
+		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
+
+		mNM.notify(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID, notification);
+	}
+
+	private void showDownloadingNotification(String name) {
 		Log.d(TAG, "showDownloadingNotification()");
-		String ticker = "Downloading...";
-		CharSequence title = "Downloading "+new File(thread.currentItem.srcuri).getName();
-		String text = "Downloading...";
+		String ticker = "Downloading "+name;
+		CharSequence title = "Downloading...";
+		String text = "Downloading "+name;
 
 		Notification notification = new Notification(
 				android.R.drawable.stat_sys_download, ticker, System

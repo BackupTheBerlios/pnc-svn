@@ -162,6 +162,8 @@ public class UpdateService extends Service {
 
 		notification.setLatestEventInfo(this, "Refresh done", "All feed has been updated", contentIntent);
 
+		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
+
 		mNM.notify(Constants.NOTIFICATION_UPDATECOMPLETE_ID, notification);
 	}
 
@@ -210,6 +212,7 @@ public class UpdateService extends Service {
 			handler.post(new Runnable(){
 				@Override
 				public void run() {
+					showUpdatingNotification();
 					String title = null;
 					try {
 						Map<Feed, List<FeedItem>> result = new RssUtil().parse(url);
@@ -224,6 +227,7 @@ public class UpdateService extends Service {
 				        Util.showToastShort(UpdateService.this,
 								"Could not add " + title + " "+ e.getMessage());
 					}
+					mNM.cancel(Constants.NOTIFICATION_UPDATING_ID);
 				}
 			});
 		}
@@ -232,6 +236,7 @@ public class UpdateService extends Service {
 			handler.post(new Runnable(){
 				@Override
 				public void run() {
+					showUpdatingNotification();
 					String title = null;
 					try {
 						Feed feed = mDbHelper.fetchFeed(id);
@@ -248,6 +253,7 @@ public class UpdateService extends Service {
 				        Util.showToastShort(UpdateService.this, "Could not update " + 
 				        		title + " " + e.getMessage());
 					}
+					mNM.cancel(Constants.NOTIFICATION_UPDATING_ID);
 				}
 			});
 		}

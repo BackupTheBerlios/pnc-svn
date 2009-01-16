@@ -55,6 +55,10 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 	private IDownloadService binder;
 
 	private ViewHolder header = new ViewHolder();
+	
+	private boolean visible = false;
+	
+	private FeedItem currItem;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -82,7 +86,15 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 	@Override
 	protected void onResume() {
 		super.onResume();
+		visible = true;
 		populateList();
+		progressHandler.sendEmptyMessage(0);
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		visible = false;
 	}
 
 	@Override
@@ -134,6 +146,16 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		return super.onMenuItemSelected(featureId, menuitem);
 	}
 	
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		mDbHelper = null;
+		if(binder != null){
+			unbindService(this);
+		}
+		super.onDestroy();
+	}
+	
 	private void infoItem(FeedItem item){
 		Intent i = new Intent(this, FeedItemInfo.class);
 		i.putExtra(Constants.FEEDITEM, item);
@@ -158,16 +180,6 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 		}
 	}
 
-	@Override
-	protected void onDestroy() {
-		mDbHelper.close();
-		mDbHelper = null;
-		if(binder != null){
-			unbindService(this);
-		}
-		super.onDestroy();
-	}
-	
 	private void populateList() {
 		try{
 			if(binder != null){
@@ -178,8 +190,6 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 					public void run() {
 						adapter = new DownloadAdapter(DownloadQueueList.this, downloads);
 						setListAdapter(adapter);
-
-						progressHandler.sendEmptyMessage(0);
 					}
 				});
 			}else{
@@ -234,13 +244,17 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 			if(binder != null && mDbHelper != null){
 				try {
 					long currId = binder.getCurrentDownload();
-					FeedItem item = mDbHelper.fetchFeedItem(currId);
-					if(item != null){
+					if(currId == Constants.INVALID_ID) {
+						currItem = null;
+					}else if(currItem == null || currItem.id != currId){
+						currItem = mDbHelper.fetchFeedItem(currId);
+					}
+					if(currItem != null){
 						header.icon.setImageBitmap(BitmapCache.instance()
-								.get(item.feedId, mDbHelper));
-						header.title.setText(item.title);
-						header.author.setText(item.author);
-						header.progress.setMax((int)item.size);
+								.get(currItem.feedId, mDbHelper));
+						header.title.setText(currItem.title);
+						header.author.setText(currItem.author);
+						header.progress.setMax((int)currItem.size);
 						header.progress.setProgress((int)binder.getProgress());
 					}else{
 						header.icon.setImageResource(R.drawable.question);
@@ -252,9 +266,11 @@ public class DownloadQueueList extends ListActivity implements ServiceConnection
 					Log.e(TAG, e.getMessage(), e);
 					Util.showDialog(DownloadQueueList.this, e.getClass().getSimpleName(), e.getMessage());
 				}
-				sendEmptyMessageDelayed(0, UPDATE_DELAY);
 			}else{
 				Log.d(TAG, "binder or dbhelper is null!!");
+			}
+			if(visible){
+				sendEmptyMessageDelayed(0, UPDATE_DELAY);
 			}
 		}
 	};

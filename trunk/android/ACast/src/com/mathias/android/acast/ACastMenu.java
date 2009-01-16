@@ -159,11 +159,11 @@ public class ACastMenu extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if(SETTINGS_ID == item.getItemId()){
-			Intent i = new Intent(this, SettingsEdit.class);
+			Intent i = new Intent(this, PreferenceEdit.class);
 			startActivity(i);
+			return true;
 		}
-		//return super.onOptionsItemSelected(item);
-		return true;
+		return super.onOptionsItemSelected(item);
 	}
 
 	private void populateView(){

@@ -89,14 +89,14 @@ public class MediaService extends Service {
 		};
 		registerReceiver(receiver, new IntentFilter("android.intent.action.MEDIA_BUTTON"));
 		
-		String lastId = mDbHandler.getSetting(Settings.LASTFEEDITEMID);
-		FeedItem item = mDbHandler.fetchFeedItem(Long.parseLong(lastId));
-		if(item != null){
-			try {
-				initItem(item, false, false);
-			} catch (RemoteException e) {
-				Log.e(TAG, e.getMessage(), e);
+		try {
+			String lastId = mDbHandler.getSetting(Settings.LASTFEEDITEMID);
+			FeedItem item = mDbHandler.fetchFeedItem(Long.parseLong(lastId));
+			if(item != null){
+					initItem(item, false, false);
 			}
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
     
@@ -408,6 +408,13 @@ public class MediaService extends Service {
 				}
 			}else{
 				String locator = item.mp3file;
+				File l = new File(locator);
+				if(!l.exists() || l.length() == 0){
+					String err = "File is corrupt: "+locator;
+					Log.e(TAG, err);
+					showErrorNotification(err);
+					return;
+				}
 				Log.d(TAG, "Initializing from file: "+locator);
 				mp = new MediaPlayer();
 				try {

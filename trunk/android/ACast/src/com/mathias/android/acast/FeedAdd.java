@@ -92,7 +92,7 @@ public class FeedAdd extends ListActivity {
 			@Override
 			public void onClick(View v) {
 				String uri = text.getText().toString();
-				if(!uri.startsWith("http://")){
+				if(!uri.startsWith("http://")) {
 			        Util.showToastShort(FeedAdd.this, "You might want to add \'http://\' to RSS URL");
 				}
 				addFeed(uri);

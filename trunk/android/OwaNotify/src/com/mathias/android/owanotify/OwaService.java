@@ -163,6 +163,8 @@ public class OwaService extends Service {
 		notification.setLatestEventInfo(this, item.from, item.subject,
 				contentIntent);
 
+		notification.defaults = Notification.DEFAULT_ALL;
+
 		mNM.notify(NOTIFICATION_INBOX_ID, notification);
 	}
 

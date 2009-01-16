@@ -3,6 +3,7 @@ package com.mathias.android.acast;
 import java.io.File;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import android.app.ListActivity;
@@ -83,6 +84,8 @@ public class FeedItemList extends ListActivity {
 
 	private List<FeedItem> items;
 
+    private long lastId = Constants.INVALID_ID;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -106,7 +109,12 @@ public class FeedItemList extends ListActivity {
 		defaultIcon = BitmapFactory.decodeResource(getResources(),
 				R.drawable.question);
 
-		populateFields();
+		// start progress handler loop
+		lastId = (savedInstanceState != null ? savedInstanceState.getLong(
+				Constants.FEEDITEMID, Constants.INVALID_ID)
+				: Constants.INVALID_ID);
+
+		populateView();
 		
 		getListView().setOnCreateContextMenuListener(this);
 
@@ -198,11 +206,12 @@ public class FeedItemList extends ListActivity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		populateFields();
+		populateView();
 	}
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
+		lastId = id;
 		FeedItem item = adapter.getItem(position);
 		if(item.mp3uri == null){
 			infoItem(item);
@@ -240,6 +249,7 @@ public class FeedItemList extends ListActivity {
 				.getMenuInfo();
 		int id = item.getItemId();
 		int pos = menuInfo.position;
+		lastId = adapter.getItemId(pos);
 		if(pos != ListView.INVALID_POSITION){
 			if(QUEUE_ID == id){
 				queueItem(adapter.getItem(pos));
@@ -281,7 +291,7 @@ public class FeedItemList extends ListActivity {
 		}
 	}
 
-	private void populateFields() {
+	private void populateView() {
 		if (mDbHelper != null && mFeedId != null) {
 			feed = mDbHelper.fetchFeed(mFeedId);
 			items = mDbHelper.fetchAllFeedItems(mFeedId);
@@ -302,6 +312,18 @@ public class FeedItemList extends ListActivity {
 
 			adapter = new FeedItemAdapter(this, items);
 			setListAdapter(adapter);
+
+			if(lastId != Constants.INVALID_ID){
+				int pos = 0;
+				for(Iterator<FeedItem> it = items.iterator(); it.hasNext(); ){
+					long itemId = it.next().id;
+					if(lastId == itemId){
+						getListView().setSelection(pos);
+						break;
+					}
+					pos++;
+				}
+			}
 		}
 	}
 
@@ -378,7 +400,7 @@ public class FeedItemList extends ListActivity {
 					} catch (DatabaseException e) {
 						Log.e(TAG, e.getMessage(), e);
 					}
-					populateFields();
+					populateView();
 				}
 			});
 		}
@@ -407,9 +429,9 @@ public class FeedItemList extends ListActivity {
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					populateFields();
+					populateView();
 			        setProgressBarIndeterminateVisibility(false);
-			        Util.showToastShort(FeedItemList.this, "Downloaded");
+//			        Util.showToastShort(FeedItemList.this, "Downloaded");
 				}
 			});
 		}
@@ -418,9 +440,9 @@ public class FeedItemList extends ListActivity {
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					populateFields();
+					populateView();
 			        setProgressBarIndeterminateVisibility(false);
-			        Util.showToastShort(FeedItemList.this, "Download failed: "+exception);
+//			        Util.showToastShort(FeedItemList.this, "Download failed: "+exception);
 				}
 			});
 		}
@@ -437,7 +459,7 @@ public class FeedItemList extends ListActivity {
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					populateFields();
+					populateView();
 			        setProgressBarIndeterminateVisibility(false);
 				}
 			});
@@ -448,7 +470,7 @@ public class FeedItemList extends ListActivity {
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					populateFields();
+					populateView();
 			        setProgressBarIndeterminateVisibility(false);
 				}
 			});
