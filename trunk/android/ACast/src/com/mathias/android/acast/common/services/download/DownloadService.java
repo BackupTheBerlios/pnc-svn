@@ -10,33 +10,39 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
-import android.os.Handler;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.mathias.android.acast.ACastDbAdapter;
 import com.mathias.android.acast.Constants;
 import com.mathias.android.acast.DownloadQueueList;
 import com.mathias.android.acast.DownloadedList;
+import com.mathias.android.acast.R;
+import com.mathias.android.acast.common.UiThread;
 import com.mathias.android.acast.common.Util;
+import com.mathias.android.acast.common.Util.DownloadException;
 import com.mathias.android.acast.common.Util.ProgressListener;
-import com.mathias.android.acast.podcast.Settings;
+import com.mathias.android.acast.common.services.wifi.IWifiService;
+import com.mathias.android.acast.common.services.wifi.IWifiServiceCallback;
+import com.mathias.android.acast.common.services.wifi.WifiService;
 
 /**
  * start service and bind interface and callback
  * service will terminate by it self when file is downloaded
  * sends notification when download is complete, no intent/activity will be started
  */
-public class DownloadService extends Service {
+public class DownloadService extends Service implements ServiceConnection {
 	
 	private static final String TAG = DownloadService.class.getSimpleName();
 	
@@ -59,17 +65,27 @@ public class DownloadService extends Service {
 	private UiThread uiThread;
 	
 	private LinkedBlockingQueue<DownloadItem> queue = new LinkedBlockingQueue<DownloadItem>();
-	
-	private boolean wifiConnected = false;
-	
-	private boolean waitingForWifi = false; 
+
+	private SharedPreferences prefs;
+
+	private boolean onlyWifiDownload = false;
+
+	private boolean wifiAvailable = false;
+
+	private IWifiService wifiBinder;
+
+	private DownloadItem currentItem;
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		Log.d(TAG, "onCreate");
 
-    	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		prefs.registerOnSharedPreferenceChangeListener(prefsListener);
+		readSettings();
+
+		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
     	PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
 		mPWL = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
@@ -80,33 +96,20 @@ public class DownloadService extends Service {
 		
 		workThread = new WorkerThread();
 		workThread.start();
-		
-		uiThread = new UiThread();
+
+		uiThread = new UiThread(this);
 		uiThread.start();
-		
-		new WifiConnectionThread().start();
+
+		Intent i = new Intent(this, WifiService.class);
+		bindService(i, this, BIND_AUTO_CREATE);
 	}
 
-	private class WifiConnectionThread extends Thread {
-		@Override
-		public void run() {
-			while(true){
-				WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-				WifiInfo info = wifiManager.getConnectionInfo();
-				boolean tempval = info != null && info.getSSID() != null;
-				if(waitingForWifi && tempval != wifiConnected){
-					workThread.interrupt();
-				}
-				wifiConnected = tempval;
-
-				DownloadService.sleep(10000);
-			}
-		}
+	private void readSettings(){
+		onlyWifiDownload = prefs.getBoolean(getString(R.string.ONLYWIFIDOWNLOAD_key), false);
+		Log.d(TAG, "onCreate onlyWifiDownload="+onlyWifiDownload);
 	}
 
 	private class WorkerThread extends Thread implements ProgressListener {
-
-		private DownloadItem currentItem;
 
 		public void download(DownloadItem item){
 			Log.d(TAG, "Queing: "+item.destfile);
@@ -172,52 +175,51 @@ public class DownloadService extends Service {
 		public void run() {
 			Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
 			while(true){
-				boolean onlyWifiDownload = Boolean.parseBoolean(mDbHelper
-						.getSetting(Settings.ONLYWIFIDOWNLOAD));
-				if(onlyWifiDownload && !wifiConnected){
-					waitingForWifi = true;
-					DownloadService.sleep(Long.MAX_VALUE);
-					waitingForWifi = false;
-					continue;
-				}
-				try {
-					currentItem = queue.take();
-					mPWL.acquire();
-					Log.d(TAG, "Got item from queue: "+currentItem);
-					if(currentItem != null){
-						int externalId = (int) currentItem.externalId;
-						try {
-							File f = new File(currentItem.destfile);
-							showDownloadingNotification(f.getName());
-							Log.d(TAG, "Downloading file: "+f.getName());
-							Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
-							Log.d(TAG, "Done downloading file: "+f.getName());
-	
-							if(mDbHelper != null){
-								mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
-							}
+				try{
+					Log.d(TAG, "run onlyWifiDownload="+onlyWifiDownload);
+					if(onlyWifiDownload && !wifiAvailable) {
+						sleep(Long.MAX_VALUE);
+					}else{
+						currentItem = queue.take();
+						mPWL.acquire();
+						Log.d(TAG, "Got item from queue: "+currentItem);
+						if(currentItem != null){
+							int externalId = (int) currentItem.externalId;
+							try {
+								File f = new File(currentItem.destfile);
+								showDownloadingNotification(f.getName());
+								Log.d(TAG, "Downloading file: "+f.getName());
+								Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
+								Log.d(TAG, "Done downloading file: "+f.getName());
+		
+								if(mDbHelper != null){
+									mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
+								}
 
-							broadcastDownloadCompleted(externalId);
-						} catch (Exception e) {
-							queue.clear();
-							String ret = "Download failed: "+e.getMessage();
-							Log.e(TAG, "broadcastDownloadException: "+e.getMessage(), e);
-							broadcastDownloadException(externalId, ret);
-							uiThread.showToastLong(ret);
+								broadcastDownloadCompleted(externalId);
+							} catch (DownloadException e) {
+								queue.clear();
+								String ret = "Download failed: "+e.getMessage();
+								Log.e(TAG, "broadcastDownloadException: "+e.getMessage(), e);
+								broadcastDownloadException(externalId, ret);
+								uiThread.showToastLong(ret);
+							}
+							mNM.cancel(Constants.NOTIFICATION_DOWNLOADING_ID);
 						}
-						mNM.cancel(Constants.NOTIFICATION_DOWNLOADING_ID);
+						if(queue.isEmpty()){
+							showDownloadCompleteNotification(currentItem);
+						}
+						mPWL.release();
 					}
-					if(queue.isEmpty()){
-						showDownloadCompleteNotification(currentItem);
-					}
-					mPWL.release();
+				}catch(InterruptedException e){
+					continue;
 				} catch (Throwable e2) {
+					String str = "Error: "+e2.getMessage();
+					Log.e(TAG, str, e2);
 					if(queue != null && !queue.isEmpty()){
 						queue.clear();
 					}
 					mPWL.release();
-					String str = "Error: "+e2.getMessage();
-					Log.e(TAG, str, e2);
 					showDownloadExceptionNotification();
 					broadcastDownloadException(-1, str);
 					uiThread.showToastLong(str);
@@ -226,33 +228,18 @@ public class DownloadService extends Service {
 		}
 	}
 	
-	private class UiThread extends Thread {
-		
-		private Handler handler;
-		
-		public void showToastLong(final String text){
-			handler.post(new Runnable(){
-				@Override
-				public void run() {
-					Util.showToastLong(DownloadService.this, text);
-				}
-			});
-		}
-		public void showToastShort(final String text){
-			handler.post(new Runnable(){
-				@Override
-				public void run() {
-					Util.showToastShort(DownloadService.this, text);
-				}
-			});
-		}
+	private OnSharedPreferenceChangeListener prefsListener = new OnSharedPreferenceChangeListener(){
 		@Override
-		public void run() {
-			Looper.prepare();
-			handler = new Handler();
-			Looper.loop();
+		public void onSharedPreferenceChanged(
+				SharedPreferences sharedPreferences, String key) {
+			boolean t = onlyWifiDownload;
+			readSettings();
+			if(!wifiAvailable && onlyWifiDownload && !t){
+				currentItem = null;
+			}
+			workThread.interrupt();
 		}
-	}
+	};
 
 	//
 	private void broadcastDownloadCompleted(long externalid){
@@ -351,6 +338,10 @@ public class DownloadService extends Service {
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy");
+		prefs.unregisterOnSharedPreferenceChangeListener(prefsListener);
+		if(wifiBinder != null){
+			unbindService(this);
+		}
 		mCallbacks.kill();
 		mDbHelper.close();
 		mDbHelper = null;
@@ -415,11 +406,33 @@ public class DownloadService extends Service {
 		mNM.notify(Constants.NOTIFICATION_DOWNLOADING_ID, notification);
 	}
 
-	private static void sleep(long time) {
+	@Override
+	public void onServiceConnected(ComponentName name, IBinder service) {
+		wifiBinder = IWifiService.Stub.asInterface(service);
 		try {
-			Thread.sleep(time);
-		} catch (InterruptedException e) {
+			wifiAvailable = wifiBinder.isWifiAvailable();
+			wifiBinder.registerCallback(wifiCallback);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
+
+	@Override
+	public void onServiceDisconnected(ComponentName name) {
+		try {
+			wifiBinder.unregisterCallback(wifiCallback);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		wifiBinder = null;
+	}
+
+	private final IWifiServiceCallback wifiCallback = new IWifiServiceCallback.Stub() {
+		@Override
+		public void onWifiStateChanged(boolean connected)
+				throws RemoteException {
+			workThread.interrupt();
+		}
+	};
 
 }

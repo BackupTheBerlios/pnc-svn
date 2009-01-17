@@ -42,7 +42,7 @@ public class UpdateService extends Service {
 	
     private PowerManager.WakeLock mPWL;
 
-    final RemoteCallbackList<IUpdateServiceCallback> mCallbacks = new RemoteCallbackList<IUpdateServiceCallback>();
+    private final RemoteCallbackList<IUpdateServiceCallback> mCallbacks = new RemoteCallbackList<IUpdateServiceCallback>();
 
 	@Override
 	public void onCreate() {

@@ -46,4 +46,66 @@
 	<!-- feed_add -->
 	<string name="importlocalopml">Import local OPML</string>
 	<string name="exportlocalopml">Export local OPML</string>
+	<!-- preferences -->
+		<!-- ONLYWIFIDOWNLOAD -->
+	<string name="ONLYWIFIDOWNLOAD_key">ONLYWIFIDOWNLOAD</string>
+	<string name="ONLYWIFIDOWNLOAD_title">Only Wifi download</string>
+	<string name="ONLYWIFIDOWNLOAD_summary">Only automatic download through Wifi</string>
+		<!-- ONLYWIFISTREAM -->
+	<string name="ONLYWIFISTREAM_key">ONLYWIFISTREAM</string>
+	<string name="ONLYWIFISTREAM_title">Only Wifi stream</string>
+	<string name="ONLYWIFISTREAM_summary">Only stream audio through Wifi</string>
+		<!-- AUTODELETE -->
+	<string name="AUTODELETE_key">AUTODELETE</string>
+	<string name="AUTODELETE_title">Auto delete</string>
+	<string name="AUTODELETE_summary">Downloaded items are automatically deleted during feed refresh</string>
+		<!-- AUTOREFRESH -->
+	<string name="AUTOREFRESH_key">AUTOREFRESH</string>
+	<string name="AUTOREFRESH_title">Auto refresh</string>
+	<string name="AUTOREFRESH_summary">Auto refresh all feeds at spec time (hourly, daily, week, month)</string>
+		<!-- AUTODOWNLOAD -->
+	<string name="AUTODOWNLOAD_key">AUTODOWNLOAD</string>
+	<string name="AUTODOWNLOAD_title">Auto download</string>
+	<string name="AUTODOWNLOAD_summary">Download all feeds during auto refresh</string>
+		<!-- RESUMEPARTLYDOWNLOADED -->
+	<string name="RESUMEPARTLYDOWNLOADED_key">RESUMEPARTLYDOWNLOADED</string>
+	<string name="RESUMEPARTLYDOWNLOADED_title">Resume partly downloaded</string>
+	<string name="RESUMEPARTLYDOWNLOADED_summary">Resume partly downloaded files</string>
+		<!-- AUTODELETECOMPLETED -->
+	<string name="AUTODELETECOMPLETED_key">AUTODELETECOMPLETED</string>
+	<string name="AUTODELETECOMPLETED_title">Auto delete after played</string>
+	<string name="AUTODELETECOMPLETED_summary">Auto delete on completion played</string>
+		<!-- OPENINFORMATION -->
+	<string name="OPENINFORMATION_key">OPENINFORMATION</string>
+	<string name="OPENINFORMATION_title">Open information</string>
+	<string name="OPENINFORMATION_summary">Open information as default instead of media player.</string>
+		<!-- AUTOPLAYNEXT -->
+	<string name="AUTOPLAYNEXT_key">AUTOPLAYNEXT</string>
+	<string name="AUTOPLAYNEXT_title">Auto queue next</string>
+	<string name="AUTOPLAYNEXT_summary">Auto queue next feed items after a feed item is completed.</string>
+		<!-- AUTOPLAYNEXT_DOWNLOADED -->
+	<string name="AUTOPLAYNEXT_DOWNLOADED_key">AUTOPLAYNEXT_DOWNLOADED</string>
+	<string name="AUTOPLAYNEXT_DOWNLOADED_title">Only auto queue downloaded</string>
+	<string name="AUTOPLAYNEXT_DOWNLOADED_summary">Only auto queue downloaded feed items.</string>
+		<!-- AUTOPLAYNEXT_COMPLETED -->
+	<string name="AUTOPLAYNEXT_COMPLETED_key">AUTOPLAYNEXT_COMPLETED</string>
+	<string name="AUTOPLAYNEXT_COMPLETED_title">Only auto queue completed</string>
+	<string name="AUTOPLAYNEXT_COMPLETED_summary">Only auto queue downloaded feed items.</string>
+		<!-- AUTOPLAYPLAYER -->
+	<string name="AUTOPLAYPLAYER_key">AUTOPLAYPLAYER</string>
+	<string name="AUTOPLAYPLAYER_title">Auto play player</string>
+	<string name="AUTOPLAYPLAYER_summary">Auto play current track when entering player.</string>
+		<!-- PLAYERINLANDSCAPE -->
+	<string name="PLAYERINLANDSCAPE_key">PLAYERINLANDSCAPE</string>
+	<string name="PLAYERINLANDSCAPE_title">Player in landscape mode</string>
+	<string name="PLAYERINLANDSCAPE_summary">Always show player in landscape mode.</string>
+		<!-- FULLSCREEN -->
+	<string name="FULLSCREEN_key">FULLSCREEN</string>
+	<string name="FULLSCREEN_title">Full screen</string>
+	<string name="FULLSCREEN_summary">Use full screen.</string>
+		<!-- PLAYLISTPLAYER -->
+	<string name="PLAYLISTPLAYER_key">PLAYLISTPLAYER</string>
+	<string name="PLAYLISTPLAYER_title">Play list player</string>
+	<string name="PLAYLISTPLAYER_summary">Use play list player as default player.</string>
+
 </resources>

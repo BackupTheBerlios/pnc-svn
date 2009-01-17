@@ -28,6 +28,7 @@ import android.util.Log;
 import android.util.Xml;
 import android.util.Xml.Encoding;
 
+import com.mathias.android.acast.common.Util.DownloadException;
 import com.mathias.android.acast.podcast.Feed;
 import com.mathias.android.acast.podcast.FeedItem;
 
@@ -170,7 +171,7 @@ public class RssUtil implements ContentHandler {
 						String iconpath = scaleBitmap(file);
 						Log.d(TAG, "Icon path: "+iconpath);
 						feed.icon = iconpath;
-					} catch (Exception e) {
+					} catch (DownloadException e) {
 						Log.e(TAG, e.getMessage(), e);
 						throw new SAXException(e);
 					}

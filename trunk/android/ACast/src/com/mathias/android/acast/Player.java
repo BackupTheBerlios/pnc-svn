@@ -4,11 +4,14 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -52,12 +55,20 @@ public class Player extends Activity implements ServiceConnection {
 
 	private TextView title;
 
+	private SharedPreferences prefs;
+
+	private boolean autoPlayPlayer = false;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate "+getTaskId());
 		super.onCreate(savedInstanceState);
 
 		ACastUtil.customTitle(this, "Player", R.layout.player);
+
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		prefs.registerOnSharedPreferenceChangeListener(prefsListener);
+		readSettings();
 
 		mDbHandler = new ACastDbAdapter(this);
 		mDbHandler.open();
@@ -198,6 +209,18 @@ public class Player extends Activity implements ServiceConnection {
 		return true;
 	}
 
+	private OnSharedPreferenceChangeListener prefsListener = new OnSharedPreferenceChangeListener(){
+		@Override
+		public void onSharedPreferenceChanged(
+				SharedPreferences sharedPreferences, String key) {
+			readSettings();
+		}
+	};
+	
+	private void readSettings(){
+		autoPlayPlayer = prefs.getBoolean(getString(R.string.AUTOPLAYPLAYER_key), false);		
+	}
+
 	private Handler progressHandler = new Handler(){
 		@Override
 		public void handleMessage(Message not_used) {
@@ -234,9 +257,9 @@ public class Player extends Activity implements ServiceConnection {
 	@Override
 	protected void onDestroy() {
 		Log.d(TAG, "onDestroy: isFinishing="+isFinishing()+" taskid"+getTaskId());
+		prefs.unregisterOnSharedPreferenceChangeListener(prefsListener);
 		if(mediaBinder != null){
 			unbindService(this);
-			mediaBinder = null;
 		}
 		mDbHandler.close();
 		mDbHandler = null;
@@ -254,6 +277,21 @@ public class Player extends Activity implements ServiceConnection {
 	public void onServiceConnected(ComponentName name, IBinder service) {
 		Log.d(TAG, "onServiceConnected: "+getTaskId()+" "+name);
 		mediaBinder = IMediaService.Stub.asInterface(service);
+		if(autoPlayPlayer){
+			Log.e(TAG, "autoPlayPlayer=true");
+			try{
+				Log.e(TAG, "mediaBinder="+mediaBinder);
+				if(mediaBinder != null){
+					if(!mediaBinder.isPlaying()){
+						Log.e(TAG, "isPLaying=true mediaBinder.play()");
+						mediaBinder.play();
+					}
+					playpause.setImageResource(R.drawable.pause);
+				}
+			}catch(RemoteException e){
+				Log.e(TAG, e.getMessage(), e);
+			}
+		}
 		try {
 			mediaBinder.registerCallback(mediaCallback);
 			runOnUiThread(new Runnable(){
@@ -265,7 +303,6 @@ public class Player extends Activity implements ServiceConnection {
 		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
-		populateView();
 	}
 
 	@Override
@@ -276,6 +313,7 @@ public class Player extends Activity implements ServiceConnection {
 		} catch (RemoteException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
+		mediaBinder = null;
 	}
 
 	private final IMediaServiceCallback mediaCallback = new IMediaServiceCallback.Stub() {
@@ -303,7 +341,7 @@ public class Player extends Activity implements ServiceConnection {
 
 	private void populateView(){
 		try {
-			if(mediaBinder != null){
+			if(mediaBinder != null && mDbHandler != null){
 				FeedItem item = null;
 				long id = mediaBinder.getId();
 				if(id != -1){
@@ -329,7 +367,7 @@ public class Player extends Activity implements ServiceConnection {
 					}
 				}
 			}else{
-				Log.w(TAG, "binder is null");
+				Log.w(TAG, "mDbHandler or mediaBinder is null");
 			}
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);

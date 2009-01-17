@@ -122,6 +122,82 @@ public final class R {
         public static final int videoplayer=0x7f030012;
     }
     public static final class string {
+        /**  AUTODELETECOMPLETED 
+         */
+        public static final int AUTODELETECOMPLETED_key=0x7f050034;
+        public static final int AUTODELETECOMPLETED_summary=0x7f050036;
+        public static final int AUTODELETECOMPLETED_title=0x7f050035;
+        /**  AUTODELETE 
+         */
+        public static final int AUTODELETE_key=0x7f050028;
+        public static final int AUTODELETE_summary=0x7f05002a;
+        public static final int AUTODELETE_title=0x7f050029;
+        /**  AUTODOWNLOAD 
+         */
+        public static final int AUTODOWNLOAD_key=0x7f05002e;
+        public static final int AUTODOWNLOAD_summary=0x7f050030;
+        public static final int AUTODOWNLOAD_title=0x7f05002f;
+        /**  AUTOPLAYNEXT_COMPLETED 
+         */
+        public static final int AUTOPLAYNEXT_COMPLETED_key=0x7f050040;
+        public static final int AUTOPLAYNEXT_COMPLETED_summary=0x7f050042;
+        public static final int AUTOPLAYNEXT_COMPLETED_title=0x7f050041;
+        /**  AUTOPLAYNEXT_DOWNLOADED 
+         */
+        public static final int AUTOPLAYNEXT_DOWNLOADED_key=0x7f05003d;
+        public static final int AUTOPLAYNEXT_DOWNLOADED_summary=0x7f05003f;
+        public static final int AUTOPLAYNEXT_DOWNLOADED_title=0x7f05003e;
+        /**  AUTOPLAYNEXT 
+         */
+        public static final int AUTOPLAYNEXT_key=0x7f05003a;
+        public static final int AUTOPLAYNEXT_summary=0x7f05003c;
+        public static final int AUTOPLAYNEXT_title=0x7f05003b;
+        /**  AUTOPLAYPLAYER 
+         */
+        public static final int AUTOPLAYPLAYER_key=0x7f050043;
+        public static final int AUTOPLAYPLAYER_summary=0x7f050045;
+        public static final int AUTOPLAYPLAYER_title=0x7f050044;
+        /**  AUTOREFRESH 
+         */
+        public static final int AUTOREFRESH_key=0x7f05002b;
+        public static final int AUTOREFRESH_summary=0x7f05002d;
+        public static final int AUTOREFRESH_title=0x7f05002c;
+        /**  FULLSCREEN 
+         */
+        public static final int FULLSCREEN_key=0x7f050049;
+        public static final int FULLSCREEN_summary=0x7f05004b;
+        public static final int FULLSCREEN_title=0x7f05004a;
+        /**  preferences 
+ ONLYWIFIDOWNLOAD 
+         */
+        public static final int ONLYWIFIDOWNLOAD_key=0x7f050022;
+        public static final int ONLYWIFIDOWNLOAD_summary=0x7f050024;
+        public static final int ONLYWIFIDOWNLOAD_title=0x7f050023;
+        /**  ONLYWIFISTREAM 
+         */
+        public static final int ONLYWIFISTREAM_key=0x7f050025;
+        public static final int ONLYWIFISTREAM_summary=0x7f050027;
+        public static final int ONLYWIFISTREAM_title=0x7f050026;
+        /**  OPENINFORMATION 
+         */
+        public static final int OPENINFORMATION_key=0x7f050037;
+        public static final int OPENINFORMATION_summary=0x7f050039;
+        public static final int OPENINFORMATION_title=0x7f050038;
+        /**  PLAYERINLANDSCAPE 
+         */
+        public static final int PLAYERINLANDSCAPE_key=0x7f050046;
+        public static final int PLAYERINLANDSCAPE_summary=0x7f050048;
+        public static final int PLAYERINLANDSCAPE_title=0x7f050047;
+        /**  PLAYLISTPLAYER 
+         */
+        public static final int PLAYLISTPLAYER_key=0x7f05004c;
+        public static final int PLAYLISTPLAYER_summary=0x7f05004e;
+        public static final int PLAYLISTPLAYER_title=0x7f05004d;
+        /**  RESUMEPARTLYDOWNLOADED 
+         */
+        public static final int RESUMEPARTLYDOWNLOADED_key=0x7f050031;
+        public static final int RESUMEPARTLYDOWNLOADED_summary=0x7f050033;
+        public static final int RESUMEPARTLYDOWNLOADED_title=0x7f050032;
         public static final int add=0x7f050003;
         /**  feeds_list menu items 
          */

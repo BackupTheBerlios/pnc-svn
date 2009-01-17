@@ -12,12 +12,15 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -86,6 +89,10 @@ public class FeedItemList extends ListActivity {
 
     private long lastId = Constants.INVALID_ID;
 
+	private SharedPreferences prefs;
+	
+	private boolean onlyWifiDownload = false;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -95,6 +102,10 @@ public class FeedItemList extends ListActivity {
 		setContentView(R.layout.feeditem_list);
 		
 		setTitle("Feed items");
+
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		prefs.registerOnSharedPreferenceChangeListener(prefsListener);
+		readSettings();
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
@@ -282,6 +293,27 @@ public class FeedItemList extends ListActivity {
 		return super.onMenuItemSelected(featureId, menuitem);
 	}
 	
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		mDbHelper = null;
+		if(downloadBinder != null){
+			unbindService(downloadServiceConn);
+		}
+		if(mediaBinder != null){
+			unbindService(mediaServiceConn);
+		}
+		if(updateBinder != null){
+			unbindService(updateServiceConn);
+		}
+		super.onDestroy();
+	}
+
+	private void readSettings(){
+		onlyWifiDownload = prefs.getBoolean(
+				getString(R.string.ONLYWIFIDOWNLOAD_key), false);
+	}
+
 	private void updateFeed(){
 		try {
 	        setProgressBarIndeterminateVisibility(true);
@@ -406,23 +438,14 @@ public class FeedItemList extends ListActivity {
 		}
 	}
 
-	@Override
-	protected void onDestroy() {
-		mDbHelper.close();
-		mDbHelper = null;
-		if(downloadBinder != null){
-			unbindService(downloadServiceConn);
+	private OnSharedPreferenceChangeListener prefsListener = new OnSharedPreferenceChangeListener(){
+		@Override
+		public void onSharedPreferenceChanged(
+				SharedPreferences sharedPreferences, String key) {
+			readSettings();
 		}
-		if(mediaBinder != null){
-			unbindService(mediaServiceConn);
-		}
-		if(updateBinder != null){
-			unbindService(updateServiceConn);
-		}
-		super.onDestroy();
-	}
-
-
+	};
+	
 	private final IDownloadServiceCallback downloadCallback = new IDownloadServiceCallback.Stub() {
 		@Override
 		public void onCompleted(final long externalid) throws RemoteException {
@@ -431,7 +454,6 @@ public class FeedItemList extends ListActivity {
 				public void run() {
 					populateView();
 			        setProgressBarIndeterminateVisibility(false);
-//			        Util.showToastShort(FeedItemList.this, "Downloaded");
 				}
 			});
 		}
@@ -442,7 +464,6 @@ public class FeedItemList extends ListActivity {
 				public void run() {
 					populateView();
 			        setProgressBarIndeterminateVisibility(false);
-//			        Util.showToastShort(FeedItemList.this, "Download failed: "+exception);
 				}
 			});
 		}

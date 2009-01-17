@@ -19,13 +19,73 @@
         xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-            android:title="inline_preferences">
-            
+            android:title="Boolean">
+
         <CheckBoxPreference
-                android:key="checkbox_preference"
-                android:title="title_toggle_preference"
-                android:summary="summary_toggle_preference" />
-            
+                android:key="@string/ONLYWIFIDOWNLOAD_key"
+                android:title="@string/ONLYWIFIDOWNLOAD_title"
+                android:summary="@string/ONLYWIFIDOWNLOAD_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/ONLYWIFISTREAM_key"
+                android:title="@string/ONLYWIFISTREAM_title"
+                android:summary="@string/ONLYWIFISTREAM_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTODELETE_key"
+                android:title="@string/AUTODELETE_title"
+                android:summary="@string/AUTODELETE_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTOREFRESH_key"
+                android:title="@string/AUTOREFRESH_title"
+                android:summary="@string/AUTOREFRESH_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTODOWNLOAD_key"
+                android:title="@string/AUTODOWNLOAD_title"
+                android:summary="@string/AUTODOWNLOAD_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/RESUMEPARTLYDOWNLOADED_key"
+                android:title="@string/RESUMEPARTLYDOWNLOADED_title"
+                android:summary="@string/RESUMEPARTLYDOWNLOADED_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTODELETECOMPLETED_key"
+                android:title="@string/AUTODELETECOMPLETED_title"
+                android:summary="@string/AUTODELETECOMPLETED_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/OPENINFORMATION_key"
+                android:title="@string/OPENINFORMATION_title"
+                android:summary="@string/OPENINFORMATION_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTOPLAYNEXT_key"
+                android:title="@string/AUTOPLAYNEXT_title"
+                android:summary="@string/AUTOPLAYNEXT_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTOPLAYNEXT_DOWNLOADED_key"
+                android:title="@string/AUTOPLAYNEXT_DOWNLOADED_title"
+                android:summary="@string/AUTOPLAYNEXT_DOWNLOADED_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTOPLAYNEXT_COMPLETED_key"
+                android:title="@string/AUTOPLAYNEXT_COMPLETED_title"
+                android:summary="@string/AUTOPLAYNEXT_COMPLETED_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/PLAYERINLANDSCAPE_key"
+                android:title="@string/PLAYERINLANDSCAPE_title"
+                android:summary="@string/PLAYERINLANDSCAPE_summary" />
+
+        <CheckBoxPreference
+                android:key="@string/AUTOPLAYPLAYER_key"
+                android:title="@string/AUTOPLAYPLAYER_title"
+                android:summary="@string/AUTOPLAYPLAYER_summary" />
+
     </PreferenceCategory>
                 
     <PreferenceCategory

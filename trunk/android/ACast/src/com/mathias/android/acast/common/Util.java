@@ -83,26 +83,33 @@ public abstract class Util {
 		void progressDiff(long externalid, long size);
 		boolean continueDownload(long externalid);
 	}
+	
+	@SuppressWarnings("serial")
+	public static class DownloadException extends Exception {
+		public DownloadException(String detailMessage) {
+			super(detailMessage);
+		}
+	}
 
 	public static void downloadFile(long externalid, String src,
-			File dest, ProgressListener listener) throws Exception {
+			File dest, ProgressListener listener) throws DownloadException {
 		if(src == null || dest == null){
-			throw new Exception("src or dest null!");
+			throw new DownloadException("src or dest null!");
 		}
 		File dir = dest.getParentFile();
 		if(!dir.exists()){
 			if(!dir.mkdirs()){
 				Log.e(TAG, "Could not create dirs: "+dir.getAbsolutePath());
-				throw new Exception("Could not create dirs: "+dir.getAbsolutePath());
+				throw new DownloadException("Could not create dirs: "+dir.getAbsolutePath());
 			}
-		}
-		if(!dest.exists() && !dest.createNewFile()){
-			Log.e(TAG, "Could not create file: "+dest.getAbsolutePath());
-			throw new Exception("Could not create file: "+dest.getAbsolutePath());
 		}
 		InputStream input = null;
 		FileOutputStream output = null;
 		try {
+			if(!dest.exists() && !dest.createNewFile()){
+				Log.e(TAG, "Could not create file: "+dest.getAbsolutePath());
+				throw new DownloadException("Could not create file: "+dest.getAbsolutePath());
+			}
 			DefaultHttpClient client = new DefaultHttpClient();
 			HttpResponse response = client.execute(new HttpGet(src));
 			input = response.getEntity().getContent();
@@ -123,16 +130,16 @@ public abstract class Util {
 			}
 		} catch (FileNotFoundException e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception(e.getMessage());
+			throw new DownloadException(e.getMessage());
 		} catch (ClientProtocolException e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception(e.getMessage());
+			throw new DownloadException(e.getMessage());
 		} catch (IOException e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception(e.getMessage());
+			throw new DownloadException(e.getMessage());
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
-			throw new Exception(e.getMessage());
+			throw new DownloadException(e.getMessage());
 		}finally{
 			if(input != null){
 				try {

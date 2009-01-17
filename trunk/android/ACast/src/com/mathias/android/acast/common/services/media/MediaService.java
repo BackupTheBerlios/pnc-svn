@@ -14,6 +14,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
@@ -22,6 +24,7 @@ import android.os.Looper;
 import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.mathias.android.acast.ACastDbAdapter;
@@ -55,6 +58,10 @@ public class MediaService extends Service {
 
 	private long lastPress = 0;
 
+	private SharedPreferences prefs;
+	
+	private LocalSettings settings = new LocalSettings();
+	
     @Override
 	public void onCreate() {
 
@@ -62,6 +69,10 @@ public class MediaService extends Service {
     	thread.start();
 
     	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		prefs.registerOnSharedPreferenceChangeListener(prefsListener);
+		readSettings();
 
 		mDbHandler = new ACastDbAdapter(this);
 		mDbHandler.open();
@@ -91,16 +102,33 @@ public class MediaService extends Service {
 		
 		try {
 			String lastId = mDbHandler.getSetting(Settings.LASTFEEDITEMID);
-			FeedItem item = mDbHandler.fetchFeedItem(Long.parseLong(lastId));
-			if(item != null){
+			if(lastId != null){
+				FeedItem item = mDbHandler.fetchFeedItem(Long.parseLong(lastId));
+				if(item != null && item.downloaded){
 					initItem(item, false, false);
+				}
 			}
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
 	}
     
-    private class WorkerThread extends Thread {
+	private OnSharedPreferenceChangeListener prefsListener = new OnSharedPreferenceChangeListener(){
+		@Override
+		public void onSharedPreferenceChanged(
+				SharedPreferences sharedPreferences, String key) {
+			readSettings();
+		}
+	};
+
+	private void readSettings(){
+		settings.onlyWifiStream = prefs.getBoolean(getString(R.string.ONLYWIFIDOWNLOAD_key), false);
+		Log.d(TAG, "listener onlyWifiDownload="+settings.onlyWifiStream);
+		settings.autoDeleteAfterPlayed = prefs.getBoolean(getString(R.string.AUTODELETECOMPLETED_key), false);
+		Log.d(TAG, "listener autoDeleteAfterPlayed="+settings.autoDeleteAfterPlayed);
+	}
+
+	private class WorkerThread extends Thread {
 
 		public Handler handler;
 		
@@ -163,6 +191,7 @@ public class MediaService extends Service {
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy() mp="+mp);
+		prefs.unregisterOnSharedPreferenceChangeListener(prefsListener);
 		unregisterReceiver(receiver);
 		stopMediaPlayer();
 		mCallbacks.kill();
@@ -263,7 +292,7 @@ public class MediaService extends Service {
 			if(mp != null){
 				res = mp.isPlaying();
 			}
-			Log.d(TAG, "isPlaying:"+res+" mp="+mp);
+			Log.d(TAG, "isPlaying="+res+" mp="+mp);
 			return res;
 		}
 		@Override
@@ -354,6 +383,14 @@ public class MediaService extends Service {
 							ACastDbAdapter.FEEDITEM_COMPLETED, true);
 					mDbHandler.updateFeedItem(oldid,
 							ACastDbAdapter.FEEDITEM_BOOKMARK, 0);
+					if(settings.autoDeleteAfterPlayed) {
+						FeedItem item = mDbHandler.fetchFeedItem(oldid);
+						if(item != null && item.downloaded){
+							new File(item.mp3file).delete();
+							item.downloaded = false;
+							mDbHandler.updateFeedItem(item);
+						}
+					}
 				}else{
 					mDbHandler.updateFeedItem(oldid,
 							ACastDbAdapter.FEEDITEM_BOOKMARK, currpos);
@@ -541,6 +578,11 @@ public class MediaService extends Service {
 		notification.setLatestEventInfo(this, "Error", error, contentIntent);
 
 		mNM.notify(Constants.NOTIFICATION_MEDIASERVICE_ID, notification);
+	}
+
+	private static class LocalSettings {
+		boolean onlyWifiStream = false;
+		boolean autoDeleteAfterPlayed = false;
 	}
 
 }

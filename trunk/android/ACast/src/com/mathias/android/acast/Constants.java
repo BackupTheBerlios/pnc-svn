@@ -1,14 +1,11 @@
 /*
 TODO 5: Interface to podnova.com
-TODO 5: Setting: Full screen; remove activity title bar (requestWindowFeature(Window.FEATURE_NO_TITLE)), fullscreen (getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); ).
 TODO 5: Introduction screen..., where to add feeds and info regarding players.
-TODO 5: Setting auto play player onResume
 TODO 4: Bug: downloadedView -> queue item; does not add item at the end of queue.
 TODO 5: Three progressHandler... for DownloadQueueList seems wrong. Is one added for each download?
 TODO 6: notification player
 TODO 6: All feed items view, including not downloaded
 TODO 5: delete downloaded which are X days or older
-TODO 5: settings: boolean use big button player or play list player as default
 TODO 5: problem when opening/removing sdcard
 TODO 5: notification during download. progressbar for notification.
 TODO 5: 'downloading' icon in status bar and for each feeditem during download.
@@ -40,10 +37,21 @@ TODO 4: save playlists
 TODO 4: Broadcast instead of callback interface?
 TODO 4: Switch between pubdate and asc title order in feed list.
 TODO 4: Menu option to mark feed item as read
-TODO 5: Setting: only auto queue downloaded
-TODO 5: Setting: only auto queue completed
+TODO 5: Settings dialog: 
+	Setting: auto delete, 
+	Setting: auto refresh all feeds at spec time (hourly, daily, week, month), 
+	Setting: auto download. 
+	Setting: Only download through wifi. 
+	Setting: Resume partly downloaded. 
+	Setting: Auto delete after playing
+	Setting: Auto-play next unplayed Episode when an Episode has finished playing.
+	Setting: Full screen; remove activity title bar (requestWindowFeature(Window.FEATURE_NO_TITLE)), fullscreen (getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); ).
+	Setting: auto play player onResume
+	Setting: boolean use big button player or play list player as default
+	Setting: only auto queue downloaded
+	Setting: only auto queue completed
+	Setting: Sort by date, unsorted, title, size, ... (settings?)
 TODO 5: Playlist feed icon and status icon
-TODO 5: Sort by date, unsorted, title, size, ... (settings?)
 TODO 5: Move resume button playlist to list so it is possible to move it out of screen like iphone.
 TODO 6: Search through all titles for all feeds
 TODO 5: Download estimated time
@@ -55,14 +63,6 @@ TODO 5: ContentProvider, MIME (text/xml) association, should trigger intent for 
       	<data android:mimeType="audio/x-scpls" />
       	<data android:mimeType="audio/x-mpegurl" />
       </intent-filter>
-TODO 5: Settings dialog: 
-       auto delete, 
-       auto refresh all feeds at spec time (hourly, daily, week, month), 
-       auto download. 
-       Only download through wifi. 
-       Resume partly downloaded. 
-       Auto delete after playing
-       Auto-play next unplayed Episode when an Episode has finished playing.
 TODO 5: On multidownload(queue), press (drag?) to activate/setcurrent download of podcast.
 TODO 5: Pause when incoming call, resume afterwards. Pause playback when a call is initiated. 
 TODO 6: Pause/play with button on headset. Multi press; one: pause/play, two: seek forward, three: seek backward, long: ? Media button should only trigger acast and not music player, or consume intent.
