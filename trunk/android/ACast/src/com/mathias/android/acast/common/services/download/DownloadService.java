@@ -23,6 +23,7 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 import com.mathias.android.acast.ACastDbAdapter;
 import com.mathias.android.acast.Constants;
@@ -160,8 +161,12 @@ public class DownloadService extends Service implements ServiceConnection {
 
 		@Override
 		public void progressDiff(long externalid, long size) {
+			Log.d(TAG, "progressDiff: "+externalid+" size="+size);
 			if(currentItem != null && currentItem.externalId == externalid){
 				currentItem.progress = currentItem.progress+size;
+				showDownloadingNotification(new File(currentItem.destfile)
+						.getName(), (int) currentItem.size,
+						(int) currentItem.progress);
 			}
 			broadcastDownloadProgress(externalid, size);
 		}
@@ -187,11 +192,11 @@ public class DownloadService extends Service implements ServiceConnection {
 							int externalId = (int) currentItem.externalId;
 							try {
 								File f = new File(currentItem.destfile);
-								showDownloadingNotification(f.getName());
+								showDownloadingNotification(f.getName(), 1, 0);
 								Log.d(TAG, "Downloading file: "+f.getName());
 								Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
 								Log.d(TAG, "Done downloading file: "+f.getName());
-		
+
 								if(mDbHelper != null){
 									mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
 								}
@@ -283,9 +288,9 @@ public class DownloadService extends Service implements ServiceConnection {
 
 	private final IDownloadService.Stub binder = new IDownloadService.Stub(){
 		@Override
-		public void download(long externalid, String srcuri, String destfile)
+		public void download(long externalid, String srcuri, String destfile, long size)
 				throws RemoteException {
-			workThread.download(new DownloadItem(externalid, srcuri, destfile, 0));
+			workThread.download(new DownloadItem(externalid, srcuri, destfile, 0, size));
 		}
 		@Override
 		public void cancelAndRemoveCurrent() throws RemoteException {
@@ -388,20 +393,22 @@ public class DownloadService extends Service implements ServiceConnection {
 		mNM.notify(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID, notification);
 	}
 
-	private void showDownloadingNotification(String name) {
+	private void showDownloadingNotification(String name, int max, int progress) {
 		Log.d(TAG, "showDownloadingNotification()");
-		String ticker = "Downloading "+name;
-		CharSequence title = "Downloading...";
 		String text = "Downloading "+name;
 
 		Notification notification = new Notification(
-				android.R.drawable.stat_sys_download, ticker, System
+				android.R.drawable.stat_sys_download, text, System
 						.currentTimeMillis());
 
 		Intent i = new Intent(this, DownloadQueueList.class);
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
+		notification.contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
-		notification.setLatestEventInfo(this, title, text, contentIntent);
+		RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.not_progress);
+		contentView.setImageViewResource(R.id.icon, android.R.drawable.stat_sys_download);
+		contentView.setTextViewText(R.id.text, text);
+		contentView.setProgressBar(R.id.progress, max, progress, false);
+		notification.contentView = contentView;
 
 		mNM.notify(Constants.NOTIFICATION_DOWNLOADING_ID, notification);
 	}
@@ -431,6 +438,10 @@ public class DownloadService extends Service implements ServiceConnection {
 		@Override
 		public void onWifiStateChanged(boolean connected)
 				throws RemoteException {
+			wifiAvailable = connected;
+			if(!connected && onlyWifiDownload){
+				currentItem = null;
+			}
 			workThread.interrupt();
 		}
 	};

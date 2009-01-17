@@ -1,12 +1,19 @@
 package com.mathias.android.acast;
 
+import java.util.Date;
+
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +26,7 @@ import android.widget.TextView;
 import com.mathias.android.acast.common.Util;
 import com.mathias.android.acast.common.services.media.IMediaService;
 import com.mathias.android.acast.common.services.media.MediaService;
+import com.mathias.android.acast.common.services.update.UpdateService;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
 
@@ -36,6 +44,8 @@ public class ACastMenu extends Activity {
 	
 	private TextView resumetitle;
 
+	private SharedPreferences prefs;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -45,6 +55,9 @@ public class ACastMenu extends Activity {
 		//since indeterminate progress is used custom title is unavailable
 		setContentView(R.layout.menu);
 		setTitle("Menu");
+
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		prefs.registerOnSharedPreferenceChangeListener(prefsListener);
 
 		mDbHelper = new ACastDbAdapter(this);
 		mDbHelper.open();
@@ -165,6 +178,38 @@ public class ACastMenu extends Activity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
+
+	private OnSharedPreferenceChangeListener prefsListener = new OnSharedPreferenceChangeListener(){
+		@Override
+		public void onSharedPreferenceChanged(
+				SharedPreferences sharedPreferences, String key) {
+			Log.d(TAG, "onSharedPreferenceChanged: "+key);
+			String schedkey = getString(R.string.SCHEDULEDUPDATE_key);
+			if(schedkey.equals(key)){
+				String schedup = prefs.getString(schedkey, "0");
+				int hours = Integer.parseInt(schedup);
+
+				Intent i = new Intent(ACastMenu.this, UpdateService.class);
+				i.putExtra(Constants.ALARM, 1);
+				PendingIntent mAlarmSender = PendingIntent.getService(
+						ACastMenu.this, 0, i, 0);
+
+				AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);
+				if(hours > 0){
+					long interval = hours * 3600000;
+		            long firstTime = System.currentTimeMillis();
+					Log.d(TAG, "setRepeating: "+new Date(firstTime+interval));
+		            am = (AlarmManager)getSystemService(ALARM_SERVICE);
+		            am.setRepeating(AlarmManager.RTC, firstTime+interval, interval,
+							mAlarmSender);
+				}else{
+					//Cancel alarm
+					Log.d(TAG, "Cancel alarm");
+		            am.cancel(mAlarmSender);
+				}
+			}
+		}
+	};
 
 	private void populateView(){
 		FeedItem item = null;

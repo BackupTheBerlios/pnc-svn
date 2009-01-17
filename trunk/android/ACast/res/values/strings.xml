@@ -50,11 +50,15 @@
 		<!-- ONLYWIFIDOWNLOAD -->
 	<string name="ONLYWIFIDOWNLOAD_key">ONLYWIFIDOWNLOAD</string>
 	<string name="ONLYWIFIDOWNLOAD_title">Only Wifi download</string>
-	<string name="ONLYWIFIDOWNLOAD_summary">Only automatic download through Wifi</string>
+	<string name="ONLYWIFIDOWNLOAD_summary">Only download over Wifi</string>
 		<!-- ONLYWIFISTREAM -->
 	<string name="ONLYWIFISTREAM_key">ONLYWIFISTREAM</string>
 	<string name="ONLYWIFISTREAM_title">Only Wifi stream</string>
-	<string name="ONLYWIFISTREAM_summary">Only stream audio through Wifi</string>
+	<string name="ONLYWIFISTREAM_summary">Only stream audio over Wifi</string>
+		<!-- ONLYWIFIUPDATE -->
+	<string name="ONLYWIFIUPDATE_key">ONLYWIFIUPDATE</string>
+	<string name="ONLYWIFIUPDATE_title">Only Wifi refresh</string>
+	<string name="ONLYWIFIUPDATE_summary">Only refresh feeds over Wifi</string>
 		<!-- AUTODELETE -->
 	<string name="AUTODELETE_key">AUTODELETE</string>
 	<string name="AUTODELETE_title">Auto delete</string>
@@ -107,5 +111,9 @@
 	<string name="PLAYLISTPLAYER_key">PLAYLISTPLAYER</string>
 	<string name="PLAYLISTPLAYER_title">Play list player</string>
 	<string name="PLAYLISTPLAYER_summary">Use play list player as default player.</string>
+		<!-- SCHEDULEDUPDATE -->
+	<string name="SCHEDULEDUPDATE_key">SCHEDULEDUPDATE</string>
+	<string name="SCHEDULEDUPDATE_title">Scheduled update</string>
+	<string name="SCHEDULEDUPDATE_summary">Select how often a full refresh of feeds should be executed.</string>
 
 </resources>

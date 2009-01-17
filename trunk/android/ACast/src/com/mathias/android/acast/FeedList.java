@@ -381,8 +381,9 @@ public class FeedList extends ListActivity {
 						&& feeditem.mp3file != null) {
 					try {
 						if (!feeditem.downloaded) {
-							downloadBinder.download(feeditem.id, feeditem
-									.mp3uri, feeditem.mp3file);
+							downloadBinder.download(feeditem.id,
+									feeditem.mp3uri, feeditem.mp3file,
+									feeditem.size);
 							count++;
 						}
 					} catch (RemoteException e) {
@@ -402,8 +403,8 @@ public class FeedList extends ListActivity {
 					&& feeditem.mp3file != null) {
 				try {
 					if (!feeditem.downloaded) {
-						downloadBinder.download(feeditem.id, feeditem
-								.mp3uri, feeditem.mp3file);
+						downloadBinder.download(feeditem.id, feeditem.mp3uri,
+								feeditem.mp3file, feeditem.size);
 					}
 				} catch (RemoteException e) {
 					Log.e(TAG, e.getMessage(), e);

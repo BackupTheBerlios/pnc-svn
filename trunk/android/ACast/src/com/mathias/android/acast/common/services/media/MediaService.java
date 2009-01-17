@@ -11,9 +11,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.media.MediaPlayer;
@@ -33,10 +35,13 @@ import com.mathias.android.acast.DatabaseException;
 import com.mathias.android.acast.Player;
 import com.mathias.android.acast.R;
 import com.mathias.android.acast.common.Util;
+import com.mathias.android.acast.common.services.wifi.IWifiService;
+import com.mathias.android.acast.common.services.wifi.IWifiServiceCallback;
+import com.mathias.android.acast.common.services.wifi.WifiService;
 import com.mathias.android.acast.podcast.FeedItem;
 import com.mathias.android.acast.podcast.Settings;
 
-public class MediaService extends Service {
+public class MediaService extends Service implements ServiceConnection {
 	
 	private static final String TAG = MediaService.class.getSimpleName();
 
@@ -56,12 +61,14 @@ public class MediaService extends Service {
 	
 	private BroadcastReceiver receiver;
 
-	private long lastPress = 0;
-
 	private SharedPreferences prefs;
 	
 	private LocalSettings settings = new LocalSettings();
 	
+	private boolean wifiAvailable = false;
+
+	private IWifiService wifiBinder;
+
     @Override
 	public void onCreate() {
 
@@ -78,6 +85,8 @@ public class MediaService extends Service {
 		mDbHandler.open();
 		
 		receiver = new BroadcastReceiver() {
+			private long lastPress = 0;
+
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				Log.d(TAG, "MEDIA_BUTTON pressed");
@@ -100,6 +109,9 @@ public class MediaService extends Service {
 		};
 		registerReceiver(receiver, new IntentFilter("android.intent.action.MEDIA_BUTTON"));
 		
+		Intent i = new Intent(this, WifiService.class);
+		bindService(i, this, BIND_AUTO_CREATE);
+
 		try {
 			String lastId = mDbHandler.getSetting(Settings.LASTFEEDITEMID);
 			if(lastId != null){
@@ -117,7 +129,17 @@ public class MediaService extends Service {
 		@Override
 		public void onSharedPreferenceChanged(
 				SharedPreferences sharedPreferences, String key) {
+			boolean t = settings.onlyWifiStream;
 			readSettings();
+			if(!wifiAvailable && settings.onlyWifiStream && !t){
+				if(binder != null){
+					try {
+						binder.stop();
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+				}
+			}
 		}
 	};
 
@@ -193,6 +215,9 @@ public class MediaService extends Service {
 		Log.d(TAG, "onDestroy() mp="+mp);
 		prefs.unregisterOnSharedPreferenceChangeListener(prefsListener);
 		unregisterReceiver(receiver);
+		if(wifiBinder != null){
+			unbindService(this);
+		}
 		stopMediaPlayer();
 		mCallbacks.kill();
 		mDbHandler.close();
@@ -408,6 +433,11 @@ public class MediaService extends Service {
 			Log.e(TAG, "initItem: item is null");
 			return;
 		}
+		if(settings.onlyWifiStream && !wifiAvailable){
+			Log.e(TAG, "Streaming over non-WiFi disabled!");
+			Util.showToastLong(this, "Streaming over non-WiFi disabled!");
+			return;
+		}
 		Log.d(TAG, "initItem, id=" + item.id + " lastCompleted="
 				+ lastCompleted + " mp=" + mp);
 
@@ -500,7 +530,7 @@ public class MediaService extends Service {
 		}
 	};
 
-	private void broadcastTrackCompleted(){
+	private void broadcastTrackCompleted() {
 		Log.d(TAG, "broadcastTrackCompleted mp="+mp);
         final int N = mCallbacks.beginBroadcast();
 		for (int i = 0; i < N; i++) {
@@ -514,7 +544,7 @@ public class MediaService extends Service {
 		mCallbacks.finishBroadcast();
 	}
 
-	private void broadcastPlaylistCompleted(){
+	private void broadcastPlaylistCompleted() {
 		Log.d(TAG, "broadcastPlaylistCompleted mp="+mp);
         final int N = mCallbacks.beginBroadcast();
 		for (int i = 0; i < N; i++) {
@@ -528,7 +558,7 @@ public class MediaService extends Service {
 		mCallbacks.finishBroadcast();
 	}
 
-	private void stopMediaPlayer(){
+	private void stopMediaPlayer() {
 		Log.d(TAG, "stopMediaPlayer mp="+mp);
 		if(mp != null){
 			mp.reset();
@@ -584,5 +614,43 @@ public class MediaService extends Service {
 		boolean onlyWifiStream = false;
 		boolean autoDeleteAfterPlayed = false;
 	}
+
+	@Override
+	public void onServiceConnected(ComponentName name, IBinder service) {
+		wifiBinder = IWifiService.Stub.asInterface(service);
+		try {
+			wifiAvailable = wifiBinder.isWifiAvailable();
+			wifiBinder.registerCallback(wifiCallback);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public void onServiceDisconnected(ComponentName name) {
+		try {
+			wifiBinder.unregisterCallback(wifiCallback);
+		} catch (RemoteException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		wifiBinder = null;
+	}
+
+	private final IWifiServiceCallback wifiCallback = new IWifiServiceCallback.Stub() {
+		@Override
+		public void onWifiStateChanged(boolean connected)
+				throws RemoteException {
+			wifiAvailable = connected;
+			if(!connected && settings.onlyWifiStream){
+				if(binder != null){
+					try {
+						binder.stop();
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+				}
+			}
+		}
+	};
 
 }

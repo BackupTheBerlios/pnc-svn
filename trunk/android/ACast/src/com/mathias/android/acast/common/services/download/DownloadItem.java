@@ -15,17 +15,20 @@ public class DownloadItem implements Serializable {
 
 	public long progress;
 	
-	public DownloadItem(long externalId, String srcuri, String destfile, long progress){
+	public long size;
+	
+	public DownloadItem(long externalId, String srcuri, String destfile, long progress, long size){
 		this.externalId = externalId;
 		this.srcuri = srcuri;
 		this.destfile = destfile;
 		this.progress = progress;
+		this.size = size;
 	}
 	
 	@Override
 	public String toString() {
 		return Util.buildString("[externalId=", externalId, "][srcuri=",
-				srcuri, "][destfile=", destfile, "][progress=", progress, "]");
+				srcuri, "][destfile=", destfile, "][progress=", progress, "][size=", size, "]");
 	}
 
 }

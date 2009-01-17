@@ -68,7 +68,7 @@ public class Player extends Activity implements ServiceConnection {
 
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		prefs.registerOnSharedPreferenceChangeListener(prefsListener);
-		readSettings();
+		readSettings(null);
 
 		mDbHandler = new ACastDbAdapter(this);
 		mDbHandler.open();
@@ -213,12 +213,14 @@ public class Player extends Activity implements ServiceConnection {
 		@Override
 		public void onSharedPreferenceChanged(
 				SharedPreferences sharedPreferences, String key) {
-			readSettings();
+			readSettings(key);
 		}
 	};
 	
-	private void readSettings(){
-		autoPlayPlayer = prefs.getBoolean(getString(R.string.AUTOPLAYPLAYER_key), false);		
+	private void readSettings(String key){
+		if(key == null || getString(R.string.AUTOPLAYPLAYER_key).equals(key)){
+			autoPlayPlayer = prefs.getBoolean(getString(R.string.AUTOPLAYPLAYER_key), false);		
+		}
 	}
 
 	private Handler progressHandler = new Handler(){

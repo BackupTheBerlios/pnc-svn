@@ -364,7 +364,7 @@ public class FeedItemList extends ListActivity {
 			for (FeedItem item : items) {
 				if(!item.downloaded){
 					downloadBinder.download(item.id, item.mp3uri,
-							item.mp3file);
+							item.mp3file, item.size);
 				}
 			}
 			Util.showToastShort(this, "Downloading all " + feed.title);
@@ -411,7 +411,7 @@ public class FeedItemList extends ListActivity {
 		
 		String srcuri = item.mp3uri.replace(' ', '+');
 		try {
-			downloadBinder.download(item.id, srcuri, item.mp3file);
+			downloadBinder.download(item.id, srcuri, item.mp3file, item.size);
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage());
 			return;

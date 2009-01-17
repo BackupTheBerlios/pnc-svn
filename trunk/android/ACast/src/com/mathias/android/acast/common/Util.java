@@ -32,6 +32,8 @@ public abstract class Util {
 
 	private static final String TAG = Util.class.getSimpleName();
 	
+	private static final int DOWNLOAD_PROGRESS_LIMIT = 400000;
+	
 	private static final ImageGetter NULLIMAGEGETTER = new ImageGetter(){
 		@Override
 		public Drawable getDrawable(String source) {
@@ -116,16 +118,19 @@ public abstract class Util {
 			output = new FileOutputStream(dest);
 //			input = new InputStreamReader(response.getEntity().getContent(), "UTF8");
 //			output = cxt.openFileOutput(dest, Context.MODE_WORLD_READABLE);
+			int progressSize = 0;
 			boolean cont = (listener != null ? listener.continueDownload(externalid) : true);
+			byte[] buffer = new byte[8192];
 			while(cont){
-				byte[] buffer = new byte[8192];
 				int c = input.read(buffer);
 				if(c == -1){
 					break;
 				}
 				output.write(buffer, 0, c);
-				if(listener != null){
-					listener.progressDiff(externalid, c);
+				progressSize += c;
+				if(listener != null && progressSize > DOWNLOAD_PROGRESS_LIMIT){
+					listener.progressDiff(externalid, progressSize);
+					progressSize = 0;
 				}
 			}
 		} catch (FileNotFoundException e) {

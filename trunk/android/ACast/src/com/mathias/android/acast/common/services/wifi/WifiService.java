@@ -16,7 +16,7 @@ public class WifiService extends Service {
 
 	private static final String TAG = WifiService.class.getSimpleName();
 	
-	private static final long UPDATE_DELAY = 5000;
+	private static final long UPDATE_DELAY = 10000;
 
     private final RemoteCallbackList<IWifiServiceCallback> mCallbacks = new RemoteCallbackList<IWifiServiceCallback>();
 

@@ -207,4 +207,6 @@ public interface Constants {
 
 	public static final long INVALID_ID = -1;
 
+	public static final String ALARM = "alarm";
+
 }
