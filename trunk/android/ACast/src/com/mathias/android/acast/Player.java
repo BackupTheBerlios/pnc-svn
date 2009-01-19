@@ -280,7 +280,7 @@ public class Player extends Activity implements ServiceConnection {
 		Log.d(TAG, "onServiceConnected: "+getTaskId()+" "+name);
 		mediaBinder = IMediaService.Stub.asInterface(service);
 		if(autoPlayPlayer){
-			Log.e(TAG, "autoPlayPlayer=true");
+			Log.d(TAG, "autoPlayPlayer=true");
 			try{
 				Log.e(TAG, "mediaBinder="+mediaBinder);
 				if(mediaBinder != null){

@@ -133,6 +133,7 @@ public abstract class Util {
 					progressSize = 0;
 				}
 			}
+			input.close();
 		} catch (FileNotFoundException e) {
 			Log.e(TAG, e.getMessage(), e);
 			throw new DownloadException(e.getMessage());
@@ -146,12 +147,6 @@ public abstract class Util {
 			Log.e(TAG, e.getMessage(), e);
 			throw new DownloadException(e.getMessage());
 		}finally{
-			if(input != null){
-				try {
-					input.close();
-				} catch (IOException e) {
-				}
-			}
 			if(output != null){
 				try {
 					output.close();
@@ -221,7 +216,7 @@ public abstract class Util {
 	public static String escapeFilename(String filename){
 		// Valid for NTFS? @  &  ^  '  ,  {  }  [  ]  $  =  !  -  #  (  )  %  +  ~  _  .
 		// Invalid for FAT: space \  /  ?  :  "  *  <  >  | 
-		filename = filename.replaceAll("|", "");
+		filename = filename.replaceAll("\\|", "");
 		filename = filename.replaceAll(":", "");
 		// TODO 5: verify below...
 		filename = filename.replaceAll("\\?", "");

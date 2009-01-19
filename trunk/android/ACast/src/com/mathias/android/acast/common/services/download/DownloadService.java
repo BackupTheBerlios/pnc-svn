@@ -202,17 +202,17 @@ public class DownloadService extends Service implements ServiceConnection {
 								}
 
 								broadcastDownloadCompleted(externalId);
+								if(queue.isEmpty()){
+									showDownloadCompleteNotification(currentItem);
+								}
 							} catch (DownloadException e) {
 								queue.clear();
 								String ret = "Download failed: "+e.getMessage();
 								Log.e(TAG, "broadcastDownloadException: "+e.getMessage(), e);
 								broadcastDownloadException(externalId, ret);
 								uiThread.showToastLong(ret);
+								showDownloadExceptionNotification(ret);
 							}
-							mNM.cancel(Constants.NOTIFICATION_DOWNLOADING_ID);
-						}
-						if(queue.isEmpty()){
-							showDownloadCompleteNotification(currentItem);
 						}
 						mPWL.release();
 					}
@@ -225,7 +225,7 @@ public class DownloadService extends Service implements ServiceConnection {
 						queue.clear();
 					}
 					mPWL.release();
-					showDownloadExceptionNotification();
+					showDownloadExceptionNotification(str);
 					broadcastDownloadException(-1, str);
 					uiThread.showToastLong(str);
 				}
@@ -353,11 +353,10 @@ public class DownloadService extends Service implements ServiceConnection {
 		super.onDestroy();
 	}
 
-	private void showDownloadExceptionNotification() {
+	private void showDownloadExceptionNotification(String errortext) {
 		Log.d(TAG, "showDownloadExceptionNotification()");
 		String ticker = "Download error";
 		CharSequence title = "Download error";
-		String text = "Download error occured";
 
 		Notification notification = new Notification(
 				android.R.drawable.stat_sys_download_done, ticker, System
@@ -366,9 +365,9 @@ public class DownloadService extends Service implements ServiceConnection {
 		Intent i = new Intent(this, DownloadedList.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
-		notification.setLatestEventInfo(this, title, text, contentIntent);
+		notification.setLatestEventInfo(this, title, errortext, contentIntent);
 
-		mNM.notify(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_DOWNLOADSERVICE_ID, notification);
 	}
 
 	private void showDownloadCompleteNotification(DownloadItem item) {
@@ -385,12 +384,9 @@ public class DownloadService extends Service implements ServiceConnection {
 		i.putExtra(Constants.FEEDITEMID, (item != null ? item.externalId : Constants.INVALID_ID));
 
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
-
 		notification.setLatestEventInfo(this, title, text, contentIntent);
-
 		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
-
-		mNM.notify(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_DOWNLOADSERVICE_ID, notification);
 	}
 
 	private void showDownloadingNotification(String name, int max, int progress) {
@@ -410,7 +406,7 @@ public class DownloadService extends Service implements ServiceConnection {
 		contentView.setProgressBar(R.id.progress, max, progress, false);
 		notification.contentView = contentView;
 
-		mNM.notify(Constants.NOTIFICATION_DOWNLOADING_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_DOWNLOADSERVICE_ID, notification);
 	}
 
 	@Override

@@ -248,7 +248,7 @@ public class FeedList extends ListActivity {
 			}
 		}, 1000);
 
-		mNM.cancel(Constants.NOTIFICATION_UPDATECOMPLETE_ID);
+		mNM.cancel(Constants.NOTIFICATION_UPDATESERVICE_ID);
 	}
 	
 	@Override

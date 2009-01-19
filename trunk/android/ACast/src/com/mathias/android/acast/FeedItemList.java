@@ -227,6 +227,16 @@ public class FeedItemList extends ListActivity {
 		if(item.mp3uri == null){
 			infoItem(item);
 		}else{
+			String path;
+			if(!item.downloaded){
+				path = item.mp3uri;
+			}else{
+				path = item.mp3file;
+			}
+			if(isVideoFile(path)){
+				startVideoPlayer(path);
+				return;
+			}
 			ACastUtil.playQueueItem(this, mediaBinder, item, items);
 		}
 	}
@@ -571,6 +581,22 @@ public class FeedItemList extends ListActivity {
 	        TextView text3;
 	    }
 
+	}
+
+	private void startVideoPlayer(String path){
+		Log.d(TAG, "Start video player with: "+path);
+		Intent i = new Intent(this, VideoPlayer.class);
+		i.putExtra(VideoPlayer.VIDEOURI, path);
+		startActivity(i);
+	}
+
+	private static boolean isVideoFile(String uri) {
+		if (uri.toLowerCase().endsWith(".m4v")
+				|| uri.toLowerCase().endsWith(".3gp")
+				|| uri.toLowerCase().endsWith(".mp4")) {
+			return true;
+		}
+		return false;
 	}
 
 }

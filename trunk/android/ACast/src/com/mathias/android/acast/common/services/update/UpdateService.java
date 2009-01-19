@@ -209,7 +209,7 @@ public class UpdateService extends Service implements ServiceConnection {
 		contentView.setProgressBar(R.id.progress, max, progress, false);
 		notification.contentView = contentView;
 
-		mNM.notify(Constants.NOTIFICATION_UPDATING_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_UPDATESERVICE_ID, notification);
 	}
 
 	private void showUpdateCompleteNotification() {
@@ -226,7 +226,7 @@ public class UpdateService extends Service implements ServiceConnection {
 
 		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
 
-		mNM.notify(Constants.NOTIFICATION_UPDATECOMPLETE_ID, notification);
+		mNM.notify(Constants.NOTIFICATION_UPDATESERVICE_ID, notification);
 	}
 
     private class WorkerThread extends Thread {
@@ -271,7 +271,7 @@ public class UpdateService extends Service implements ServiceConnection {
 						Log.e(TAG, e.getMessage(), e);
 					}
 					Log.d(TAG, "Done");
-					mNM.cancel(Constants.NOTIFICATION_UPDATING_ID);
+					mNM.cancel(Constants.NOTIFICATION_UPDATESERVICE_ID);
 					showUpdateCompleteNotification();
 					broadcastUpdateAllCompleted();
 			        Util.showToastShort(UpdateService.this, "Update complete");
@@ -303,7 +303,7 @@ public class UpdateService extends Service implements ServiceConnection {
 				        Util.showToastShort(UpdateService.this,
 								"Could not add " + title + " "+ e.getMessage());
 					}
-					mNM.cancel(Constants.NOTIFICATION_UPDATING_ID);
+					mNM.cancel(Constants.NOTIFICATION_UPDATESERVICE_ID);
 				}
 			});
 		}
@@ -333,7 +333,7 @@ public class UpdateService extends Service implements ServiceConnection {
 				        Util.showToastShort(UpdateService.this, "Could not update " + 
 				        		title + " " + e.getMessage());
 					}
-					mNM.cancel(Constants.NOTIFICATION_UPDATING_ID);
+					mNM.cancel(Constants.NOTIFICATION_UPDATESERVICE_ID);
 				}
 			});
 		}

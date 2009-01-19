@@ -74,9 +74,6 @@ public final class R {
         public static final int link=0x7f070007;
         public static final int newitems=0x7f070011;
         public static final int next=0x7f070028;
-        public static final int path=0x7f070032;
-        public static final int pause=0x7f070034;
-        public static final int play=0x7f070033;
         public static final int player=0x7f070024;
         public static final int playlist=0x7f070021;
         public static final int playpause=0x7f070027;
@@ -84,7 +81,6 @@ public final class R {
         public static final int progressbar=0x7f070006;
         public static final int pubdate=0x7f070003;
         public static final int queue=0x7f070022;
-        public static final int reset=0x7f070035;
         public static final int resumetitle=0x7f070025;
         public static final int rewind=0x7f07002c;
         public static final int right_text=0x7f070030;

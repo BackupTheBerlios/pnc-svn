@@ -19,6 +19,10 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnBufferingUpdateListener;
+import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnPreparedListener;
+import android.media.MediaPlayer.OnSeekCompleteListener;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
@@ -89,25 +93,49 @@ public class MediaService extends Service implements ServiceConnection {
 
 			@Override
 			public void onReceive(Context context, Intent intent) {
-				Log.d(TAG, "MEDIA_BUTTON pressed");
-				long newPress = System.currentTimeMillis();
-				if(newPress < lastPress + 500){
+				if(Intent.ACTION_MEDIA_BUTTON.equals(intent.getAction())) {
+					Log.d(TAG, "MEDIA_BUTTON pressed");
+					long newPress = System.currentTimeMillis();
+					if(newPress < lastPress + 500){
+						try {
+							if(binder != null && mp != null){
+								if(binder.isPlaying()) {
+									binder.pause();
+								}else{
+									binder.play();
+								}
+							}
+						} catch (RemoteException e) {
+							Log.e(TAG, e.getMessage(), e);
+						}
+					}
+					lastPress = newPress;
+				}else if(Intent.ACTION_ANSWER.equals(intent.getAction())) {
 					try {
 						if(binder != null && mp != null){
 							if(binder.isPlaying()) {
 								binder.pause();
-							}else{
-								binder.play();
+							}
+						}
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+				}else if(Intent.ACTION_CALL_BUTTON.equals(intent.getAction())) {
+					try {
+						if(binder != null && mp != null){
+							if(binder.isPlaying()) {
+								binder.pause();
 							}
 						}
 					} catch (RemoteException e) {
 						Log.e(TAG, e.getMessage(), e);
 					}
 				}
-				lastPress = newPress;
 			}
 		};
-		registerReceiver(receiver, new IntentFilter("android.intent.action.MEDIA_BUTTON"));
+		registerReceiver(receiver, new IntentFilter(Intent.ACTION_MEDIA_BUTTON));
+		registerReceiver(receiver, new IntentFilter(Intent.ACTION_ANSWER));
+		registerReceiver(receiver, new IntentFilter(Intent.ACTION_CALL_BUTTON));
 		
 		Intent i = new Intent(this, WifiService.class);
 		bindService(i, this, BIND_AUTO_CREATE);
@@ -502,6 +530,11 @@ public class MediaService extends Service implements ServiceConnection {
 			}
 			mp.setOnCompletionListener(completionListener);
 
+			mp.setOnBufferingUpdateListener(mpListener);
+			mp.setOnErrorListener(mpListener);
+			mp.setOnPreparedListener(mpListener);
+			mp.setOnSeekCompleteListener(mpListener);
+			
 			mp.seekTo(item.bookmark);
 
 			if(play){
@@ -653,4 +686,28 @@ public class MediaService extends Service implements ServiceConnection {
 		}
 	};
 
+	private MediaPlayerListener mpListener = new MediaPlayerListener();
+
+	private static class MediaPlayerListener implements OnBufferingUpdateListener, OnErrorListener, OnPreparedListener, OnSeekCompleteListener {
+
+		private static final String TAG = MediaPlayerListener.class.getSimpleName();
+		@Override
+		public void onBufferingUpdate(MediaPlayer mp, int percent) {
+			Log.d(TAG, "onBufferingUpdate: percent="+percent);
+		}
+		@Override
+		public boolean onError(MediaPlayer mp, int what, int extra) {
+			Log.d(TAG, "onError: what="+what+" extra="+extra);
+			return false;
+		}
+		@Override
+		public void onPrepared(MediaPlayer mp) {
+			Log.d(TAG, "onPrepared: mp="+mp);
+		}
+		@Override
+		public void onSeekComplete(MediaPlayer mp) {
+			Log.d(TAG, "onSeekComplete: mp="+mp);
+		}
+	}
+	
 }

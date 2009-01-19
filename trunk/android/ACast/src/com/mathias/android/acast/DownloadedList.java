@@ -141,7 +141,7 @@ public class DownloadedList extends ListActivity {
 		Log.d(TAG, "onResume: "+lastId);
 		super.onResume();
 		populateList();
-		mNM.cancel(Constants.NOTIFICATION_DOWNLOADCOMPLETE_ID);
+		mNM.cancel(Constants.NOTIFICATION_DOWNLOADSERVICE_ID);
 	}
 
 	@Override

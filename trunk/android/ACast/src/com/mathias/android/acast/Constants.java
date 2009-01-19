@@ -1,9 +1,38 @@
 /*
+TODO 5: Bug: player resume shows play instead of pause icon
+TODO 5: Bug: player loops: 
+	D/MediaService( 1573): stop() mp=android.media.MediaPlayer@433dcda8
+	E/MediaPlayer( 1573): pause called in state 8
+	D/MediaService( 1573): bookmark completed=false mp=android.media.MediaPlayer@433dcda8
+	D/MediaService( 1573): getId mp=android.media.MediaPlayer@433dcda8
+	D/MediaService( 1573): getId: FLOSS Weekly 50: Open MPI
+	D/MediaService( 1573): getCurrentPosition pos=93151 mp=android.media.MediaPlayer@433dcda8
+	E/MediaPlayer( 1573): Attempt to call getDuration without a valid mediaplayer
+	D/MediaService( 1573): Storing bookmark: 93151/4 for: 8
+	E/MediaPlayer( 1573): Error (-38,0)
+	D/MediaService( 1573): onCompletion mp=android.media.MediaPlayer@433dcda8
+	D/MediaService( 1573): broadcastTrackCompleted mp=android.media.MediaPlayer@433dcda8
+	D/Player  ( 1573): onTrackCompleted()
+	D/MediaService( 1573): getId mp=android.media.MediaPlayer@433dcda8
+	D/MediaService( 1573): getId: FLOSS Weekly 50: Open MPI
+	D/MediaService( 1573): isPlaying=false mp=android.media.MediaPlayer@433dcda8
+	E/MediaPlayer( 1573): Attempt to call getDuration without a valid mediaplayer
+	D/MediaService( 1573): getDuration() dur=4 mp=android.media.MediaPlayer@433dcda8
+	D/MediaService( 1573): broadcastPlaylistCompleted mp=android.media.MediaPlayer@433dcda8
+	D/Player  ( 1573): onPlaylistCompleted()
+	D/MediaService( 1573): getId mp=android.media.MediaPlayer@433dcda8
+	D/MediaService( 1573): getId: FLOSS Weekly 50: Open MPI
+	D/MediaService( 1573): isPlaying=false mp=android.media.MediaPlayer@433dcda8
+	E/MediaPlayer( 1573): Attempt to call getDuration without a valid mediaplayer
+	D/MediaService( 1573): getDuration() dur=4 mp=android.media.MediaPlayer@433dcda8
+	E/MediaPlayer( 1573): Error (-38,0)
+	D/MediaService( 1573): onCompletion mp=android.media.MediaPlayer@433dcda8
+TODO 5: cancel ongoing refresh somehow
+TODO 5: Setting: show notification after automatic refresh?
 TODO 5: Interface to podnova.com
 TODO 5: Introduction screen..., where to add feeds and info regarding players.
 TODO 4: Bug: downloadedView -> queue item; does not add item at the end of queue.
 TODO 5: Three progressHandler... for DownloadQueueList seems wrong. Is one added for each download?
-TODO 6: notification player
 TODO 6: All feed items view, including not downloaded
 TODO 5: delete downloaded which are X days or older
 TODO 5: problem when opening/removing sdcard
@@ -31,7 +60,6 @@ TODO 5: OutOfMemory; bitmap... Problem in BitmapFactory.decodeFile()
 	}
 TODO 6: Put a progress bar beside feed item which is downloading, or change color icon for queued items
 TODO 5: Search/Add feed; if already exists, skip it. Check by Title (which is unique).
-TODO 4: Separate videoplayer
 TODO 5: Refresh all feeds, do reread from db, clear cache, of metadata
 TODO 4: save playlists
 TODO 4: Broadcast instead of callback interface?
@@ -69,10 +97,12 @@ TODO 6: Pause/play with button on headset. Multi press; one: pause/play, two: se
 TODO 5: Show partial downloads
 TODO 5: Show if streaming when playing
 TODO 4: Ability to exit the application
-TODO 5: Low: Bug: mediaplayer prepare can not handle streaming mp3 url with redirect, http://podtrac.com/pts/redirect.mp3?http://www.48days.bullakaclients.com/12-17-08.mp3  
-TODO 5: Low: show kb/s for download progress window
-TODO 5: Low: Username/password protected RSS
-TODO 5: Low: Use default media player with broadcast sender.
+TODO 4: Low: Bug: mediaplayer prepare can not handle streaming mp3 url with redirect, http://podtrac.com/pts/redirect.mp3?http://www.48days.bullakaclients.com/12-17-08.mp3  
+TODO 4: Low: show kb/s for download progress window
+TODO 4: Low: Username/password protected RSS
+TODO 4: Low: Use default media player with broadcast sender.
+Separate videoplayer
+notification player; not possible
 Multiple Player activites, singleinstance? (launchMode="singleInstance" in the manifest file). Solved with Activity.finish()
 Show new items that are newer then old update time. Use latest not touched instead. Otherwise have to handle multiple refresh...
 Error by notification from services, download/media
@@ -200,10 +230,10 @@ public interface Constants {
 	public static final String FEEDITEMID = "feeditemid";
 
 	public static final int NOTIFICATION_MEDIASERVICE_ID = R.id.author;
-	public static final int NOTIFICATION_DOWNLOADING_ID = R.id.add;
-	public static final int NOTIFICATION_DOWNLOADCOMPLETE_ID = R.id.addresult;
-	public static final int NOTIFICATION_UPDATING_ID = R.id.updatedate;
-	public static final int NOTIFICATION_UPDATECOMPLETE_ID = R.id.bookmark;
+	public static final int NOTIFICATION_DOWNLOADSERVICE_ID = R.id.addresult;
+	public static final int NOTIFICATION_UPDATESERVICE_ID = R.id.bookmark;
+	
+	public static final String NOTIFICATION_CLEAR = "NOTIFICATION_CLEAR";
 
 	public static final long INVALID_ID = -1;
 

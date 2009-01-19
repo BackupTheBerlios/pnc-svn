@@ -34,7 +34,7 @@ public class ACastMenu extends Activity {
 
 	private static final String TAG = ACastMenu.class.getSimpleName();
 	
-	private static final int SETTINGS_ID = 0;
+	private static final int SETTINGS_ID = Menu.FIRST+0;
 
 	private ACastDbAdapter mDbHelper;
 
