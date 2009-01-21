@@ -81,16 +81,12 @@ public class OwaService extends Service {
 		public void run() {
 	    	Log.d(TAG, "WorkingThread.run()");
 	    	
-			String username = prefs.getString(R.string.username_key);
-			String password = prefs.getString(R.string.password_key);
 			boolean dontcheckmail = prefs.getBool(R.string.dontcheckemail_key);
 			boolean dontcheckcalendar = prefs.getBool(R.string.dontcheckcalendar_key);
 			boolean alwaysshowcount = prefs.getBool(R.string.alwaysshowcount_key);
 			try {
 				if(!dontcheckmail) {
-	    			String inboxurl = OwaUtil.getFullInboxUrl(prefs);
-					String inb = Util.downloadFile(0, inboxurl, null, username, password);
-					List<OwaInboxItem> items = OwaParser.parseInbox(inb, true);
+					List<OwaInboxItem> items = OwaUtil.fetchInboxNew(prefs);
 					if(items != null && items.size() > 0){
 				    	Log.d(TAG, "showInboxNotification, items="+items.size());
 						showInboxNotification(items.size(), items.get(0));
@@ -101,9 +97,7 @@ public class OwaService extends Service {
 					}
 				}
 				if(!dontcheckcalendar) {
-	    			String calendarurl = OwaUtil.getFullCalendarUrl(prefs);
-					String cal = Util.downloadFile(0, calendarurl, null, username, password);
-					List<OwaCalendarItem> items = OwaParser.parseCalendar(cal);
+					List<OwaCalendarItem> items = OwaUtil.fetchCalendar(prefs);
 					if(items != null && items.size() > 0){
 						OwaCalendarItem item = items.get(0);
 						GregorianCalendar gc = new GregorianCalendar();
@@ -140,7 +134,7 @@ public class OwaService extends Service {
 
 		Intent i;
 		boolean internalviewer = prefs.getBool(R.string.internalviewer_key);
-		if(internalviewer){
+		if(internalviewer && item != null){
 			i = new Intent(this, OwaReadMail.class);
 			if(item.text == null){
 				item.text = OwaUtil.fetchContent(prefs, item.url);
@@ -158,7 +152,9 @@ public class OwaService extends Service {
 		notification.setLatestEventInfo(this, item.from, item.subject,
 				contentIntent);
 
-		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
+		if(num > 0){
+			notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
+		}
 
 		mNM.notify(NOTIFICATION_INBOX_ID, notification);
 	}

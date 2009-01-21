@@ -1,7 +1,11 @@
 package com.mathias.android.owanotify;
 
+import java.util.List;
+
 import android.util.Log;
 
+import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
+import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
 import com.mathias.android.owanotify.common.Util;
 
@@ -58,6 +62,36 @@ public class OwaUtil {
 			}
 		}
 		return text;
+	}
+
+	public static List<OwaInboxItem> fetchInboxNew(MSharedPreferences prefs){
+		try {
+			String username = prefs.getString(R.string.username_key);
+			String password = prefs.getString(R.string.password_key);
+			String inboxurl = getFullInboxUrl(prefs);
+			if(username != null && password != null && inboxurl != null){
+				String inb = Util.downloadFile(0, inboxurl, null, username, password);
+				return OwaParser.parseInbox(inb, true);
+			}
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return null;
+	}
+
+	public static List<OwaCalendarItem> fetchCalendar(MSharedPreferences prefs){
+		try {
+			String username = prefs.getString(R.string.username_key);
+			String password = prefs.getString(R.string.password_key);
+			String calendarurl = getFullCalendarUrl(prefs);
+			if(username != null && password != null && calendarurl != null){
+				String cal = Util.downloadFile(0, calendarurl, null, username, password);
+				return OwaParser.parseCalendar(cal);
+			}
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return null;
 	}
 
 }
