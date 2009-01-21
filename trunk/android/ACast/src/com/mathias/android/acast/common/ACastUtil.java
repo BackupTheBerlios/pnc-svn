@@ -1,5 +1,6 @@
 package com.mathias.android.acast.common;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -136,6 +137,11 @@ public abstract class ACastUtil {
 	}
 
 	public static int getStatusIcon(FeedItem item){
+		if(item.size > 0 && item.downloaded){
+			if(new File(item.mp3file).length() != item.size){
+				return R.drawable.downloaded_partly;
+			}
+		}
         if(item.mp3uri == null){
         	if(item.completed){
 	            return R.drawable.textonly_done;

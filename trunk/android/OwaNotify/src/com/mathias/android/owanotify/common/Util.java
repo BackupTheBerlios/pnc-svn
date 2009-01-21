@@ -1,4 +1,4 @@
-package com.mathias.android.owanotify;
+package com.mathias.android.owanotify.common;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -11,6 +11,8 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.util.Log;
 
 public class Util {
@@ -47,6 +49,7 @@ public class Util {
 					listener.progressDiff(externalid, c);
 				}
 			}
+			input.close();
 			return sb.toString();
 		} catch (FileNotFoundException e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -60,13 +63,6 @@ public class Util {
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
 			throw new Exception(e.getMessage());
-		}finally{
-			if(input != null){
-				try {
-					input.close();
-				} catch (IOException e) {
-				}
-			}
 		}
 	}
 
@@ -144,6 +140,15 @@ public class Util {
 			return ret;
 		}
 		return -1;
+	}
+
+	public static void showDialog(Context cxt, CharSequence title, CharSequence msg) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(cxt);
+		builder.setTitle(title);
+		builder.setMessage(msg);
+		builder.setPositiveButton(android.R.string.ok, null);
+		builder.setCancelable(true);
+		builder.show();
 	}
 
 }

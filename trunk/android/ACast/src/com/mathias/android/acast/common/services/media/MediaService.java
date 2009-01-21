@@ -102,7 +102,7 @@ public class MediaService extends Service implements ServiceConnection {
 								if(binder.isPlaying()) {
 									binder.pause();
 								}else{
-									binder.play();
+//									binder.play();
 								}
 							}
 						} catch (RemoteException e) {

@@ -1,5 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, OwaNotify</string>
     <string name="app_name">OWA Notify</string>
+    <!-- frequency -->
+    <string name="frequency_key">frequency</string>
+    <string name="frequency_title">Frequency</string>
+    <string name="frequency_summary">Frequency of fetching data</string>
+    <string name="frequency_dialogtitle">Frequency</string>
+    <!-- onlyoverwifi -->
+    <string name="onlyoverwifi_key">onlyoverwifi</string>
+    <string name="onlyoverwifi_title">Only over Wifi</string>
+    <string name="onlyoverwifi_summary">Only fetch data over Wifi</string>
+    <!-- url -->
+    <string name="url_key">url</string>
+    <string name="url_title">Url</string>
+    <string name="url_summary">URL to OWA exchange server (https://server/exchange)</string>
+    <string name="url_dialogtitle">Url</string>
+    <string name="url_defaultvalue">https://server/exchange</string>
+    <!-- name -->
+    <string name="name_key">name</string>
+    <string name="name_title">Name</string>
+    <string name="name_summary">Full name</string>
+    <string name="name_dialogtitle">Name</string>
+    <string name="name_defaultvalue">Firstname.Lastname</string>
+    <!-- username -->
+    <string name="username_key">username</string>
+    <string name="username_title">Username</string>
+    <string name="username_summary">Username</string>
+    <string name="username_dialogtitle">Username</string>
+    <!-- password -->
+    <string name="password_key">password</string>
+    <string name="password_title">Password</string>
+    <string name="password_summary">Password</string>
+    <string name="password_dialogtitle">Password</string>
+    <!-- dontcheckemail -->
+    <string name="dontcheckemail_key">dontcheckemail</string>
+    <string name="dontcheckemail_title">Don't check mail</string>
+    <string name="dontcheckemail_summary">Don't check mail</string>
+    <!-- alwaysshowcount -->
+    <string name="alwaysshowcount_key">alwaysshowcount</string>
+    <string name="alwaysshowcount_title">Always show mail count</string>
+    <string name="alwaysshowcount_summary">Always show mail count</string>
+    <!-- dontcheckcalendar -->
+    <string name="dontcheckcalendar_key">dontcheckcalendar</string>
+    <string name="dontcheckcalendar_title">Don't check calendar</string>
+    <string name="dontcheckcalendar_summary">Don't check calendar</string>
+    <!-- internalviewer -->
+    <string name="internalviewer_key">internalviewer</string>
+    <string name="internalviewer_title">Internal viewer</string>
+    <string name="internalviewer_summary">Internal viewer</string>
+    <!-- inbox -->
+    <string name="inbox_key">inbox</string>
+    <string name="inbox_title">Inbox</string>
+    <string name="inbox_summary">Inbox (/Inbox/?Cmd=contents)</string>
+    <string name="inbox_dialogtitle">Inbox</string>
+    <string name="inbox_defaultvalue">/Inbox/?Cmd=contents</string>
+    <!-- calendar -->
+    <string name="calendar_key">calendar</string>
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_summary">Calendar (/Calendar/?Cmd=contents&amp;View=Daily)</string>
+    <string name="calendar_dialogtitle">Calendar</string>
+    <string name="calendar_defaultvalue">/Calendar/?Cmd=contents&amp;View=Daily</string>
 </resources>

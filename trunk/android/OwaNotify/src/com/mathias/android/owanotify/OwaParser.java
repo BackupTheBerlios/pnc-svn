@@ -1,7 +1,12 @@
 package com.mathias.android.owanotify;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import android.util.Log;
+
+import com.mathias.android.owanotify.common.Util;
 
 public abstract class OwaParser {
 
@@ -10,52 +15,112 @@ public abstract class OwaParser {
 	private OwaParser() {
 	}
 
-	public static List<OwaInboxItem> parseInboxNew(String str) {
+	public static String parseEmail(String str) {
+
+		String ret = null;
+
+		int start = 0;
+		int end = 0;
+		while (true) {
+			// from
+			start = Util.indexAfter(str, end, "class=\"tblMsgBody\"", ">");
+			end = Util.indexBefore(str, start, "</TABLE>");
+			Log.d(TAG, "end="+end+" start="+start);
+			if(start == -1 || end == -1) {
+				break;
+			}
+			ret = str.substring(start, end);
+		}
+		return ret;
+	}
+
+	public static List<OwaInboxItem> parseInbox(String str, boolean onlynew) {
 
 		List<OwaInboxItem> items = new ArrayList<OwaInboxItem>();
 
 		int start = 0;
 		int end = 0;
 		while (true) {
-			// from
-			start = Util.indexAfter(str, end, "icon-msg-unread.gif", "<A", "<A", "<A", "<FONT size=\"2\" color=black><b>");
-			end = Util.indexBefore(str, start, "</b>");
+			start = Util.indexAfter(str, end, "icon-msg-");
+			end = Util.indexBefore(str, start, ".gif");
 			if(start == -1 || end == -1){
 				break;
 			}
-			String from = str.substring(start, end);
-
-			// subject
-			start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black><b>");
-			end = Util.indexBefore(str, start, "</b>");
-			if(start == -1 || end == -1){
-				break;
+			boolean read = true;
+			String readimage = str.substring(start, end);
+			if("unread".equals(readimage)){
+				read = false;
 			}
-			String subject = str.substring(start, end);
 
-			// date
-			start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black><b>");
-			end = Util.indexBefore(str, start, "</b>");
-			if(start == -1 || end == -1){
-				break;
+			if(!onlynew || !read) {
+				
+				String readPrefix = "";
+				String readSuffix = "";
+				if(!read){
+					readPrefix = "<b>";
+					readSuffix = "</b>";
+				}
+				
+				// from
+				start = Util.indexAfter(str, end, "<A", "<A", "<A", "<FONT size=\"2\" color=black>"+readPrefix);
+				end = Util.indexBefore(str, start, readSuffix+"</FONT>");
+				if(start == -1 || end == -1){
+					break;
+				}
+				String from = str.substring(start, end);
+
+				// url
+				start = Util.indexAfter(str, end, "<A href=\"");
+				end = Util.indexBefore(str, start, "\">");
+				if(start == -1 || end == -1){
+					break;
+				}
+				String url = str.substring(start, end);
+
+				// subject
+				start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black>"+readPrefix);
+				end = Util.indexBefore(str, start, readSuffix+"</FONT>");
+				if(start == -1 || end == -1){
+					break;
+				}
+				String subject = str.substring(start, end);
+
+				// date
+				start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black>"+readPrefix);
+				end = Util.indexBefore(str, start, readSuffix+"</FONT>");
+				if(start == -1 || end == -1){
+					break;
+				}
+				String date = str.substring(start, end);
+
+				items.add(new OwaInboxItem(url, from, subject, date, null, read));
 			}
-			String date = str.substring(start, end);
-
-			items.add(new OwaInboxItem(from, subject, date));
 		}
 		return items;
 	}
 
-	public static class OwaInboxItem {
-		public boolean unread;
+	@SuppressWarnings("serial")
+	public static class OwaInboxItem implements Serializable {
+		public boolean read;
+		public String url;
 		public String from;
 		public String subject;
 		public String date;
+		public String text;
 
-		public OwaInboxItem(String from, String subject, String date) {
+		public OwaInboxItem(String url, String from, String subject, String date, String text, boolean read) {
+			this.read = read;
 			this.from = from;
 			this.subject = subject;
 			this.date = date;
+			this.url = url;
+			this.text = text;
+		}
+		
+		@Override
+		public String toString() {
+			return Util.buildString("[from=", from, "][read=", read,
+					"][subject=", subject, "][date=", date, "][url=", url, "]");
 		}
 	}
 

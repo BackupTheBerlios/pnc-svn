@@ -21,50 +21,43 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
-import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
+import com.mathias.android.owanotify.common.MSharedPreferences;
+import com.mathias.android.owanotify.common.Util;
 
 public class OwaCalendarView extends ListActivity {
 
-	private static final String TAG = OwaMailView.class.getSimpleName();
+	private static final String TAG = OwaCalendarView.class.getSimpleName();
 	
 	private OwaAdapter adapter;
-	
-	private DbAdapter dbHelper;
 
 	private List<OwaCalendarItem> calendaritems = new ArrayList<OwaCalendarItem>();
+
+	private MSharedPreferences prefs;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
         AlarmManager mAM = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-		Intent i = new Intent(this, OwaMailView.class);
+		Intent i = new Intent(this, OwaCalendarView.class);
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, i, 0);
         mAM.setRepeating(AlarmManager.RTC, System.currentTimeMillis(), (long)1800000, pendingIntent);
 
         setContentView(R.layout.main);
         
-        dbHelper = new DbAdapter(this);
-        dbHelper.open();
+        prefs = new MSharedPreferences(this);
 
         adapter = new OwaAdapter(this);
     	setListAdapter(adapter);
 
     	WorkerThread thread = new WorkerThread();
         thread.start();
-        thread.getEmail();
+        thread.getCalendar();
     }
-    
-    @Override
-    protected void onDestroy() {
-    	dbHelper.close();
-    	dbHelper = null;
-    	super.onDestroy();
-    }
-    
+
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
-		String fullurl = dbHelper.getSetting(Setting.FULLINBOXURL);
+		String fullurl = OwaUtil.getFullInboxUrl(prefs);
 		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
     }
 
@@ -75,26 +68,24 @@ public class OwaCalendarView extends ListActivity {
     private class WorkerThread extends Thread {
     	
     	private boolean ready = false;
-    	
-//    	private String url = "https://owa.smarttrust.com/exchange/";
-//    	private String name = "Mathias.Axelsson";
-//    	private String inbox = "/Inbox/?Cmd=contents";
-//		private String calendar = "/Calendar/?Cmd=contents&View=Daily";
-//    	private String username = "mataxe1";
-//    	private String password = "*********";
 
-    	public void getEmail(){
+    	public void getCalendar(){
     		while(true){
         		if(ready){
             		handler.post(new Runnable(){
         				@Override
         				public void run() {
         		    		try {
-        		    			String calendarurl = dbHelper.getSetting(Setting.FULLCALENDARURL);
-        		    			String username = dbHelper.getSetting(Setting.USERNAME);
-        		    			String password = dbHelper.getSetting(Setting.PASSWORD);
-        						String str = Util.downloadFile(0, calendarurl, null, username, password);
-        						calendaritems = OwaParser.parseCalendar(str);
+        		    			String calendarurl = OwaUtil.getFullCalendarUrl(prefs);
+        		    			String username = prefs.getString(R.string.username_key);
+        		    			String password = prefs.getString(R.string.password_key);
+        		    			if(calendarurl != null && username != null && password != null){
+            						String str = Util.downloadFile(0, calendarurl, null, username, password);
+            						calendaritems = OwaParser.parseCalendar(str);
+        		    			}else{
+        		    				Intent i = new Intent(OwaCalendarView.this, SettingEdit.class);
+        		    				startActivity(i);
+        		    			}
         					} catch (Exception e) {
         						Log.e(TAG, e.getMessage(), e);
         					}

@@ -224,8 +224,6 @@ public class UpdateService extends Service implements ServiceConnection {
 
 		notification.setLatestEventInfo(this, "Refresh done", "All feed has been updated", contentIntent);
 
-		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
-
 		mNM.notify(Constants.NOTIFICATION_UPDATESERVICE_ID, notification);
 	}
 

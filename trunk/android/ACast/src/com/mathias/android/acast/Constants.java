@@ -1,4 +1,8 @@
 /*
+TODO 5: Show current feed name in refreshing all notification
+TODO 5: Search: search all feed items title and desc
+TODO 5: Update db field duration on init item
+TODO 5: Set in notification intent bundle to clear notification so a reload of page does not do it
 TODO 5: Bug: player resume shows play instead of pause icon
 TODO 5: Bug: player loops: 
 	D/MediaService( 1573): stop() mp=android.media.MediaPlayer@433dcda8
@@ -101,6 +105,8 @@ TODO 4: Low: Bug: mediaplayer prepare can not handle streaming mp3 url with redi
 TODO 4: Low: show kb/s for download progress window
 TODO 4: Low: Username/password protected RSS
 TODO 4: Low: Use default media player with broadcast sender.
+Show partially downloaded files in feeditemlist. Downloaded smaller then size
+Don't play sound on refresh all feeds notification.
 Separate videoplayer
 notification player; not possible
 Multiple Player activites, singleinstance? (launchMode="singleInstance" in the manifest file). Solved with Activity.finish()

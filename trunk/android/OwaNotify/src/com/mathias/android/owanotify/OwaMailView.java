@@ -8,6 +8,7 @@ import android.app.ListActivity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,6 +22,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
+import com.mathias.android.owanotify.common.MSharedPreferences;
+import com.mathias.android.owanotify.common.Util;
 
 public class OwaMailView extends ListActivity {
 	
@@ -28,9 +31,11 @@ public class OwaMailView extends ListActivity {
 	
 	private OwaAdapter adapter;
 	
-	private DbAdapter dbHelper;
+	private MSharedPreferences prefs;
 
 	private List<OwaInboxItem> inboxitems = new ArrayList<OwaInboxItem>();
+	
+	private WorkerThread thread;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -43,64 +48,86 @@ public class OwaMailView extends ListActivity {
 
         setContentView(R.layout.main);
         
-        dbHelper = new DbAdapter(this);
-        dbHelper.open();
+        prefs = new MSharedPreferences(this);
 
         adapter = new OwaAdapter(this);
     	setListAdapter(adapter);
 
-    	WorkerThread thread = new WorkerThread();
+    	thread = new WorkerThread();
         thread.start();
-        thread.getEmail();
     }
     
     @Override
-    protected void onDestroy() {
-    	dbHelper.close();
-    	dbHelper = null;
-    	super.onDestroy();
-    }
-    
-    @Override
-    protected void onListItemClick(ListView l, View v, int position, long id) {
-		String fullurl = dbHelper.getSetting(Setting.FULLINBOXURL);
-		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
+    protected void onResume() {
+    	super.onResume();
+        thread.getNewEmails();
     }
 
-    private void populateView(){
-		adapter.notifyDataSetChanged();
+    @Override
+    protected void onListItemClick(ListView l, View v, int position, long id) {
+		boolean internalviewer = prefs.getBool(R.string.internalviewer_key);
+    	if(!internalviewer){
+    		String fullurl = OwaUtil.getFullInboxUrl(prefs);
+    		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
+    	}else{
+    		OwaInboxItem item = adapter.getItem(position);
+    		thread.displayEmail(item);
+    	}
     }
-    
+
+	private void populateView(){
+		adapter.notifyDataSetChanged();
+	}
+
     private class WorkerThread extends Thread {
     	
     	private boolean ready = false;
-    	
-//    	private String url = "https://owa.smarttrust.com/exchange/";
-//    	private String name = "Mathias.Axelsson";
-//    	private String inbox = "/Inbox/?Cmd=contents";
-//		private String calendar = "/Calendar/?Cmd=contents&View=Daily";
-//    	private String username = "mataxe1";
-//    	private String password = "*********";
 
-    	public void getEmail(){
+    	public void displayEmail(final OwaInboxItem item){
+    		while(true){
+        		if(ready){
+            		handler.post(new Runnable(){
+        				@Override
+        				public void run() {
+        					item.text = OwaUtil.fetchContent(prefs, item.url);
+    		        		Intent i = new Intent(OwaMailView.this, OwaReadMail.class);
+    		        		i.putExtra(OwaReadMail.EMAIL, item);
+    		        		startActivity(i);
+        				}
+            		});
+            		break;
+        		}
+        		try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+    		}
+    	}
+
+    	public void getNewEmails(){
     		while(true){
         		if(ready){
             		handler.post(new Runnable(){
         				@Override
         				public void run() {
         		    		try {
-        		    			String inboxurl = dbHelper.getSetting(Setting.FULLINBOXURL);
-        		    			String username = dbHelper.getSetting(Setting.USERNAME);
-        		    			String password = dbHelper.getSetting(Setting.PASSWORD);
-        						String str = Util.downloadFile(0, inboxurl, null, username, password);
-        						inboxitems = OwaParser.parseInboxNew(str);
+        		    			String inboxurl = OwaUtil.getFullInboxUrl(prefs);
+        		    			String username = prefs.getString(R.string.username_key);
+        		    			String password = prefs.getString(R.string.password_key);
+        		    			if(inboxurl != null && username != null && password != null){
+            						String str = Util.downloadFile(0, inboxurl, null, username, password);
+            						inboxitems = OwaParser.parseInbox(str, false);
+        		    			}else{
+        		    				Intent i = new Intent(OwaMailView.this, SettingEdit.class);
+        		    				startActivity(i);
+        		    			}
         					} catch (Exception e) {
-        						Log.e(TAG, e.getMessage(), e);
+								Log.e(TAG, e.getMessage(), e);
         					}
         					runOnUiThread(new Runnable(){
 								@Override
 								public void run() {
-	        						populateView();
+									populateView();
 								}
         					});
         				}
@@ -140,7 +167,7 @@ public class OwaMailView extends ListActivity {
 		}
 
 		@Override
-		public Object getItem(int position) {
+		public OwaInboxItem getItem(int position) {
 			return inboxitems.get(position);
 		}
 
@@ -169,6 +196,11 @@ public class OwaMailView extends ListActivity {
 	        holder.from.setText(item.from);
 	        holder.subject.setText(item.subject);
 	        holder.date.setText(item.date);
+			if(!item.read){
+				holder.from.setTextColor(Color.WHITE);
+				holder.subject.setTextColor(Color.WHITE);
+				holder.date.setTextColor(Color.WHITE);
+			}
 	        return convertView;
 		}
     	

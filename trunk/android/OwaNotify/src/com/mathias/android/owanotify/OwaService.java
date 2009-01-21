@@ -20,6 +20,8 @@ import android.util.Log;
 
 import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
 import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
+import com.mathias.android.owanotify.common.MSharedPreferences;
+import com.mathias.android.owanotify.common.Util;
 
 public class OwaService extends Service {
 	
@@ -39,13 +41,13 @@ public class OwaService extends Service {
 		mail_res.put(9, R.drawable.mail9);
 	}
 	
-	private static final int NOTIFICATION_INBOX_ID = R.id.inbox;
+	public static final int NOTIFICATION_INBOX_ID = R.id.date;
 
-	private static final int NOTIFICATION_CALENDAR_ID = R.id.calendar;
+	public static final int NOTIFICATION_CALENDAR_ID = R.id.from;
 
 	private NotificationManager mNM;
 
-	private DbAdapter dbHelper;
+	private MSharedPreferences prefs;
 
 	@Override
 	public void onCreate() {
@@ -54,8 +56,7 @@ public class OwaService extends Service {
 
     	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
-        dbHelper = new DbAdapter(this);
-        dbHelper.open();
+		prefs = new MSharedPreferences(this);
 
 		new WorkingThread().start();
 	}
@@ -64,14 +65,6 @@ public class OwaService extends Service {
 	public IBinder onBind(Intent arg0) {
     	Log.d(TAG, "onBind");
 		return mBinder;
-	}
-
-	@Override
-	public void onDestroy() {
-    	Log.d(TAG, "onDestroy");
-		dbHelper.close();
-		dbHelper = null;
-		super.onDestroy();
 	}
 
     private final IBinder mBinder = new Binder() {
@@ -83,57 +76,54 @@ public class OwaService extends Service {
         }
     };
 
-    private class WorkingThread extends Thread {
+	private class WorkingThread extends Thread {
 		@Override
 		public void run() {
 	    	Log.d(TAG, "WorkingThread.run()");
-			String url = dbHelper.getSetting(Setting.URL);
-			String name = dbHelper.getSetting(Setting.NAME);
-			String inbox = dbHelper.getSetting(Setting.INBOX);
-			String calendar = dbHelper.getSetting(Setting.CALENDAR);
-			String username = dbHelper.getSetting(Setting.USERNAME);
-			String password = dbHelper.getSetting(Setting.PASSWORD);
-			if(url == null){
-		    	Log.d(TAG, "url is null");
-			}else{
-				try {
-					if(dbHelper.getSettingBool(Setting.CHECKMAIL)){
-						String inb = Util.downloadFile(0, url+name+inbox, null, username, password);
-						List<OwaInboxItem> items = OwaParser.parseInboxNew(inb);
-						if(items != null && items.size() > 0){
-					    	Log.d(TAG, "showInboxNotification, items="+items.size());
-							showInboxNotification(items.size(), items.get(0));
-						}else if(dbHelper.getSettingBool(Setting.ALWAYSSHOWMAILCOUNT)){
-							showInboxNotification(0, null);
-						}else{
-							mNM.cancel(NOTIFICATION_INBOX_ID);
-						}
+	    	
+			String username = prefs.getString(R.string.username_key);
+			String password = prefs.getString(R.string.password_key);
+			boolean dontcheckmail = prefs.getBool(R.string.dontcheckemail_key);
+			boolean dontcheckcalendar = prefs.getBool(R.string.dontcheckcalendar_key);
+			boolean alwaysshowcount = prefs.getBool(R.string.alwaysshowcount_key);
+			try {
+				if(!dontcheckmail) {
+	    			String inboxurl = OwaUtil.getFullInboxUrl(prefs);
+					String inb = Util.downloadFile(0, inboxurl, null, username, password);
+					List<OwaInboxItem> items = OwaParser.parseInbox(inb, true);
+					if(items != null && items.size() > 0){
+				    	Log.d(TAG, "showInboxNotification, items="+items.size());
+						showInboxNotification(items.size(), items.get(0));
+					}else if(alwaysshowcount){
+						showInboxNotification(0, null);
+					}else{
+						mNM.cancel(NOTIFICATION_INBOX_ID);
 					}
-					if(dbHelper.getSettingBool(Setting.CHECKCALENDAR)){
-						String cal = Util.downloadFile(0, url+name+calendar, null, username, password);
-						List<OwaCalendarItem> items = OwaParser.parseCalendar(cal);
-						if(items != null && items.size() > 0){
-							OwaCalendarItem item = items.get(0);
-							GregorianCalendar gc = new GregorianCalendar();
-							dbHelper.getSetting(Setting.FREQUENCY);
-							int currHour = gc.get(Calendar.HOUR);
-							int currMinute = gc.get(Calendar.MINUTE);
-							int calHour = Util.getHour(item.time);
-							int calMinute = Util.getMinute(item.time);
-							if(currHour-5 < calHour){
-								if (currHour > calHour
-										|| (currHour == calHour && currMinute >= calMinute)) {
-							    	Log.d(TAG, "showCalendarNotification, items="+items.size());
-									showCalendarNotification(items.size(), item);
-								}
-							}
-						}else{
-							mNM.cancel(NOTIFICATION_CALENDAR_ID);
-						}
-					}
-				} catch (Exception e) {
-					Log.e(TAG, e.getMessage(), e);
 				}
+				if(!dontcheckcalendar) {
+	    			String calendarurl = OwaUtil.getFullCalendarUrl(prefs);
+					String cal = Util.downloadFile(0, calendarurl, null, username, password);
+					List<OwaCalendarItem> items = OwaParser.parseCalendar(cal);
+					if(items != null && items.size() > 0){
+						OwaCalendarItem item = items.get(0);
+						GregorianCalendar gc = new GregorianCalendar();
+						int currHour = gc.get(Calendar.HOUR);
+						int currMinute = gc.get(Calendar.MINUTE);
+						int calHour = Util.getHour(item.time);
+						int calMinute = Util.getMinute(item.time);
+						if(currHour-5 < calHour){
+							if (currHour > calHour
+									|| (currHour == calHour && currMinute >= calMinute)) {
+						    	Log.d(TAG, "showCalendarNotification, items="+items.size());
+								showCalendarNotification(items.size(), item);
+							}
+						}
+					}else{
+						mNM.cancel(NOTIFICATION_CALENDAR_ID);
+					}
+				}
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage(), e);
 			}
 			stopSelf();
 		}
@@ -149,21 +139,26 @@ public class OwaService extends Service {
 				"New mail ("+num+")", System.currentTimeMillis());
 
 		Intent i;
-		if(dbHelper.getSettingBool(Setting.INTERNALVIEWER)){
-			i = new Intent(this, OwaMailView.class);			
+		boolean internalviewer = prefs.getBool(R.string.internalviewer_key);
+		if(internalviewer){
+			i = new Intent(this, OwaReadMail.class);
+			if(item.text == null){
+				item.text = OwaUtil.fetchContent(prefs, item.url);
+				i.putExtra(OwaReadMail.EMAIL, item);
+			}
 		}else{
-			String fullurl = dbHelper.getSetting(Setting.FULLINBOXURL);
-			i = new Intent("android.intent.action.VIEW", Uri.parse(fullurl));			
+			String fullurl = OwaUtil.getFullInboxUrl(prefs);
+			i = new Intent(Intent.ACTION_VIEW, Uri.parse(fullurl));			
 		}
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
 		if(item == null){
-			item = new OwaInboxItem("No mail", "No new mail", null);
+			item = new OwaInboxItem(null, "No mail", "No new mail", null, null, false);
 		}
 		notification.setLatestEventInfo(this, item.from, item.subject,
 				contentIntent);
 
-		notification.defaults = Notification.DEFAULT_ALL;
+		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
 
 		mNM.notify(NOTIFICATION_INBOX_ID, notification);
 	}
@@ -174,18 +169,19 @@ public class OwaService extends Service {
 				"New appointment", System.currentTimeMillis());
 
 		Intent i;
-		if(dbHelper.getSettingBool(Setting.INTERNALVIEWER)){
+		boolean internalviewer = prefs.getBool(R.string.internalviewer_key);
+		if(internalviewer){
 			i = new Intent(this, OwaCalendarView.class);			
 		}else{
-			String fullurl = dbHelper.getSetting(Setting.FULLCALENDARURL);
-			i = new Intent("android.intent.action.VIEW", Uri.parse(fullurl));			
+			String fullurl = OwaUtil.getFullCalendarUrl(prefs);
+			i = new Intent(Intent.ACTION_VIEW, Uri.parse(fullurl));			
 		}
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
 		notification.setLatestEventInfo(this,
 				item.title, item.time+" "+item.title, contentIntent);
 		
-		notification.defaults = Notification.DEFAULT_ALL;
+		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
 
 		mNM.notify(NOTIFICATION_CALENDAR_ID, notification);
 	}

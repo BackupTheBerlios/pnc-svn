@@ -163,10 +163,9 @@ public class ACastMenu extends Activity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		super.onCreateOptionsMenu(menu);
 		MenuItem item = menu.add(Menu.NONE, SETTINGS_ID, Menu.NONE, R.string.settings);
 		item.setIcon(android.R.drawable.ic_menu_preferences);
-		return true;
+		return super.onCreateOptionsMenu(menu);
 	}
 	
 	@Override
@@ -199,7 +198,6 @@ public class ACastMenu extends Activity {
 					long interval = hours * 3600000;
 		            long firstTime = System.currentTimeMillis();
 					Log.d(TAG, "setRepeating: "+new Date(firstTime+interval));
-		            am = (AlarmManager)getSystemService(ALARM_SERVICE);
 		            am.setRepeating(AlarmManager.RTC, firstTime+interval, interval,
 							mAlarmSender);
 				}else{
