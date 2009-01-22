@@ -191,19 +191,28 @@ public class DownloadService extends Service implements ServiceConnection {
 						if(currentItem != null){
 							int externalId = (int) currentItem.externalId;
 							try {
-								File f = new File(currentItem.destfile);
-								showDownloadingNotification(f.getName(), 1, 0);
-								Log.d(TAG, "Downloading file: "+f.getName());
-								Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
-								Log.d(TAG, "Done downloading file: "+f.getName());
+								if(!Util.isExternalStorageAvailable()){
+									queue.clear();
+									String ret = "External storage is not available";
+									Log.e(TAG, ret);
+									broadcastDownloadException(externalId, ret);
+									uiThread.showToastLong(ret);
+									showDownloadExceptionNotification(ret);
+								}else{
+									File f = new File(currentItem.destfile);
+									showDownloadingNotification(f.getName(), 1, 0);
+									Log.d(TAG, "Downloading file: "+f.getName());
+									Util.downloadFile(externalId, currentItem.srcuri, f, WorkerThread.this);
+									Log.d(TAG, "Done downloading file: "+f.getName());
 
-								if(mDbHelper != null){
-									mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
-								}
+									if(mDbHelper != null){
+										mDbHelper.updateFeedItem(externalId, ACastDbAdapter.FEEDITEM_DOWNLOADED, true);
+									}
 
-								broadcastDownloadCompleted(externalId);
-								if(queue.isEmpty()){
-									showDownloadCompleteNotification(currentItem);
+									broadcastDownloadCompleted(externalId);
+									if(queue.isEmpty()){
+										showDownloadCompleteNotification(currentItem);
+									}
 								}
 							} catch (DownloadException e) {
 								queue.clear();

@@ -224,6 +224,7 @@ public abstract class Util {
 		filename = filename.replaceAll("\\*", "");
 		filename = filename.replaceAll("\\<", "");
 		filename = filename.replaceAll("\\>", "");
+//TODO		replaceAll("[\\/:*?\"<>|]", "_");
 		return filename;
 	}
 
@@ -261,5 +262,12 @@ public abstract class Util {
 		}
 		return false;
 	}
+
+    public static boolean isExternalStorageAvailable() {
+        String ext = System.getProperty("EXTERNAL_STORAGE_STATE");
+        boolean ret = (ext != null ? "mounted".equals(ext) : false);
+		Log.d(TAG, "isExternalStorageAvailable: "+ext);
+        return ret;
+    }
 
 }
