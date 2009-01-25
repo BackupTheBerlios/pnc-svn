@@ -19,7 +19,7 @@
     <!-- name -->
     <string name="name_key">name</string>
     <string name="name_title">Name</string>
-    <string name="name_summary">Full name</string>
+    <string name="name_summary">Full name (Firstname.Lastname)</string>
     <string name="name_dialogtitle">Name</string>
     <string name="name_defaultvalue">Firstname.Lastname</string>
     <!-- username -->

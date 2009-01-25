@@ -6,6 +6,7 @@ import java.util.List;
 import android.app.AlarmManager;
 import android.app.ListActivity;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -14,6 +15,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -28,16 +31,22 @@ public class OwaCalendarView extends ListActivity {
 
 	private static final String TAG = OwaCalendarView.class.getSimpleName();
 	
+	private static final int EMAIL_ID = Menu.FIRST+0;
+	private static final int REFRESH_ID = Menu.FIRST+1;
+	private static final int SETTINGS_ID = Menu.FIRST+2;
+
 	private OwaAdapter adapter;
 
 	private List<OwaCalendarItem> calendaritems = new ArrayList<OwaCalendarItem>();
 
 	private MSharedPreferences prefs;
+	
+	private WorkerThread thread;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         AlarmManager mAM = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 		Intent i = new Intent(this, OwaCalendarView.class);
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, i, 0);
@@ -50,9 +59,12 @@ public class OwaCalendarView extends ListActivity {
         adapter = new OwaAdapter(this);
     	setListAdapter(adapter);
 
-    	WorkerThread thread = new WorkerThread();
+    	thread = new WorkerThread();
         thread.start();
         thread.getCalendar();
+        
+        TextView empty = (TextView) findViewById(android.R.id.empty);
+        empty.setText("No calendar items found...");
     }
 
     @Override
@@ -60,6 +72,34 @@ public class OwaCalendarView extends ListActivity {
 		String fullurl = OwaUtil.getFullInboxUrl(prefs);
 		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
     }
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuItem item = menu.add(Menu.NONE, EMAIL_ID, Menu.NONE, "E-Mails");
+		item.setIcon(android.R.drawable.ic_menu_send);
+		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, "Refresh");
+		item.setIcon(android.R.drawable.ic_menu_rotate);
+		item = menu.add(Menu.NONE, SETTINGS_ID, Menu.NONE, "Settings");
+		item.setIcon(android.R.drawable.ic_menu_preferences);
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if(EMAIL_ID == item.getItemId()){
+			Intent i = new Intent(this, OwaMailView.class);
+			startActivity(i);
+			return true;
+		}else if(REFRESH_ID == item.getItemId()){
+	        thread.getCalendar();
+			return true;
+		}else if(SETTINGS_ID == item.getItemId()){
+			Intent i = new Intent(this, SettingEdit.class);
+			startActivity(i);
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
 
     private void populateView(){
 		adapter.notifyDataSetChanged();
@@ -70,6 +110,7 @@ public class OwaCalendarView extends ListActivity {
     	private boolean ready = false;
 
     	public void getCalendar(){
+			final ProgressDialog pd = ProgressDialog.show(OwaCalendarView.this, null, "Fetching calendar items");
     		while(true){
         		if(ready){
             		handler.post(new Runnable(){
@@ -93,6 +134,7 @@ public class OwaCalendarView extends ListActivity {
 								@Override
 								public void run() {
 	        						populateView();
+	        		    	        pd.dismiss();
 								}
         					});
         				}

@@ -1,5 +1,7 @@
 package com.mathias.android.owanotify.common;
 
+import java.util.Map;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -31,6 +33,14 @@ public class MSharedPreferences {
 
 	public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener){
 		prefs.registerOnSharedPreferenceChangeListener(listener);
+	}
+
+	public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener){
+		prefs.unregisterOnSharedPreferenceChangeListener(listener);
+	}
+
+	public Map<String, ?> getAll(){
+		return prefs.getAll();
 	}
 
 }

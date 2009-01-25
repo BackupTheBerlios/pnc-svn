@@ -5,7 +5,7 @@ import android.preference.PreferenceActivity;
 
 public class SettingEdit extends PreferenceActivity {
 
-    @Override
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 

@@ -6,6 +6,7 @@ import java.util.List;
 import android.app.AlarmManager;
 import android.app.ListActivity;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -15,6 +16,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -29,6 +32,10 @@ public class OwaMailView extends ListActivity {
 	
 	private static final String TAG = OwaMailView.class.getSimpleName();
 	
+	private static final int CALENDAR_ID = Menu.FIRST+0;
+	private static final int REFRESH_ID = Menu.FIRST+1;
+	private static final int SETTINGS_ID = Menu.FIRST+2;
+
 	private OwaAdapter adapter;
 	
 	private MSharedPreferences prefs;
@@ -36,31 +43,46 @@ public class OwaMailView extends ListActivity {
 	private List<OwaInboxItem> inboxitems = new ArrayList<OwaInboxItem>();
 	
 	private WorkerThread thread;
+	
+	private OwaSharedPreferenceChangeListener prefsListener;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         AlarmManager mAM = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 		Intent i = new Intent(this, OwaMailView.class);
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, i, 0);
         mAM.setRepeating(AlarmManager.RTC, System.currentTimeMillis(), (long)1800000, pendingIntent);
 
         setContentView(R.layout.main);
-        
+
         prefs = new MSharedPreferences(this);
+        prefsListener = new OwaSharedPreferenceChangeListener(this, prefs);
+    	prefs.registerOnSharedPreferenceChangeListener(prefsListener);
 
         adapter = new OwaAdapter(this);
     	setListAdapter(adapter);
 
     	thread = new WorkerThread();
         thread.start();
+
+        TextView empty = (TextView) findViewById(android.R.id.empty);
+        empty.setText("No mails found...");
     }
     
     @Override
     protected void onResume() {
     	super.onResume();
-        thread.getNewEmails();
+    	if(inboxitems.size() == 0){
+            thread.updateEmails();
+    	}
+    }
+    
+    @Override
+    protected void onDestroy() {
+    	super.onDestroy();
+    	prefs.unregisterOnSharedPreferenceChangeListener(prefsListener);
     }
 
     @Override
@@ -75,6 +97,34 @@ public class OwaMailView extends ListActivity {
     	}
     }
 
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuItem item = menu.add(Menu.NONE, CALENDAR_ID, Menu.NONE, "Calendar");
+		item.setIcon(android.R.drawable.ic_menu_month);
+		item = menu.add(Menu.NONE, REFRESH_ID, Menu.NONE, "Refresf");
+		item.setIcon(android.R.drawable.ic_menu_rotate);
+		item = menu.add(Menu.NONE, SETTINGS_ID, Menu.NONE, "Settings");
+		item.setIcon(android.R.drawable.ic_menu_preferences);
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if(CALENDAR_ID == item.getItemId()){
+			Intent i = new Intent(this, OwaCalendarView.class);
+			startActivity(i);
+			return true;
+		}else if(REFRESH_ID == item.getItemId()){
+            thread.updateEmails();
+			return true;
+		}else if(SETTINGS_ID == item.getItemId()){
+			Intent i = new Intent(this, SettingEdit.class);
+			startActivity(i);
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
 	private void populateView(){
 		adapter.notifyDataSetChanged();
 	}
@@ -84,6 +134,7 @@ public class OwaMailView extends ListActivity {
     	private boolean ready = false;
 
     	public void displayEmail(final OwaInboxItem item){
+			final ProgressDialog pd = ProgressDialog.show(OwaMailView.this, null, "Fetching e-mail");
     		while(true){
         		if(ready){
             		handler.post(new Runnable(){
@@ -93,6 +144,7 @@ public class OwaMailView extends ListActivity {
     		        		Intent i = new Intent(OwaMailView.this, OwaReadMail.class);
     		        		i.putExtra(OwaReadMail.EMAIL, item);
     		        		startActivity(i);
+    		    	        pd.dismiss();
         				}
             		});
             		break;
@@ -104,7 +156,9 @@ public class OwaMailView extends ListActivity {
     		}
     	}
 
-    	public void getNewEmails(){
+    	public void updateEmails(){
+    		final ProgressDialog pd = ProgressDialog.show(OwaMailView.this, null, "Fetching e-mails");
+	        setProgressBarIndeterminateVisibility(true);
     		while(true){
         		if(ready){
             		handler.post(new Runnable(){
@@ -128,6 +182,7 @@ public class OwaMailView extends ListActivity {
 								@Override
 								public void run() {
 									populateView();
+									pd.dismiss();
 								}
         					});
         				}
@@ -200,6 +255,10 @@ public class OwaMailView extends ListActivity {
 				holder.from.setTextColor(Color.WHITE);
 				holder.subject.setTextColor(Color.WHITE);
 				holder.date.setTextColor(Color.WHITE);
+			}else{
+				holder.from.setTextColor(Color.GRAY);
+				holder.subject.setTextColor(Color.GRAY);
+				holder.date.setTextColor(Color.GRAY);
 			}
 	        return convertView;
 		}

@@ -141,8 +141,12 @@ public class OwaService extends Service {
 				i.putExtra(OwaReadMail.EMAIL, item);
 			}
 		}else{
-			String fullurl = OwaUtil.getFullInboxUrl(prefs);
-			i = new Intent(Intent.ACTION_VIEW, Uri.parse(fullurl));			
+			if(internalviewer) {
+				i = new Intent(this, OwaMailView.class);
+			}else{
+				String fullurl = OwaUtil.getFullInboxUrl(prefs);
+				i = new Intent(Intent.ACTION_VIEW, Uri.parse(fullurl));			
+			}
 		}
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 

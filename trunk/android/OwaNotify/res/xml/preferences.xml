@@ -3,20 +3,6 @@
         xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-            android:title="Schedule">
-
-		<ListPreference
-	            android:key="@string/frequency_key"
-	            android:defaultValue="0"
-	            android:title="@string/frequency_title"
-	            android:summary="@string/frequency_summary"
-	            android:entries="@array/frequency_names"
-	            android:entryValues="@array/frequency_values"
-	            android:dialogTitle="@string/frequency_dialogtitle" />
-	
-	</PreferenceCategory>
-
-    <PreferenceCategory
             android:title="Mandatory">
     
         <EditTextPreference
@@ -49,8 +35,17 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-            android:title="Advanced">
-    
+            android:title="Optional">
+
+		<ListPreference
+	            android:key="@string/frequency_key"
+	            android:defaultValue="0"
+	            android:title="@string/frequency_title"
+	            android:summary="@string/frequency_summary"
+	            android:entries="@array/frequency_names"
+	            android:entryValues="@array/frequency_values"
+	            android:dialogTitle="@string/frequency_dialogtitle" />
+
         <CheckBoxPreference
                 android:key="@string/alwaysshowcount_key"
                 android:title="@string/alwaysshowcount_title"
@@ -71,6 +66,17 @@
                 android:title="@string/internalviewer_title"
                 android:summary="@string/internalviewer_summary" />
 
+        <CheckBoxPreference
+                android:key="@string/onlyoverwifi_key"
+                android:title="@string/onlyoverwifi_title"
+                android:enabled="false"
+                android:summary="@string/onlyoverwifi_summary" />
+
+	</PreferenceCategory>
+
+    <PreferenceCategory
+            android:title="Advanced">
+    
         <EditTextPreference
                 android:key="@string/inbox_key"
                 android:title="@string/inbox_title"
@@ -79,17 +85,11 @@
                 android:defaultValue="@string/inbox_defaultvalue" />
                 
         <EditTextPreference
+                android:enabled="false"
                 android:key="@string/calendar_key"
                 android:title="@string/calendar_title"
                 android:summary="@string/calendar_summary"
-                android:dialogTitle="@string/calendar_dialogtitle"
-                android:defaultValue="@string/calendar_defaultvalue" />
-                
-        <CheckBoxPreference
-                android:key="@string/onlyoverwifi_key"
-                android:title="@string/onlyoverwifi_title"
-                android:enabled="false"
-                android:summary="@string/onlyoverwifi_summary" />
+                android:dialogTitle="@string/calendar_dialogtitle" />
 
     </PreferenceCategory>
 
