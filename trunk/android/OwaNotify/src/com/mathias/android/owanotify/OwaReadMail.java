@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.TextView;
 
 import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
@@ -25,6 +26,8 @@ public class OwaReadMail extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
 
 		setContentView(R.layout.reademail);
 

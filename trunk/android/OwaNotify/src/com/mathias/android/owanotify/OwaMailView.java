@@ -20,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -50,12 +51,14 @@ public class OwaMailView extends ListActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        setContentView(R.layout.main);
+
         AlarmManager mAM = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 		Intent i = new Intent(this, OwaMailView.class);
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, i, 0);
         mAM.setRepeating(AlarmManager.RTC, System.currentTimeMillis(), (long)1800000, pendingIntent);
-
-        setContentView(R.layout.main);
 
         prefs = new MSharedPreferences(this);
         prefsListener = new OwaSharedPreferenceChangeListener(this, prefs);
