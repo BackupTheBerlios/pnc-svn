@@ -26,7 +26,12 @@ import com.mathias.android.owanotify.common.Util;
 public class OwaService extends Service {
 	
 	private static final String TAG = OwaService.class.getSimpleName();
-	
+
+	private enum Last {
+		INBOX,
+		CALENDAR
+	}
+
 	private static final Map<Integer, Integer> mail_res = new HashMap<Integer, Integer>();
 	static {
 		mail_res.put(0, R.drawable.mail0);
@@ -93,7 +98,7 @@ public class OwaService extends Service {
 					}else if(alwaysshowcount){
 						showInboxNotification(0, null);
 					}else{
-						mNM.cancel(NOTIFICATION_INBOX_ID);
+						cancelInboxNotification();
 					}
 				}
 				if(!dontcheckcalendar) {
@@ -113,7 +118,7 @@ public class OwaService extends Service {
 							}
 						}
 					}else{
-						mNM.cancel(NOTIFICATION_CALENDAR_ID);
+						cancelCalendarNotification();
 					}
 				}
 			} catch (Exception e) {
@@ -124,6 +129,11 @@ public class OwaService extends Service {
 	}
 
 	private void showInboxNotification(int num, OwaInboxItem item) {
+		int lastInboxNum = Integer.parseInt(System.getProperty(Last.INBOX
+				.name(), "0"));
+		if(lastInboxNum == num){
+			return;
+		}
 
 		Integer res = mail_res.get(num);
 		if(num > 9){
@@ -134,19 +144,11 @@ public class OwaService extends Service {
 
 		Intent i;
 		boolean internalviewer = prefs.getBool(R.string.internalviewer_key);
-		if(internalviewer && item != null){
-			i = new Intent(this, OwaReadMail.class);
-			if(item.text == null){
-				item.text = OwaUtil.fetchContent(prefs, item.url);
-				i.putExtra(OwaReadMail.EMAIL, item);
-			}
+		if(internalviewer) {
+			i = new Intent(this, OwaMailView.class);
 		}else{
-			if(internalviewer) {
-				i = new Intent(this, OwaMailView.class);
-			}else{
-				String fullurl = OwaUtil.getFullInboxUrl(prefs);
-				i = new Intent(Intent.ACTION_VIEW, Uri.parse(fullurl));			
-			}
+			String fullurl = OwaUtil.getFullInboxUrl(prefs);
+			i = new Intent(Intent.ACTION_VIEW, Uri.parse(fullurl));			
 		}
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
@@ -161,9 +163,15 @@ public class OwaService extends Service {
 		}
 
 		mNM.notify(NOTIFICATION_INBOX_ID, notification);
+		System.setProperty(Last.INBOX.name(), ""+num);
 	}
 
 	private void showCalendarNotification(int num, OwaCalendarItem item) {
+		int lastCalendarNum = Integer.parseInt(System.getProperty(Last.INBOX
+				.name(), "0"));
+		if(lastCalendarNum == num){
+			return;
+		}
 
 		Notification notification = new Notification(R.drawable.calendar,
 				"New appointment", System.currentTimeMillis());
@@ -184,6 +192,19 @@ public class OwaService extends Service {
 		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
 
 		mNM.notify(NOTIFICATION_CALENDAR_ID, notification);
+		System.setProperty(Last.CALENDAR.name(), ""+num);
+	}
+
+	private void cancelInboxNotification(){
+		Log.d(TAG, "cancelInboxNotification");
+		mNM.cancel(NOTIFICATION_INBOX_ID);
+		System.setProperty(Last.INBOX.name(), ""+0);
+	}
+
+	private void cancelCalendarNotification(){
+		Log.d(TAG, "cancelCalendarNotification");
+		mNM.cancel(NOTIFICATION_CALENDAR_ID);
+		System.setProperty(Last.CALENDAR.name(), ""+0);
 	}
 
 }

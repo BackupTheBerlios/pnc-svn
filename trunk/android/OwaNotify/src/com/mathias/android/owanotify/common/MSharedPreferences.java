@@ -43,4 +43,8 @@ public class MSharedPreferences {
 		return prefs.getAll();
 	}
 
+	public SharedPreferences getPrefs(){
+		return prefs;
+	}
+
 }

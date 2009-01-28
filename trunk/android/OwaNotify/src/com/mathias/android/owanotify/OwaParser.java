@@ -41,29 +41,43 @@ public abstract class OwaParser {
 		int start = 0;
 		int end = 0;
 		while (true) {
-			start = Util.indexAfter(str, end, "icon-msg-");
-			end = Util.indexBefore(str, start, ".gif");
-			if(start == -1 || end == -1){
-				break;
-			}
+			/*
+			 * /exchweb/img/?.gif
+			 * view-mark
+			 * view-importance
+			 * view-document
+			 * view-flag
+			 * view-paperclip
+			 * sort-d
+			 * imp-high
+			 * icon-mtgreq
+			 * icon-msg-unread
+			 * icon-msg-read
+			 * icon-msg-reply
+			 */
+			String readimage = null;
+			do{
+				start = Util.indexAfter(str, end, "exchweb/img/");
+				end = Util.indexBefore(str, start, ".gif");
+				if(start == -1 || end == -1) {
+					Log.e(TAG, "Could not parse email list. Last image="+readimage);
+					return items;
+				}
+				readimage = str.substring(start, end);
+			} while (!"icon-mtgreq".equals(readimage)
+					&& !"icon-msg-unread".equals(readimage)
+					&& !"icon-msg-read".equals(readimage)
+					&& !"icon-msg-reply".equals(readimage));
 			boolean read = true;
-			String readimage = str.substring(start, end);
-			if("unread".equals(readimage)){
+			if ("icon-mtgreq".equals(readimage)
+					|| "icon-msg-unread".equals(readimage)) {
 				read = false;
 			}
 
 			if(!onlynew || !read) {
-				
-				String readPrefix = "";
-				String readSuffix = "";
-				if(!read){
-					readPrefix = "<b>";
-					readSuffix = "</b>";
-				}
-				
 				// from
-				start = Util.indexAfter(str, end, "<A", "<A", "<A", "<FONT size=\"2\" color=black>"+readPrefix);
-				end = Util.indexBefore(str, start, readSuffix+"</FONT>");
+				start = Util.indexAfter(str, end, "<A", "<A", "<A", "<FONT size=\"2\" color=black>");
+				end = Util.indexBefore(str, start, "</FONT>");
 				if(start == -1 || end == -1){
 					break;
 				}
@@ -78,25 +92,42 @@ public abstract class OwaParser {
 				String url = str.substring(start, end);
 
 				// subject
-				start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black>"+readPrefix);
-				end = Util.indexBefore(str, start, readSuffix+"</FONT>");
+				start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black>");
+				end = Util.indexBefore(str, start, "</FONT>");
 				if(start == -1 || end == -1){
 					break;
 				}
 				String subject = str.substring(start, end);
 
 				// date
-				start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black>"+readPrefix);
-				end = Util.indexBefore(str, start, readSuffix+"</FONT>");
+				start = Util.indexAfter(str, end, "<FONT size=\"2\" color=black>");
+				end = Util.indexBefore(str, start, "</FONT>");
 				if(start == -1 || end == -1){
 					break;
 				}
 				String date = str.substring(start, end);
 
+				if(isBold(from)){
+					from = removeBold(from);
+					subject = removeBold(subject);
+					date = removeBold(date);
+					read = false;
+				}
+
 				items.add(new OwaInboxItem(url, from, subject, date, null, read));
 			}
 		}
 		return items;
+	}
+	
+	private static boolean isBold(String inp){
+		return inp.contains("<b>");
+	}
+
+	private static String removeBold(String inp){
+		inp = inp.replaceAll("<b>", "");
+		inp = inp.replaceAll("</b>", "");
+		return inp;
 	}
 
 	@SuppressWarnings("serial")

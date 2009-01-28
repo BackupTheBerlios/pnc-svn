@@ -135,12 +135,14 @@ public class OwaMailView extends ListActivity {
 
     	public void displayEmail(final OwaInboxItem item){
 			final ProgressDialog pd = ProgressDialog.show(OwaMailView.this, null, "Fetching e-mail");
+			pd.setCancelable(true);
     		while(true){
         		if(ready){
             		handler.post(new Runnable(){
         				@Override
         				public void run() {
         					item.text = OwaUtil.fetchContent(prefs, item.url);
+        					item.read = true;
     		        		Intent i = new Intent(OwaMailView.this, OwaReadMail.class);
     		        		i.putExtra(OwaReadMail.EMAIL, item);
     		        		startActivity(i);
@@ -158,7 +160,7 @@ public class OwaMailView extends ListActivity {
 
     	public void updateEmails(){
     		final ProgressDialog pd = ProgressDialog.show(OwaMailView.this, null, "Fetching e-mails");
-	        setProgressBarIndeterminateVisibility(true);
+			pd.setCancelable(true);
     		while(true){
         		if(ready){
             		handler.post(new Runnable(){
