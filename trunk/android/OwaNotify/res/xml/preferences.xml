@@ -67,6 +67,11 @@
                 android:summary="@string/internalviewer_summary" />
 
         <CheckBoxPreference
+                android:key="@string/defaultwhitebg_key"
+                android:title="@string/defaultwhitebg_title"
+                android:summary="@string/defaultwhitebg_summary" />
+
+        <CheckBoxPreference
                 android:key="@string/onlyoverwifi_key"
                 android:title="@string/onlyoverwifi_title"
                 android:enabled="false"

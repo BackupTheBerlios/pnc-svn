@@ -105,18 +105,18 @@ public class OwaService extends Service {
 					List<OwaCalendarItem> items = OwaUtil.fetchCalendar(prefs);
 					if(items != null && items.size() > 0){
 						OwaCalendarItem item = items.get(0);
-						GregorianCalendar gc = new GregorianCalendar();
-						int currHour = gc.get(Calendar.HOUR);
-						int currMinute = gc.get(Calendar.MINUTE);
-						int calHour = Util.getHour(item.time);
-						int calMinute = Util.getMinute(item.time);
-						if(currHour-5 < calHour){
-							if (currHour > calHour
-									|| (currHour == calHour && currMinute >= calMinute)) {
+//						GregorianCalendar gc = new GregorianCalendar();
+//						int currHour = gc.get(Calendar.HOUR);
+//						int currMinute = gc.get(Calendar.MINUTE);
+//						int calHour = Util.getHour(item.time);
+//						int calMinute = Util.getMinute(item.time);
+//						if(currHour-5 < calHour){
+//							if (currHour > calHour
+//									|| (currHour == calHour && currMinute >= calMinute)) {
 						    	Log.d(TAG, "showCalendarNotification, items="+items.size());
 								showCalendarNotification(items.size(), item);
-							}
-						}
+//							}
+//						}
 					}else{
 						cancelCalendarNotification();
 					}
@@ -131,7 +131,7 @@ public class OwaService extends Service {
 	private void showInboxNotification(int num, OwaInboxItem item) {
 		int lastInboxNum = Integer.parseInt(System.getProperty(Last.INBOX
 				.name(), "0"));
-		if(lastInboxNum == num){
+		if(lastInboxNum >= num){
 			return;
 		}
 
@@ -169,7 +169,7 @@ public class OwaService extends Service {
 	private void showCalendarNotification(int num, OwaCalendarItem item) {
 		int lastCalendarNum = Integer.parseInt(System.getProperty(Last.INBOX
 				.name(), "0"));
-		if(lastCalendarNum == num){
+		if(lastCalendarNum >= num){
 			return;
 		}
 

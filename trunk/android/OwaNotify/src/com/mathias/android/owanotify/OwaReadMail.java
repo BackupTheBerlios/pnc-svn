@@ -2,12 +2,14 @@ package com.mathias.android.owanotify;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
@@ -18,10 +20,15 @@ public class OwaReadMail extends Activity {
 	public static final String EMAIL = "EMAIL";
 	
 	private static final int OPENINBROWSER_ID = Menu.FIRST +0;
+	private static final int TOGGLEBG_ID = Menu.FIRST +1;
 	
 	private MSharedPreferences prefs;
 
 	private OwaInboxItem item;
+	
+	private ScrollView scroll;
+	
+	private int bgc = Color.BLACK;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -31,7 +38,14 @@ public class OwaReadMail extends Activity {
 
 		setContentView(R.layout.reademail);
 
-        prefs = new MSharedPreferences(this);
+		scroll = (ScrollView) findViewById(R.id.scroll);
+
+		prefs = new MSharedPreferences(this);
+		
+		if(prefs.getBool(R.string.defaultwhitebg_key)){
+			bgc = Color.WHITE;
+			scroll.setBackgroundColor(bgc);
+		}
 
 		item = (OwaInboxItem) (savedInstanceState != null ? savedInstanceState
 				.getSerializable(EMAIL)
@@ -59,6 +73,8 @@ public class OwaReadMail extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuItem item = menu.add(Menu.NONE, OPENINBROWSER_ID, Menu.NONE, "Open in browser");
 		item.setIcon(android.R.drawable.ic_menu_set_as);
+		item = menu.add(Menu.NONE, TOGGLEBG_ID, Menu.NONE, "Toggle background");
+		item.setIcon(android.R.drawable.ic_menu_revert);
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -68,6 +84,13 @@ public class OwaReadMail extends Activity {
     		String fullurl = OwaUtil.getFullUrl(prefs, item.url);
     		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
 			return true;
+		}else if(TOGGLEBG_ID == mitem.getItemId()){
+			if(bgc == Color.BLACK){
+				bgc = Color.WHITE;
+			}else{
+				bgc = Color.BLACK;
+			}
+			scroll.setBackgroundColor(bgc);
 		}
 		return super.onOptionsItemSelected(mitem);
 	}

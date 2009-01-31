@@ -115,14 +115,14 @@ public class OwaMailView extends ListActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if(CALENDAR_ID == item.getItemId()){
 			Intent i = new Intent(this, OwaCalendarView.class);
-			startActivity(i);
+			startActivityForResult(i, 0);
 			return true;
 		}else if(REFRESH_ID == item.getItemId()){
             thread.updateEmails();
 			return true;
 		}else if(SETTINGS_ID == item.getItemId()){
 			Intent i = new Intent(this, SettingEdit.class);
-			startActivity(i);
+			startActivityForResult(i, 0);
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
@@ -148,7 +148,7 @@ public class OwaMailView extends ListActivity {
         					item.read = true;
     		        		Intent i = new Intent(OwaMailView.this, OwaReadMail.class);
     		        		i.putExtra(OwaReadMail.EMAIL, item);
-    		        		startActivity(i);
+    		        		startActivityForResult(i, 0);
     		    	        pd.dismiss();
         				}
             		});
@@ -178,7 +178,7 @@ public class OwaMailView extends ListActivity {
             						inboxitems = OwaParser.parseInbox(str, false);
         		    			}else{
         		    				Intent i = new Intent(OwaMailView.this, SettingEdit.class);
-        		    				startActivity(i);
+        		    				startActivityForResult(i, 0);
         		    			}
         					} catch (Exception e) {
 								Log.e(TAG, e.getMessage(), e);

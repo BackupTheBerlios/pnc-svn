@@ -48,6 +48,10 @@
     <string name="internalviewer_key">internalviewer</string>
     <string name="internalviewer_title">Internal viewer</string>
     <string name="internalviewer_summary">Internal viewer</string>
+    <!-- defaultwhitebg -->
+    <string name="defaultwhitebg_key">defaultwhitebg</string>
+    <string name="defaultwhitebg_title">White BG</string>
+    <string name="defaultwhitebg_summary">Default white background in mail reader</string>
     <!-- inbox -->
     <string name="inbox_key">inbox</string>
     <string name="inbox_title">Inbox</string>

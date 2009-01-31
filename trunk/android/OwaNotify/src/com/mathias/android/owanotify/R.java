@@ -33,8 +33,9 @@ public final class R {
     public static final class id {
         public static final int date=0x7f070002;
         public static final int from=0x7f070000;
+        public static final int scroll=0x7f070003;
         public static final int subject=0x7f070001;
-        public static final int text=0x7f070003;
+        public static final int text=0x7f070004;
     }
     public static final class layout {
         public static final int main=0x7f030000;
@@ -48,13 +49,18 @@ public final class R {
         public static final int alwaysshowcount_summary=0x7f06001f;
         public static final int alwaysshowcount_title=0x7f06001e;
         public static final int app_name=0x7f060000;
-        public static final int calendar_defaultvalue=0x7f06002f;
-        public static final int calendar_dialogtitle=0x7f06002e;
+        public static final int calendar_defaultvalue=0x7f060032;
+        public static final int calendar_dialogtitle=0x7f060031;
         /**  calendar 
          */
-        public static final int calendar_key=0x7f06002b;
-        public static final int calendar_summary=0x7f06002d;
-        public static final int calendar_title=0x7f06002c;
+        public static final int calendar_key=0x7f06002e;
+        public static final int calendar_summary=0x7f060030;
+        public static final int calendar_title=0x7f06002f;
+        /**  defaultwhitebg 
+         */
+        public static final int defaultwhitebg_key=0x7f060026;
+        public static final int defaultwhitebg_summary=0x7f060028;
+        public static final int defaultwhitebg_title=0x7f060027;
         /**  dontcheckcalendar 
          */
         public static final int dontcheckcalendar_key=0x7f060020;
@@ -71,13 +77,13 @@ public final class R {
         public static final int frequency_key=0x7f060001;
         public static final int frequency_summary=0x7f060003;
         public static final int frequency_title=0x7f060002;
-        public static final int inbox_defaultvalue=0x7f06002a;
-        public static final int inbox_dialogtitle=0x7f060029;
+        public static final int inbox_defaultvalue=0x7f06002d;
+        public static final int inbox_dialogtitle=0x7f06002c;
         /**  inbox 
          */
-        public static final int inbox_key=0x7f060026;
-        public static final int inbox_summary=0x7f060028;
-        public static final int inbox_title=0x7f060027;
+        public static final int inbox_key=0x7f060029;
+        public static final int inbox_summary=0x7f06002b;
+        public static final int inbox_title=0x7f06002a;
         /**  internalviewer 
          */
         public static final int internalviewer_key=0x7f060023;

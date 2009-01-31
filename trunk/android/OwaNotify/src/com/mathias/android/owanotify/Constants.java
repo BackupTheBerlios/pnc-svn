@@ -1,6 +1,8 @@
 /*
 TODO 5: Sign and publish
 -- DONE --
+Only notify if more items then last
+Toggle Light background reading emails
 Appointments not visible in email list
 Notification should only display mail list, not item
 Opening email from list should set item.read to true
