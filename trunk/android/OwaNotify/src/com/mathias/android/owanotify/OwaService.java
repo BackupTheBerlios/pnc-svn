@@ -1,7 +1,5 @@
 package com.mathias.android.owanotify;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +19,6 @@ import android.util.Log;
 import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
 import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
-import com.mathias.android.owanotify.common.Util;
 
 public class OwaService extends Service {
 	
@@ -167,7 +164,7 @@ public class OwaService extends Service {
 	}
 
 	private void showCalendarNotification(int num, OwaCalendarItem item) {
-		int lastCalendarNum = Integer.parseInt(System.getProperty(Last.INBOX
+		int lastCalendarNum = Integer.parseInt(System.getProperty(Last.CALENDAR
 				.name(), "0"));
 		if(lastCalendarNum >= num){
 			return;

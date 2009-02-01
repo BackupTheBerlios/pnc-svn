@@ -44,8 +44,6 @@ public class OwaMailView extends ListActivity {
 	private List<OwaInboxItem> inboxitems = new ArrayList<OwaInboxItem>();
 	
 	private WorkerThread thread;
-	
-	private OwaSharedPreferenceChangeListener prefsListener;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,8 +59,6 @@ public class OwaMailView extends ListActivity {
         mAM.setRepeating(AlarmManager.RTC, System.currentTimeMillis(), (long)1800000, pendingIntent);
 
         prefs = new MSharedPreferences(this);
-        prefsListener = new OwaSharedPreferenceChangeListener(this, prefs);
-    	prefs.registerOnSharedPreferenceChangeListener(prefsListener);
 
         adapter = new OwaAdapter(this);
     	setListAdapter(adapter);
@@ -85,7 +81,6 @@ public class OwaMailView extends ListActivity {
     @Override
     protected void onDestroy() {
     	super.onDestroy();
-    	prefs.unregisterOnSharedPreferenceChangeListener(prefsListener);
     }
 
     @Override
