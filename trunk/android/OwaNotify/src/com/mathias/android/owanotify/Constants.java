@@ -1,5 +1,7 @@
 /*
+TODO 5: Cache emails
 TODO 5: Sign and publish
+TODO 5: Show To:, Cc: in email content.
 -- DONE --
 Only notify if more items then last
 Toggle Light background reading emails

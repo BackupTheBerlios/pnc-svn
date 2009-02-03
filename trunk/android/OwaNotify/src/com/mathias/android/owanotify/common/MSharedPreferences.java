@@ -31,6 +31,10 @@ public class MSharedPreferences {
 		return prefs.getBoolean(cxt.getString(resid), false);
 	}
 
+	public int getInt(int resid){
+		return prefs.getInt(cxt.getString(resid), 0);
+	}
+
 	public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener){
 		prefs.registerOnSharedPreferenceChangeListener(listener);
 	}

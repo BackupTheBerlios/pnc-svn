@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
+import com.mathias.android.owanotify.common.Util;
 
 public class OwaReadMail extends Activity {
 
@@ -63,9 +64,13 @@ public class OwaReadMail extends Activity {
 			TextView subject = (TextView) findViewById(R.id.subject);
 			subject.setText(item.subject);
 			TextView date = (TextView) findViewById(R.id.date);
-			date.setText(item.date);
+			date.setText(item.date.toString());
 			TextView text = (TextView) findViewById(R.id.text);
-			text.setText(Html.fromHtml(item.text, null, null));
+			if(item.text == null){
+				Util.showDialog(this, "Error", "Could not read email");
+			}else{
+				text.setText(Html.fromHtml(item.text, null, null));
+			}
 		}
 	}
 

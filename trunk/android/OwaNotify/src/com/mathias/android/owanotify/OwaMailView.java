@@ -1,7 +1,9 @@
 package com.mathias.android.owanotify;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.app.AlarmManager;
 import android.app.ListActivity;
@@ -44,6 +46,10 @@ public class OwaMailView extends ListActivity {
 	private List<OwaInboxItem> inboxitems = new ArrayList<OwaInboxItem>();
 	
 	private WorkerThread thread;
+	
+	private TextView empty;
+	
+	private Map<String, String> content = new HashMap<String, String>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -60,21 +66,23 @@ public class OwaMailView extends ListActivity {
 
         prefs = new MSharedPreferences(this);
 
-        adapter = new OwaAdapter(this);
-    	setListAdapter(adapter);
-
     	thread = new WorkerThread();
         thread.start();
 
-        TextView empty = (TextView) findViewById(android.R.id.empty);
-        empty.setText("No mails found...");
+    	adapter = new OwaAdapter(this);
+    	setListAdapter(adapter);
+
+        empty = (TextView) findViewById(android.R.id.empty);
     }
     
     @Override
     protected void onResume() {
     	super.onResume();
+
     	if(inboxitems.size() == 0){
             thread.updateEmails();
+    	}else{
+    		populateView();
     	}
     }
     
@@ -114,6 +122,7 @@ public class OwaMailView extends ListActivity {
 			return true;
 		}else if(REFRESH_ID == item.getItemId()){
             thread.updateEmails();
+            content.clear();
 			return true;
 		}else if(SETTINGS_ID == item.getItemId()){
 			Intent i = new Intent(this, SettingEdit.class);
@@ -124,13 +133,18 @@ public class OwaMailView extends ListActivity {
 	}
 
 	private void populateView(){
+		if(inboxitems == null){
+			empty.setText("Unknown state...");
+		}else if(inboxitems.size() == 0){
+			empty.setText("No emails found...");
+		}
 		adapter.notifyDataSetChanged();
 	}
 
     private class WorkerThread extends Thread {
     	
     	private boolean ready = false;
-
+    	
     	public void displayEmail(final OwaInboxItem item){
 			final ProgressDialog pd = ProgressDialog.show(OwaMailView.this, null, "Fetching e-mail");
 			pd.setCancelable(true);
@@ -139,12 +153,16 @@ public class OwaMailView extends ListActivity {
             		handler.post(new Runnable(){
         				@Override
         				public void run() {
-        					item.text = OwaUtil.fetchContent(prefs, item.url);
+        					item.text = content.get(item.url);
+        					if(item.text == null){
+            					item.text = OwaUtil.fetchContent(prefs, item.url);
+            					content.put(item.url, item.text);
+        					}
         					item.read = true;
     		        		Intent i = new Intent(OwaMailView.this, OwaReadMail.class);
     		        		i.putExtra(OwaReadMail.EMAIL, item);
-    		        		startActivityForResult(i, 0);
     		    	        pd.dismiss();
+    		        		startActivityForResult(i, 0);
         				}
             		});
             		break;
@@ -170,7 +188,9 @@ public class OwaMailView extends ListActivity {
         		    			String password = prefs.getString(R.string.password_key);
         		    			if(inboxurl != null && username != null && password != null){
             						String str = Util.downloadFile(0, inboxurl, null, username, password);
-            						inboxitems = OwaParser.parseInbox(str, false);
+            				        String sadd = prefs.getString(R.string.timezoneadj_key, "0");
+            				        int timezoneadj = Integer.parseInt(sadd);
+            						inboxitems = OwaParser.parseInbox(str, false, timezoneadj);
         		    			}else{
         		    				Intent i = new Intent(OwaMailView.this, SettingEdit.class);
         		    				startActivityForResult(i, 0);
@@ -250,7 +270,9 @@ public class OwaMailView extends ListActivity {
 	        }
 	        holder.from.setText(item.from);
 	        holder.subject.setText(item.subject);
-	        holder.date.setText(item.date);
+	        if(item.date != null){
+		        holder.date.setText(item.date.toString());
+	        }
 			if(!item.read){
 				holder.from.setTextColor(Color.WHITE);
 				holder.subject.setTextColor(Color.WHITE);

@@ -2,6 +2,7 @@ package com.mathias.android.owanotify;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import android.util.Log;
@@ -34,7 +35,7 @@ public abstract class OwaParser {
 		return ret;
 	}
 
-	public static List<OwaInboxItem> parseInbox(String str, boolean onlynew) {
+	public static List<OwaInboxItem> parseInbox(String str, boolean onlynew, int timezoneadj) {
 
 		List<OwaInboxItem> items = new ArrayList<OwaInboxItem>();
 
@@ -67,6 +68,8 @@ public abstract class OwaParser {
 			} while (!"icon-mtgreq".equals(readimage)
 					&& !"icon-msg-unread".equals(readimage)
 					&& !"icon-msg-read".equals(readimage)
+					&& !"icon-recall".equals(readimage)
+					&& !"icon-msg-forward".equals(readimage)
 					&& !"icon-msg-reply".equals(readimage));
 			boolean read = true;
 			if ("icon-mtgreq".equals(readimage)
@@ -114,7 +117,7 @@ public abstract class OwaParser {
 					read = false;
 				}
 
-				items.add(new OwaInboxItem(url, from, subject, date, null, read));
+				items.add(new OwaInboxItem(url, from, subject, OwaUtil.parseDate(date, timezoneadj), null, read));
 			}
 		}
 		return items;
@@ -136,10 +139,10 @@ public abstract class OwaParser {
 		public String url;
 		public String from;
 		public String subject;
-		public String date;
+		public Date date;
 		public String text;
 
-		public OwaInboxItem(String url, String from, String subject, String date, String text, boolean read) {
+		public OwaInboxItem(String url, String from, String subject, Date date, String text, boolean read) {
 			this.read = read;
 			this.from = from;
 			this.subject = subject;
@@ -155,7 +158,7 @@ public abstract class OwaParser {
 		}
 	}
 
-	public static List<OwaCalendarItem> parseCalendar(String str) {
+	public static List<OwaCalendarItem> parseCalendar(String str, int timezoneadj) {
 
 		List<OwaCalendarItem> items = new ArrayList<OwaCalendarItem>();
 
@@ -192,7 +195,7 @@ public abstract class OwaParser {
 				String title = timeTitle.substring(i,
 						timeTitle.length());
 				String time = timeTitle.substring(0, i);
-				items.add(new OwaCalendarItem(title, date, time, titleLocation));
+				items.add(new OwaCalendarItem(title, OwaUtil.parseDate(date, timezoneadj), time, titleLocation));
 			}
 		}
 		return items;
@@ -200,11 +203,11 @@ public abstract class OwaParser {
 
 	public static class OwaCalendarItem {
 		public String title;
-		public String date;
+		public Date date;
 		public String time;
 		public String titleLocation;
 
-		public OwaCalendarItem(String title, String date, String time, String titleLocation) {
+		public OwaCalendarItem(String title, Date date, String time, String titleLocation) {
 			this.title = title;
 			this.date = date;
 			this.time = time;

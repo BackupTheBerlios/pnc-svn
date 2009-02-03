@@ -46,6 +46,15 @@
 	            android:entryValues="@array/frequency_values"
 	            android:dialogTitle="@string/frequency_dialogtitle" />
 
+		<ListPreference
+	            android:key="@string/timezoneadj_key"
+	            android:defaultValue="0"
+	            android:title="@string/timezoneadj_title"
+	            android:summary="@string/timezoneadj_summary"
+	            android:entries="@array/timezoneadj_names"
+	            android:entryValues="@array/timezoneadj_values"
+	            android:dialogTitle="@string/timezoneadj_dialogtitle" />
+
         <CheckBoxPreference
                 android:key="@string/alwaysshowcount_key"
                 android:title="@string/alwaysshowcount_title"

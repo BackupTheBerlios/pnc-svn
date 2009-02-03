@@ -1,8 +1,20 @@
 package com.mathias.android.owanotify;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.http.impl.cookie.DateParseException;
+import org.apache.http.impl.cookie.DateUtils;
 
 import android.util.Log;
+import android.util.TimeUtils;
 
 import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
 import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
@@ -69,9 +81,10 @@ public class OwaUtil {
 			String username = prefs.getString(R.string.username_key);
 			String password = prefs.getString(R.string.password_key);
 			String inboxurl = getFullInboxUrl(prefs);
+			int timezoneadj = prefs.getInt(R.string.timezoneadj_key);
 			if(username != null && password != null && inboxurl != null){
 				String inb = Util.downloadFile(0, inboxurl, null, username, password);
-				return OwaParser.parseInbox(inb, true);
+				return OwaParser.parseInbox(inb, true, timezoneadj);
 			}
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -84,12 +97,30 @@ public class OwaUtil {
 			String username = prefs.getString(R.string.username_key);
 			String password = prefs.getString(R.string.password_key);
 			String calendarurl = getFullCalendarUrl(prefs);
+			int timezoneadj = prefs.getInt(R.string.timezoneadj_key);
 			if(username != null && password != null && calendarurl != null){
 				String cal = Util.downloadFile(0, calendarurl, null, username, password);
-				return OwaParser.parseCalendar(cal);
+				return OwaParser.parseCalendar(cal, timezoneadj);
 			}
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
+		}
+		return null;
+	}
+	
+	private final static Pattern f1 = Pattern.compile("\\D*(\\d{4})\\D(\\d{2})\\D(\\d{2}) (\\d{1,2})\\D(\\d{2})");
+
+	public static Date parseDate(String in, int houradd){
+		Matcher m = f1.matcher(in);
+		if(m.matches()){
+			int year = Integer.parseInt(m.group(1));
+			int month = Integer.parseInt(m.group(2));
+			int date = Integer.parseInt(m.group(3));
+			int hourOfDay = Integer.parseInt(m.group(4));
+			int minute = Integer.parseInt(m.group(5));
+			GregorianCalendar gc = new GregorianCalendar(year, month, date, hourOfDay, minute);
+			gc.add(Calendar.HOUR_OF_DAY, houradd);
+			return gc.getTime();
 		}
 		return null;
 	}

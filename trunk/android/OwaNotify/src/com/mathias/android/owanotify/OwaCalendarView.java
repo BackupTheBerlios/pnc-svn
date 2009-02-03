@@ -125,7 +125,9 @@ public class OwaCalendarView extends ListActivity {
         		    			String password = prefs.getString(R.string.password_key);
         		    			if(calendarurl != null && username != null && password != null){
             						String str = Util.downloadFile(0, calendarurl, null, username, password);
-            						calendaritems = OwaParser.parseCalendar(str);
+            				        String sadd = prefs.getString(R.string.timezoneadj_key, "0");
+            				        int timezoneadj = Integer.parseInt(sadd);
+            						calendaritems = OwaParser.parseCalendar(str, timezoneadj);
         		    			}else{
         		    				Intent i = new Intent(OwaCalendarView.this, SettingEdit.class);
         		    				startActivity(i);
@@ -205,6 +207,9 @@ public class OwaCalendarView extends ListActivity {
 	        }
 	        holder.from.setText(item.title);
 	        holder.subject.setText(item.titleLocation);
+//	        if(item.date != null){
+//		        holder.date.setText(item.date.toString());
+//	        }
 	        holder.date.setText(item.time);
 	        return convertView;
 		}
