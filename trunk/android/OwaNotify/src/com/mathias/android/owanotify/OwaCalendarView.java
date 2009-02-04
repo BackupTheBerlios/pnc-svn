@@ -1,6 +1,7 @@
 package com.mathias.android.owanotify;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import android.app.AlarmManager;
@@ -121,7 +122,7 @@ public class OwaCalendarView extends ListActivity {
         				@Override
         				public void run() {
         		    		try {
-        		    			String calendarurl = OwaUtil.getFullCalendarUrl(prefs);
+        		    			String calendarurl = OwaUtil.getFullCalendarUrl(prefs, new Date());
         		    			String username = prefs.getString(R.string.username_key);
         		    			String password = prefs.getString(R.string.password_key);
         		    			if(calendarurl != null && username != null && password != null){

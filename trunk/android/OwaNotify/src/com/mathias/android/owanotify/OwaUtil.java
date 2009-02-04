@@ -40,14 +40,14 @@ public class OwaUtil {
 		return url+name+inbox;
 	}
 
-	public static String getFullCalendarUrl(MSharedPreferences prefs){
+	public static String getFullCalendarUrl(MSharedPreferences prefs, Date date){
 		String url = prefs.getString(R.string.url_key, "");
 		if(!url.endsWith("/")){
 			url+="/";
 		}
 		String name = prefs.getString(R.string.name_key);
 		String calendar = prefs.getString(R.string.calendar_key, "/Calendar/?Cmd=contents&View=Daily");
-		return url+name+calendar;
+		return url+name+calendar+"&m="+(1+date.getMonth())+"&d="+(1+date.getDay())+"&y="+(1900+date.getYear());
 	}
 
 	public static String fetchContent(MSharedPreferences prefs, String url){
@@ -90,7 +90,7 @@ public class OwaUtil {
 		try {
 			String username = prefs.getString(R.string.username_key);
 			String password = prefs.getString(R.string.password_key);
-			String calendarurl = getFullCalendarUrl(prefs);
+			String calendarurl = getFullCalendarUrl(prefs, new Date());
 	        String sadd = prefs.getString(R.string.timezoneadj_key, "0");
 	        int timezoneadj = Integer.parseInt(sadd);
 			if(username != null && password != null && calendarurl != null){
