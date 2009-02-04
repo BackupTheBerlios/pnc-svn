@@ -6,6 +6,11 @@
     <string name="frequency_title">Frequency</string>
     <string name="frequency_summary">Frequency of fetching data</string>
     <string name="frequency_dialogtitle">Frequency</string>
+    <!-- reminder -->
+    <string name="reminder_key">reminder</string>
+    <string name="reminder_title">Calendar reminder</string>
+    <string name="reminder_summary">Reminder before appointment</string>
+    <string name="reminder_dialogtitle">Calendar reminder</string>
     <!-- timezoneadj -->
     <string name="timezoneadj_key">timezoneadj</string>
     <string name="timezoneadj_title">Timezone adjustment</string>

@@ -47,6 +47,15 @@
 	            android:dialogTitle="@string/frequency_dialogtitle" />
 
 		<ListPreference
+	            android:key="@string/reminder_key"
+	            android:defaultValue="60"
+	            android:title="@string/reminder_title"
+	            android:summary="@string/reminder_summary"
+	            android:entries="@array/reminder_names"
+	            android:entryValues="@array/reminder_values"
+	            android:dialogTitle="@string/reminder_dialogtitle" />
+
+		<ListPreference
 	            android:key="@string/timezoneadj_key"
 	            android:defaultValue="0"
 	            android:title="@string/timezoneadj_title"

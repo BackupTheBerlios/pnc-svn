@@ -176,17 +176,32 @@ public abstract class OwaParser {
 		while (true) {
 			// time and title
 			start = Util.indexAfter(str, end, "<TD TITLE=\"");
-			end = Util.indexBefore(str, start, "\" rowspan");
+			end = Util.indexBefore(str, start, "\"");
 			if(start == -1 || end == -1){
 				break;
 			}
 			String timeTitle = str.substring(start, end);
 			
-			// title and location
-			start = Util.indexAfter(str, end, "style=\"text-decoration:none\">");
-			end = Util.indexBefore(str, start, "</A");
+			//link
+			start = Util.indexAfter(str, end, "href=\"");
+			end = Util.indexBefore(str, start, "\"");
 			if(start == -1 || end == -1){
 				break;
+			}
+			String url = str.substring(start, end);
+			
+			// title and location
+			start = Util.indexAfter(str, end, "style=\"text-decoration:none\">");
+			end = Util.indexBefore(str, start, "<");
+			if(start == -1 || end == -1){
+				break;
+			}
+			while('<' == str.charAt(start)){
+				start = Util.indexAfter(str, end, ">");
+				end = Util.indexBefore(str, start, "<");
+				if(start == -1 || end == -1){
+					break;
+				}
 			}
 			String titleLocation = str.substring(start, end);
 
@@ -195,7 +210,9 @@ public abstract class OwaParser {
 				String title = timeTitle.substring(i,
 						timeTitle.length());
 				String time = timeTitle.substring(0, i);
-				items.add(new OwaCalendarItem(title, OwaUtil.parseDate(date, timezoneadj), time, titleLocation));
+				int[] timeA = OwaUtil.parseTime(time, timezoneadj);
+				items.add(new OwaCalendarItem(title, OwaUtil.parseDate(date,
+						timezoneadj), timeA[0], timeA[1], titleLocation, url));
 			}
 		}
 		return items;
@@ -204,14 +221,18 @@ public abstract class OwaParser {
 	public static class OwaCalendarItem {
 		public String title;
 		public Date date;
-		public String time;
+		public int startmin;
+		public int stopmin;
 		public String titleLocation;
+		public String url;
 
-		public OwaCalendarItem(String title, Date date, String time, String titleLocation) {
+		public OwaCalendarItem(String title, Date date, int startmin, int stopmin, String titleLocation, String url) {
 			this.title = title;
 			this.date = date;
-			this.time = time;
+			this.startmin = startmin;
+			this.stopmin = stopmin;
 			this.titleLocation = titleLocation;
+			this.url = url;
 		}
 	}
 

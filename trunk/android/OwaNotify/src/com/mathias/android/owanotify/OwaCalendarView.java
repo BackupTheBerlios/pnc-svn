@@ -72,7 +72,8 @@ public class OwaCalendarView extends ListActivity {
 
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
-		String fullurl = OwaUtil.getFullInboxUrl(prefs);
+    	OwaCalendarItem item = adapter.getItem(position);
+    	String fullurl = OwaUtil.getFullUrl(prefs, item.url);
 		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
     }
 
@@ -179,7 +180,7 @@ public class OwaCalendarView extends ListActivity {
 		}
 
 		@Override
-		public Object getItem(int position) {
+		public OwaCalendarItem getItem(int position) {
 			return calendaritems.get(position);
 		}
 
@@ -210,7 +211,7 @@ public class OwaCalendarView extends ListActivity {
 //	        if(item.date != null){
 //		        holder.date.setText(item.date.toString());
 //	        }
-	        holder.date.setText(item.time);
+	        holder.date.setText(OwaUtil.buildTime(item.startmin, item.stopmin));
 	        return convertView;
 		}
     	

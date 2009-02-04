@@ -1,5 +1,6 @@
 package com.mathias.android.owanotify;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,24 +99,20 @@ public class OwaService extends Service {
 						cancelInboxNotification();
 					}
 				}
-				if(!dontcheckcalendar) {
+				String sreminder = prefs.getString(R.string.reminder_key, "60");
+				int reminder = Integer.parseInt(sreminder);
+				if(!dontcheckcalendar && reminder != 0) {
 					List<OwaCalendarItem> items = OwaUtil.fetchCalendar(prefs);
 					if(items != null && items.size() > 0){
-						OwaCalendarItem item = items.get(0);
-//						GregorianCalendar gc = new GregorianCalendar();
-//						int currHour = gc.get(Calendar.HOUR);
-//						int currMinute = gc.get(Calendar.MINUTE);
-//						int calHour = Util.getHour(item.time);
-//						int calMinute = Util.getMinute(item.time);
-//						if(currHour-5 < calHour){
-//							if (currHour > calHour
-//									|| (currHour == calHour && currMinute >= calMinute)) {
+						Date curr = new Date();
+						int currmin = curr.getHours()*60+curr.getMinutes();
+						for (OwaCalendarItem item : items) {
+							if(currmin >= item.startmin - reminder && currmin <= item.stopmin){
 						    	Log.d(TAG, "showCalendarNotification, items="+items.size());
 								showCalendarNotification(items.size(), item);
-//							}
-//						}
-					}else{
-						cancelCalendarNotification();
+								break;
+							}
+						}
 					}
 				}
 			} catch (Exception e) {
@@ -128,7 +125,7 @@ public class OwaService extends Service {
 	private void showInboxNotification(int num, OwaInboxItem item) {
 		int lastInboxNum = Integer.parseInt(System.getProperty(Last.INBOX
 				.name(), "0"));
-		if(lastInboxNum >= num){
+		if(lastInboxNum >= num && item != null){
 			return;
 		}
 
@@ -155,7 +152,7 @@ public class OwaService extends Service {
 		notification.setLatestEventInfo(this, item.from, item.subject,
 				contentIntent);
 
-		if(num > 0){
+		if(num > lastInboxNum){
 			notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
 		}
 
@@ -171,21 +168,22 @@ public class OwaService extends Service {
 		}
 
 		Notification notification = new Notification(R.drawable.calendar,
-				"New appointment", System.currentTimeMillis());
+				"Reminder", System.currentTimeMillis());
 
 		Intent i;
 		boolean internalviewer = prefs.getBool(R.string.internalviewer_key);
 		if(internalviewer){
-			i = new Intent(this, OwaCalendarView.class);			
+			i = new Intent(this, OwaCalendarView.class);
 		}else{
-			String fullurl = OwaUtil.getFullCalendarUrl(prefs);
+			String fullurl = OwaUtil.getFullUrl(prefs, item.url);
 			i = new Intent(Intent.ACTION_VIEW, Uri.parse(fullurl));			
 		}
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
-		notification.setLatestEventInfo(this,
-				item.title, item.time+" "+item.title, contentIntent);
-		
+		notification.setLatestEventInfo(this, item.title, OwaUtil.buildTime(
+				item.startmin, item.stopmin)
+				+ " " + item.title, contentIntent);
+
 		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
 
 		mNM.notify(NOTIFICATION_CALENDAR_ID, notification);
