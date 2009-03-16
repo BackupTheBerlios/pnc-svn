@@ -13,6 +13,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.database.Cursor;
 import android.util.Log;
 
 public class Util {
@@ -149,6 +150,13 @@ public class Util {
 		builder.setPositiveButton(android.R.string.ok, null);
 		builder.setCancelable(true);
 		builder.show();
+	}
+
+	public static void closeCursor(Cursor c){
+		if(c != null){
+			c.close();
+			c = null;
+		}
 	}
 
 }

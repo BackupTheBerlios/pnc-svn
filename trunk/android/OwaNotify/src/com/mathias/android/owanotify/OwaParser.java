@@ -1,12 +1,13 @@
 package com.mathias.android.owanotify;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import android.util.Log;
 
+import com.mathias.android.owanotify.beans.CalendarItem;
+import com.mathias.android.owanotify.beans.MailItem;
 import com.mathias.android.owanotify.common.Util;
 
 public abstract class OwaParser {
@@ -35,9 +36,9 @@ public abstract class OwaParser {
 		return ret;
 	}
 
-	public static List<OwaInboxItem> parseInbox(String str, boolean onlynew, int timezoneadj) {
+	public static List<MailItem> parseInbox(String str, int timezoneadj, OwaNotifyDbAdapter dbHelper) {
 
-		List<OwaInboxItem> items = new ArrayList<OwaInboxItem>();
+		List<MailItem> items = new ArrayList<MailItem>();
 
 		int start = 0;
 		int end = 0;
@@ -77,7 +78,8 @@ public abstract class OwaParser {
 				read = false;
 			}
 
-			if(!onlynew || !read) {
+			if(true) {
+			//if(!onlynew || !read) {
 				// from
 				start = Util.indexAfter(str, end, "<A", "<A", "<A", "<FONT size=\"2\" color=black>");
 				end = Util.indexBefore(str, start, "</FONT>");
@@ -117,7 +119,15 @@ public abstract class OwaParser {
 					read = false;
 				}
 
-				items.add(new OwaInboxItem(url, from, subject, OwaUtil.parseDate(date, timezoneadj), null, read));
+				MailItem item = new MailItem(url, from, subject, OwaUtil
+						.parseDate(date, timezoneadj).getTime(), null, read);
+				items.add(item);
+				long id = dbHelper.createMail(item);
+				if(id == -1){
+					MailItem fetched = dbHelper.fetchMail(item.url);
+					item.id = fetched.id;
+					dbHelper.updateMail(item);
+				}
 			}
 		}
 		return items;
@@ -133,34 +143,9 @@ public abstract class OwaParser {
 		return inp;
 	}
 
-	@SuppressWarnings("serial")
-	public static class OwaInboxItem implements Serializable {
-		public boolean read;
-		public String url;
-		public String from;
-		public String subject;
-		public Date date;
-		public String text;
+	public static List<CalendarItem> parseCalendar(String str, int timezoneadj) {
 
-		public OwaInboxItem(String url, String from, String subject, Date date, String text, boolean read) {
-			this.read = read;
-			this.from = from;
-			this.subject = subject;
-			this.date = date;
-			this.url = url;
-			this.text = text;
-		}
-		
-		@Override
-		public String toString() {
-			return Util.buildString("[from=", from, "][read=", read,
-					"][subject=", subject, "][date=", date, "][url=", url, "]");
-		}
-	}
-
-	public static List<OwaCalendarItem> parseCalendar(String str, int timezoneadj) {
-
-		List<OwaCalendarItem> items = new ArrayList<OwaCalendarItem>();
+		List<CalendarItem> items = new ArrayList<CalendarItem>();
 
 		int start = 0;
 		int end = 0;
@@ -211,29 +196,12 @@ public abstract class OwaParser {
 						timeTitle.length());
 				String time = timeTitle.substring(0, i);
 				int[] timeA = OwaUtil.parseTime(time, timezoneadj);
-				items.add(new OwaCalendarItem(title, OwaUtil.parseDate(date,
-						timezoneadj), timeA[0], timeA[1], titleLocation, url));
+				Date d = OwaUtil.parseDate(date, timezoneadj);
+				MailItem item = new MailItem(url, "", title, d.getTime(), null, false);
+				items.add(new CalendarItem(item, timeA[0], timeA[1], titleLocation));
 			}
 		}
 		return items;
-	}
-
-	public static class OwaCalendarItem {
-		public String title;
-		public Date date;
-		public int startmin;
-		public int stopmin;
-		public String titleLocation;
-		public String url;
-
-		public OwaCalendarItem(String title, Date date, int startmin, int stopmin, String titleLocation, String url) {
-			this.title = title;
-			this.date = date;
-			this.startmin = startmin;
-			this.stopmin = stopmin;
-			this.titleLocation = titleLocation;
-			this.url = url;
-		}
 	}
 
 }

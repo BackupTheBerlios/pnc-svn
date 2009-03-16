@@ -17,8 +17,8 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
-import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
+import com.mathias.android.owanotify.beans.CalendarItem;
+import com.mathias.android.owanotify.beans.MailItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
 
 public class OwaService extends Service {
@@ -51,6 +51,8 @@ public class OwaService extends Service {
 	private NotificationManager mNM;
 
 	private MSharedPreferences prefs;
+	
+	private OwaNotifyDbAdapter dbHelper;
 
 	@Override
 	public void onCreate() {
@@ -58,6 +60,9 @@ public class OwaService extends Service {
 		super.onCreate();
 
     	mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+    	dbHelper = new OwaNotifyDbAdapter(this);
+    	dbHelper.open();
 
 		prefs = new MSharedPreferences(this);
 
@@ -89,7 +94,7 @@ public class OwaService extends Service {
 			boolean alwaysshowcount = prefs.getBool(R.string.alwaysshowcount_key);
 			try {
 				if(!dontcheckmail) {
-					List<OwaInboxItem> items = OwaUtil.fetchInboxNew(prefs);
+					List<MailItem> items = OwaUtil.fetchInboxNew(prefs, dbHelper);
 					if(items != null && items.size() > 0){
 				    	Log.d(TAG, "showInboxNotification, items="+items.size());
 						showInboxNotification(items.size(), items.get(0));
@@ -102,11 +107,11 @@ public class OwaService extends Service {
 				String sreminder = prefs.getString(R.string.reminder_key, "60");
 				int reminder = Integer.parseInt(sreminder);
 				if(!dontcheckcalendar && reminder != 0) {
-					List<OwaCalendarItem> items = OwaUtil.fetchCalendar(prefs);
+					List<CalendarItem> items = OwaUtil.fetchCalendar(prefs);
 					if(items != null && items.size() > 0){
 						Date curr = new Date();
 						int currmin = curr.getHours()*60+curr.getMinutes();
-						for (OwaCalendarItem item : items) {
+						for (CalendarItem item : items) {
 							if(currmin >= item.startmin - reminder && currmin <= item.stopmin){
 						    	Log.d(TAG, "showCalendarNotification, items="+items.size());
 								showCalendarNotification(items.size(), item);
@@ -122,7 +127,7 @@ public class OwaService extends Service {
 		}
 	}
 
-	private void showInboxNotification(int num, OwaInboxItem item) {
+	private void showInboxNotification(int num, MailItem item) {
 		int lastInboxNum = Integer.parseInt(System.getProperty(Last.INBOX
 				.name(), "0"));
 		if(lastInboxNum >= num && item != null){
@@ -147,7 +152,7 @@ public class OwaService extends Service {
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
 		if(item == null){
-			item = new OwaInboxItem(null, "No mail", "No new mail", null, null, false);
+			item = new MailItem(null, "No mail", "No new mail", 0, null, false);
 		}
 		notification.setLatestEventInfo(this, item.from, item.subject,
 				contentIntent);
@@ -160,7 +165,7 @@ public class OwaService extends Service {
 		System.setProperty(Last.INBOX.name(), ""+num);
 	}
 
-	private void showCalendarNotification(int num, OwaCalendarItem item) {
+	private void showCalendarNotification(int num, CalendarItem item) {
 		int lastCalendarNum = Integer.parseInt(System.getProperty(Last.CALENDAR
 				.name(), "0"));
 		if(lastCalendarNum >= num){
@@ -180,9 +185,9 @@ public class OwaService extends Service {
 		}
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, i, 0);
 
-		notification.setLatestEventInfo(this, item.title, OwaUtil.buildTime(
+		notification.setLatestEventInfo(this, item.subject, OwaUtil.buildTime(
 				item.startmin, item.stopmin)
-				+ " " + item.title, contentIntent);
+				+ " " + item.subject, contentIntent);
 
 		notification.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
 

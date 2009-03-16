@@ -1,5 +1,5 @@
 /*
-TODO 5: Cache emails
+TODO 5: Store in db. dont cache emails
 TODO 5: Sign and publish
 TODO 5: Show To:, Cc: in email content.
 -- DONE --

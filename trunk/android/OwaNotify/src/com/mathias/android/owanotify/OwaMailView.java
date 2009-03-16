@@ -1,6 +1,7 @@
 package com.mathias.android.owanotify;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
+import com.mathias.android.owanotify.beans.MailItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
 import com.mathias.android.owanotify.common.Util;
 
@@ -43,11 +44,13 @@ public class OwaMailView extends ListActivity {
 	
 	private MSharedPreferences prefs;
 
-	private List<OwaInboxItem> inboxitems = new ArrayList<OwaInboxItem>();
+	private List<MailItem> inboxitems = new ArrayList<MailItem>();
 	
 	private WorkerThread thread;
 	
 	private TextView empty;
+	
+	private OwaNotifyDbAdapter dbHelper;
 	
 	private Map<String, String> content = new HashMap<String, String>();
 
@@ -63,6 +66,9 @@ public class OwaMailView extends ListActivity {
 		Intent i = new Intent(this, OwaMailView.class);
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, i, 0);
         mAM.setRepeating(AlarmManager.RTC, System.currentTimeMillis(), (long)1800000, pendingIntent);
+
+        dbHelper = new OwaNotifyDbAdapter(this);
+        dbHelper.open();
 
         prefs = new MSharedPreferences(this);
 
@@ -98,7 +104,7 @@ public class OwaMailView extends ListActivity {
     		String fullurl = OwaUtil.getFullInboxUrl(prefs);
     		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
     	}else{
-    		OwaInboxItem item = adapter.getItem(position);
+    		MailItem item = adapter.getItem(position);
     		thread.displayEmail(item);
     	}
     }
@@ -145,7 +151,7 @@ public class OwaMailView extends ListActivity {
     	
     	private boolean ready = false;
     	
-    	public void displayEmail(final OwaInboxItem item){
+    	public void displayEmail(final MailItem item){
 			final ProgressDialog pd = ProgressDialog.show(OwaMailView.this, null, "Fetching e-mail");
 			pd.setCancelable(true);
     		while(true){
@@ -190,7 +196,7 @@ public class OwaMailView extends ListActivity {
             						String str = Util.downloadFile(0, inboxurl, null, username, password);
             				        String sadd = prefs.getString(R.string.timezoneadj_key, "0");
             				        int timezoneadj = Integer.parseInt(sadd);
-            						inboxitems = OwaParser.parseInbox(str, false, timezoneadj);
+            						inboxitems = OwaParser.parseInbox(str, timezoneadj, dbHelper);
         		    			}else{
         		    				Intent i = new Intent(OwaMailView.this, SettingEdit.class);
         		    				startActivityForResult(i, 0);
@@ -242,7 +248,7 @@ public class OwaMailView extends ListActivity {
 		}
 
 		@Override
-		public OwaInboxItem getItem(int position) {
+		public MailItem getItem(int position) {
 			return inboxitems.get(position);
 		}
 
@@ -264,14 +270,14 @@ public class OwaMailView extends ListActivity {
 	            holder = (ViewHolder) convertView.getTag();
 	        }
 
-	        OwaInboxItem item = inboxitems.get(position);
+	        MailItem item = inboxitems.get(position);
 	        if(item == null) {
 	        	return null;
 	        }
 	        holder.from.setText(item.from);
 	        holder.subject.setText(item.subject);
-	        if(item.date != null){
-		        holder.date.setText(item.date.toString());
+	        if(item.date != 0){
+		        holder.date.setText(new Date(item.date).toString());
 	        }
 			if(!item.read){
 				holder.from.setTextColor(Color.WHITE);

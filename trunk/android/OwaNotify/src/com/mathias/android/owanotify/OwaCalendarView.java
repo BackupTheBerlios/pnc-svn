@@ -25,7 +25,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
+import com.mathias.android.owanotify.beans.CalendarItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
 import com.mathias.android.owanotify.common.Util;
 
@@ -39,7 +39,7 @@ public class OwaCalendarView extends ListActivity {
 
 	private OwaAdapter adapter;
 
-	private List<OwaCalendarItem> calendaritems = new ArrayList<OwaCalendarItem>();
+	private List<CalendarItem> calendaritems = new ArrayList<CalendarItem>();
 
 	private MSharedPreferences prefs;
 	
@@ -73,7 +73,7 @@ public class OwaCalendarView extends ListActivity {
 
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
-    	OwaCalendarItem item = adapter.getItem(position);
+    	CalendarItem item = adapter.getItem(position);
     	String fullurl = OwaUtil.getFullUrl(prefs, item.url);
 		startActivity(new Intent("android.intent.action.VIEW", Uri.parse(fullurl)));			
     }
@@ -181,7 +181,7 @@ public class OwaCalendarView extends ListActivity {
 		}
 
 		@Override
-		public OwaCalendarItem getItem(int position) {
+		public CalendarItem getItem(int position) {
 			return calendaritems.get(position);
 		}
 
@@ -203,12 +203,12 @@ public class OwaCalendarView extends ListActivity {
 	            holder = (ViewHolder) convertView.getTag();
 	        }
 
-	        OwaCalendarItem item = calendaritems.get(position);
+	        CalendarItem item = calendaritems.get(position);
 	        if(item == null) {
 	        	return null;
 	        }
-	        holder.from.setText(item.title);
-	        holder.subject.setText(item.titleLocation);
+	        holder.from.setText(item.from);
+	        holder.subject.setText(item.location);
 //	        if(item.date != null){
 //		        holder.date.setText(item.date.toString());
 //	        }

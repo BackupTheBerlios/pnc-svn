@@ -3,14 +3,15 @@ package com.mathias.android.owanotify;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.util.Log;
 
-import com.mathias.android.owanotify.OwaParser.OwaCalendarItem;
-import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
+import com.mathias.android.owanotify.beans.CalendarItem;
+import com.mathias.android.owanotify.beans.MailItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
 import com.mathias.android.owanotify.common.Util;
 
@@ -69,7 +70,7 @@ public class OwaUtil {
 		return text;
 	}
 
-	public static List<OwaInboxItem> fetchInboxNew(MSharedPreferences prefs){
+	public static List<MailItem> fetchInboxNew(MSharedPreferences prefs, OwaNotifyDbAdapter helper){
 		try {
 			String username = prefs.getString(R.string.username_key);
 			String password = prefs.getString(R.string.password_key);
@@ -78,7 +79,16 @@ public class OwaUtil {
 	        int timezoneadj = Integer.parseInt(sadd);
 			if(username != null && password != null && inboxurl != null){
 				String inb = Util.downloadFile(0, inboxurl, null, username, password);
-				return OwaParser.parseInbox(inb, true, timezoneadj);
+				List<MailItem> items = OwaParser.parseInbox(inb, timezoneadj, helper);
+				if(items != null){
+					for (Iterator<MailItem> it = items.iterator(); it.hasNext();) {
+						MailItem item = it.next();
+						if(item.read){
+							it.remove();
+						}
+					}
+					return items;
+				}
 			}
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -86,7 +96,7 @@ public class OwaUtil {
 		return null;
 	}
 
-	public static List<OwaCalendarItem> fetchCalendar(MSharedPreferences prefs){
+	public static List<CalendarItem> fetchCalendar(MSharedPreferences prefs){
 		try {
 			String username = prefs.getString(R.string.username_key);
 			String password = prefs.getString(R.string.password_key);

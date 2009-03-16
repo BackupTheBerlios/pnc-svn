@@ -1,5 +1,7 @@
 package com.mathias.android.owanotify;
 
+import java.util.Date;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -12,7 +14,7 @@ import android.view.Window;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.mathias.android.owanotify.OwaParser.OwaInboxItem;
+import com.mathias.android.owanotify.beans.MailItem;
 import com.mathias.android.owanotify.common.MSharedPreferences;
 import com.mathias.android.owanotify.common.Util;
 
@@ -25,7 +27,7 @@ public class OwaReadMail extends Activity {
 	
 	private MSharedPreferences prefs;
 
-	private OwaInboxItem item;
+	private MailItem item;
 	
 	private ScrollView scroll;
 	
@@ -48,13 +50,13 @@ public class OwaReadMail extends Activity {
 			scroll.setBackgroundColor(bgc);
 		}
 
-		item = (OwaInboxItem) (savedInstanceState != null ? savedInstanceState
+		item = (MailItem) (savedInstanceState != null ? savedInstanceState
 				.getSerializable(EMAIL)
 				: null);
 
 		if (item == null) {
 			Bundle extras = getIntent().getExtras();
-			item = (OwaInboxItem) (extras != null ? extras
+			item = (MailItem) (extras != null ? extras
 					.getSerializable(EMAIL) : null);
 		}
 
@@ -64,7 +66,7 @@ public class OwaReadMail extends Activity {
 			TextView subject = (TextView) findViewById(R.id.subject);
 			subject.setText(item.subject);
 			TextView date = (TextView) findViewById(R.id.date);
-			date.setText(item.date.toString());
+			date.setText(new Date(item.date).toString());
 			TextView text = (TextView) findViewById(R.id.text);
 			if(item.text == null){
 				Util.showDialog(this, "Error", "Could not read email");
