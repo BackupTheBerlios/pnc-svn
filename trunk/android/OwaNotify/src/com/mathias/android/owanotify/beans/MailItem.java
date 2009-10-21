@@ -9,7 +9,7 @@ public class MailItem implements Serializable {
 	public long id;
 	public boolean read;
 	public String url;
-	public String from;
+	public String sender;
 	public String cc;
 	public String to;
 	public String subject;
@@ -21,7 +21,7 @@ public class MailItem implements Serializable {
 
 	public MailItem(MailItem item){
 		read = item.read;
-		from = item.from;
+		sender = item.sender;
 		subject = item.subject;
 		date = item.date;
 		url = item.url;
@@ -31,7 +31,7 @@ public class MailItem implements Serializable {
 	public MailItem(String url, String from, String subject, long date,
 			String text, boolean read) {
 		this.read = read;
-		this.from = from;
+		this.sender = from;
 		this.subject = subject;
 		this.date = date;
 		this.url = url;
@@ -40,7 +40,7 @@ public class MailItem implements Serializable {
 
 	@Override
 	public String toString() {
-		return Util.buildString("[from=", from, "][read=", read, "][subject=",
+		return Util.buildString("[from=", sender, "][read=", read, "][subject=",
 				subject, "][date=", date, "][url=", url, "]");
 	}
 

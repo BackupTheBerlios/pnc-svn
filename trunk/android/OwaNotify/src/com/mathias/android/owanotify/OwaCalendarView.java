@@ -207,7 +207,7 @@ public class OwaCalendarView extends ListActivity {
 	        if(item == null) {
 	        	return null;
 	        }
-	        holder.from.setText(item.from);
+	        holder.from.setText(item.sender);
 	        holder.subject.setText(item.location);
 //	        if(item.date != null){
 //		        holder.date.setText(item.date.toString());

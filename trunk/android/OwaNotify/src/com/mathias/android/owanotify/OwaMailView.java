@@ -274,7 +274,7 @@ public class OwaMailView extends ListActivity {
 	        if(item == null) {
 	        	return null;
 	        }
-	        holder.from.setText(item.from);
+	        holder.from.setText(item.sender);
 	        holder.subject.setText(item.subject);
 	        if(item.date != 0){
 		        holder.date.setText(new Date(item.date).toString());

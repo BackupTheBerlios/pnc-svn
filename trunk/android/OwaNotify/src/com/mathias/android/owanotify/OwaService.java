@@ -154,7 +154,7 @@ public class OwaService extends Service {
 		if(item == null){
 			item = new MailItem(null, "No mail", "No new mail", 0, null, false);
 		}
-		notification.setLatestEventInfo(this, item.from, item.subject,
+		notification.setLatestEventInfo(this, item.sender, item.subject,
 				contentIntent);
 
 		if(num > lastInboxNum){

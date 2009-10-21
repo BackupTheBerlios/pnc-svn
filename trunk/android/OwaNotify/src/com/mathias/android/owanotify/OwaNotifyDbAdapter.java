@@ -20,7 +20,7 @@ public class OwaNotifyDbAdapter {
 	public static final String MAIL_SUBJECT = "subject";
 	public static final String MAIL_TO = "to";
 	public static final String MAIL_CC = "cc";
-	public static final String MAIL_FROM = "from";
+	public static final String MAIL_SENDER = "sender";
 	public static final String MAIL_DATE = "date";
 	public static final String MAIL_READ = "read";
 	public static final String MAIL_CONTENT = "content";
@@ -30,7 +30,7 @@ public class OwaNotifyDbAdapter {
 	public static final String CALENDAR_SUBJECT = "subject";
 	public static final String CALENDAR_TO = "to";
 	public static final String CALENDAR_CC = "cc";
-	public static final String CALENDAR_FROM = "from";
+	public static final String CALENDAR_SENDER = "sender";
 	public static final String CALENDAR_DATE = "date";
 	public static final String CALENDAR_READ = "read";
 	public static final String CALENDAR_CONTENT = "content";
@@ -53,7 +53,7 @@ public class OwaNotifyDbAdapter {
 			+ MAIL_CC+" text, " 
 			+ MAIL_CONTENT+" text, "
 			+ MAIL_DATE+" integer, "
-			+ MAIL_FROM+" integer, "
+			+ MAIL_SENDER+" integer, "
 			+ MAIL_READ+" boolean not null, "
 			+ MAIL_SUBJECT+" text, "
 			+ MAIL_TO+" text);";
@@ -64,7 +64,7 @@ public class OwaNotifyDbAdapter {
 			+ CALENDAR_CC+" text, " 
 			+ CALENDAR_CONTENT+" text, "
 			+ CALENDAR_DATE+" integer, "
-			+ CALENDAR_FROM+" integer, "
+			+ CALENDAR_SENDER+" integer, "
 			+ CALENDAR_READ+" boolean not null, "
 			+ CALENDAR_SUBJECT+" text, "
 			+ CALENDAR_TO+" text, "
@@ -127,7 +127,7 @@ public class OwaNotifyDbAdapter {
 		initialValues.put(MAIL_CC, item.cc);
 		initialValues.put(MAIL_CONTENT, item.text);
 		initialValues.put(MAIL_DATE, item.date);
-		initialValues.put(MAIL_FROM, item.from);
+		initialValues.put(MAIL_SENDER, item.sender);
 		initialValues.put(MAIL_READ, item.read);
 		initialValues.put(MAIL_SUBJECT, item.subject);
 		initialValues.put(MAIL_TO, item.to);
@@ -143,7 +143,7 @@ public class OwaNotifyDbAdapter {
 			initialValues.put(MAIL_CC, item.cc);
 			initialValues.put(MAIL_CONTENT, item.text);
 			initialValues.put(MAIL_DATE, item.date);
-			initialValues.put(MAIL_FROM, item.from);
+			initialValues.put(MAIL_SENDER, item.sender);
 			initialValues.put(MAIL_READ, item.read);
 			initialValues.put(MAIL_SUBJECT, item.subject);
 			initialValues.put(MAIL_TO, item.to);
@@ -161,7 +161,7 @@ public class OwaNotifyDbAdapter {
 		initialValues.put(CALENDAR_CC, item.cc);
 		initialValues.put(CALENDAR_CONTENT, item.text);
 		initialValues.put(CALENDAR_DATE, item.date);
-		initialValues.put(CALENDAR_FROM, item.from);
+		initialValues.put(CALENDAR_SENDER, item.sender);
 		initialValues.put(CALENDAR_LOCATION, item.location);
 		initialValues.put(CALENDAR_READ, item.read);
 		initialValues.put(CALENDAR_START, item.startmin);
@@ -180,7 +180,7 @@ public class OwaNotifyDbAdapter {
 			initialValues.put(CALENDAR_CC, item.cc);
 			initialValues.put(CALENDAR_CONTENT, item.text);
 			initialValues.put(CALENDAR_DATE, item.date);
-			initialValues.put(CALENDAR_FROM, item.from);
+			initialValues.put(CALENDAR_SENDER, item.sender);
 			initialValues.put(CALENDAR_LOCATION, item.location);
 			initialValues.put(CALENDAR_READ, item.read);
 			initialValues.put(CALENDAR_START, item.startmin);
@@ -210,7 +210,7 @@ public class OwaNotifyDbAdapter {
 	public List<MailItem> fetchAllMail() {
 		List<MailItem> feeds = new ArrayList<MailItem>();
 		Cursor c = mDb.query(DATABASE_TABLE_MAIL, new String[] { MAIL_ID,
-				MAIL_URL, MAIL_CC, MAIL_CONTENT, MAIL_DATE, MAIL_FROM,
+				MAIL_URL, MAIL_CC, MAIL_CONTENT, MAIL_DATE, MAIL_SENDER,
 				MAIL_READ, MAIL_SUBJECT, MAIL_TO }, null, null, null, null,
 				null);
 		if(c == null || !c.moveToFirst()){
@@ -221,7 +221,7 @@ public class OwaNotifyDbAdapter {
 				item.id = c.getLong(c.getColumnIndexOrThrow(MAIL_ID));
 				item.cc = c.getString(c.getColumnIndexOrThrow(MAIL_CC));
 				item.date = c.getLong(c.getColumnIndexOrThrow(MAIL_DATE));
-				item.from = c.getString(c.getColumnIndexOrThrow(MAIL_FROM));
+				item.sender = c.getString(c.getColumnIndexOrThrow(MAIL_SENDER));
 				item.read = 0 != c.getShort(c.getColumnIndexOrThrow(MAIL_READ));
 				item.subject = c.getString(c.getColumnIndexOrThrow(MAIL_SUBJECT));
 				item.text = c.getString(c.getColumnIndexOrThrow(MAIL_CONTENT));
@@ -237,7 +237,7 @@ public class OwaNotifyDbAdapter {
 	public List<CalendarItem> fetchAllCalendar() {
 		List<CalendarItem> feeds = new ArrayList<CalendarItem>();
 		Cursor c = mDb.query(DATABASE_TABLE_CALENDAR, new String[] { CALENDAR_ID,
-				CALENDAR_URL, CALENDAR_CC, CALENDAR_CONTENT, CALENDAR_DATE, CALENDAR_FROM,
+				CALENDAR_URL, CALENDAR_CC, CALENDAR_CONTENT, CALENDAR_DATE, CALENDAR_SENDER,
 				CALENDAR_READ, CALENDAR_SUBJECT, CALENDAR_TO }, null, null, null, null,
 				null);
 		if(c == null || !c.moveToFirst()){
@@ -248,7 +248,7 @@ public class OwaNotifyDbAdapter {
 				item.id = c.getLong(c.getColumnIndexOrThrow(CALENDAR_ID));
 				item.cc = c.getString(c.getColumnIndexOrThrow(CALENDAR_CC));
 				item.date = c.getLong(c.getColumnIndexOrThrow(CALENDAR_DATE));
-				item.from = c.getString(c.getColumnIndexOrThrow(CALENDAR_FROM));
+				item.sender = c.getString(c.getColumnIndexOrThrow(CALENDAR_SENDER));
 				item.read = 0 != c.getShort(c.getColumnIndexOrThrow(CALENDAR_READ));
 				item.subject = c.getString(c.getColumnIndexOrThrow(CALENDAR_SUBJECT));
 				item.text = c.getString(c.getColumnIndexOrThrow(CALENDAR_CONTENT));
@@ -267,7 +267,7 @@ public class OwaNotifyDbAdapter {
 	public MailItem fetchMail(long id) {
 		MailItem item = null;
 		Cursor c = mDb.query(DATABASE_TABLE_MAIL, new String[] {
-				MAIL_URL, MAIL_CC, MAIL_CONTENT, MAIL_DATE, MAIL_FROM,
+				MAIL_URL, MAIL_CC, MAIL_CONTENT, MAIL_DATE, MAIL_SENDER,
 				MAIL_READ, MAIL_SUBJECT, MAIL_TO }, MAIL_ID + "=" + id, null, null, null,
 				null);
 		if(c == null || !c.moveToFirst()){
@@ -277,7 +277,7 @@ public class OwaNotifyDbAdapter {
 			item.id = id;
 			item.cc = c.getString(c.getColumnIndexOrThrow(MAIL_CC));
 			item.date = c.getLong(c.getColumnIndexOrThrow(MAIL_DATE));
-			item.from = c.getString(c.getColumnIndexOrThrow(MAIL_FROM));
+			item.sender = c.getString(c.getColumnIndexOrThrow(MAIL_SENDER));
 			item.read = 0 != c.getShort(c.getColumnIndexOrThrow(MAIL_READ));
 			item.subject = c.getString(c.getColumnIndexOrThrow(MAIL_SUBJECT));
 			item.text = c.getString(c.getColumnIndexOrThrow(MAIL_CONTENT));
@@ -291,7 +291,7 @@ public class OwaNotifyDbAdapter {
 	public MailItem fetchMail(String url) {
 		MailItem item = null;
 		Cursor c = mDb.query(DATABASE_TABLE_MAIL, new String[] {
-				MAIL_ID, MAIL_URL, MAIL_CC, MAIL_CONTENT, MAIL_DATE, MAIL_FROM,
+				MAIL_ID, MAIL_URL, MAIL_CC, MAIL_CONTENT, MAIL_DATE, MAIL_SENDER,
 				MAIL_READ, MAIL_SUBJECT, MAIL_TO }, MAIL_URL + "=" + url, null, null, null,
 				null);
 		if(c == null || !c.moveToFirst()){
@@ -301,7 +301,7 @@ public class OwaNotifyDbAdapter {
 			item.id = c.getLong(c.getColumnIndexOrThrow(MAIL_ID));
 			item.cc = c.getString(c.getColumnIndexOrThrow(MAIL_CC));
 			item.date = c.getLong(c.getColumnIndexOrThrow(MAIL_DATE));
-			item.from = c.getString(c.getColumnIndexOrThrow(MAIL_FROM));
+			item.sender = c.getString(c.getColumnIndexOrThrow(MAIL_SENDER));
 			item.read = 0 != c.getShort(c.getColumnIndexOrThrow(MAIL_READ));
 			item.subject = c.getString(c.getColumnIndexOrThrow(MAIL_SUBJECT));
 			item.text = c.getString(c.getColumnIndexOrThrow(MAIL_CONTENT));
@@ -315,7 +315,7 @@ public class OwaNotifyDbAdapter {
 	public CalendarItem fetchCalendar(long id) {
 		CalendarItem item = null;
 		Cursor c = mDb.query(DATABASE_TABLE_CALENDAR, new String[] {
-				CALENDAR_URL, CALENDAR_CC, CALENDAR_CONTENT, CALENDAR_DATE, CALENDAR_FROM,
+				CALENDAR_URL, CALENDAR_CC, CALENDAR_CONTENT, CALENDAR_DATE, CALENDAR_SENDER,
 				CALENDAR_READ, CALENDAR_SUBJECT, CALENDAR_TO }, CALENDAR_ID + "=" + id, null, null, null,
 				null);
 		if(c == null || !c.moveToFirst()){
@@ -325,7 +325,7 @@ public class OwaNotifyDbAdapter {
 			item.id = id;
 			item.cc = c.getString(c.getColumnIndexOrThrow(CALENDAR_CC));
 			item.date = c.getLong(c.getColumnIndexOrThrow(CALENDAR_DATE));
-			item.from = c.getString(c.getColumnIndexOrThrow(CALENDAR_FROM));
+			item.sender = c.getString(c.getColumnIndexOrThrow(CALENDAR_SENDER));
 			item.read = 0 != c.getShort(c.getColumnIndexOrThrow(CALENDAR_READ));
 			item.subject = c.getString(c.getColumnIndexOrThrow(CALENDAR_SUBJECT));
 			item.text = c.getString(c.getColumnIndexOrThrow(CALENDAR_CONTENT));
@@ -345,7 +345,7 @@ public class OwaNotifyDbAdapter {
 		initialValues.put(MAIL_CC, item.cc);
 		initialValues.put(MAIL_CONTENT, item.text);
 		initialValues.put(MAIL_DATE, item.date);
-		initialValues.put(MAIL_FROM, item.from);
+		initialValues.put(MAIL_SENDER, item.sender);
 		initialValues.put(MAIL_READ, item.read);
 		initialValues.put(MAIL_SUBJECT, item.subject);
 		initialValues.put(MAIL_TO, item.to);
@@ -363,7 +363,7 @@ public class OwaNotifyDbAdapter {
 		initialValues.put(CALENDAR_CC, item.cc);
 		initialValues.put(CALENDAR_CONTENT, item.text);
 		initialValues.put(CALENDAR_DATE, item.date);
-		initialValues.put(CALENDAR_FROM, item.from);
+		initialValues.put(CALENDAR_SENDER, item.sender);
 		initialValues.put(CALENDAR_LOCATION, item.location);
 		initialValues.put(CALENDAR_READ, item.read);
 		initialValues.put(CALENDAR_START, item.startmin);

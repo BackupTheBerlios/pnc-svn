@@ -62,7 +62,7 @@ public class OwaReadMail extends Activity {
 
 		if (item != null) {
 			TextView from = (TextView) findViewById(R.id.from);
-			from.setText(item.from);
+			from.setText(item.sender);
 			TextView subject = (TextView) findViewById(R.id.subject);
 			subject.setText(item.subject);
 			TextView date = (TextView) findViewById(R.id.date);
