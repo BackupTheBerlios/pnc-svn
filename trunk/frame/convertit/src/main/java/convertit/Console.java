@@ -64,7 +64,9 @@ public class Console {
 	}
 
 	private void handleLuhnCheckDigit(String p1) {
-		if(!Util.isEmpty(p1) && Util.isNumeric(p1)){
+		if(Util.isEmpty(p1) || !Util.isNumeric(p1)){
+			log("Invalid input");
+		}else{
 			int sum = 0;
 			for(int i = 0; i < p1.length(); i++) {
 				char a = p1.charAt(i);
@@ -86,6 +88,7 @@ public class Console {
 			if((res.length() % 2) != 0){
 				res += 'F';
 			}
+			log(res);
 		}
 	}
 
@@ -228,7 +231,11 @@ public class Console {
 	}
 
 	public static void main(String[] args) {
-		new Console().inputLoop();
+		if(args != null && args.length > 0){
+			new Console().handleCommand(args);
+		}else{
+			new Console().inputLoop();
+		}
 	}
 
 }

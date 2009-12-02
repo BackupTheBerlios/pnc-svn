@@ -43,11 +43,11 @@ public class Des {
 			byte[] enc = ecipher.doFinal(utf8);
 
 			// Encode bytes to base64 to get a string
-			return new sun.misc.BASE64Encoder().encode(enc);
+			return new String(enc);
 		} catch (javax.crypto.BadPaddingException e) {
 		} catch (IllegalBlockSizeException e) {
 		} catch (UnsupportedEncodingException e) {
-		} catch (java.io.IOException e) {
+		} catch (Exception e) {
 		}
 		return null;
 	}
@@ -55,7 +55,7 @@ public class Des {
 	public String decrypt(String str) {
 		try {
 			// Decode base64 to get bytes
-			byte[] dec = new sun.misc.BASE64Decoder().decodeBuffer(str);
+			byte[] dec = str.getBytes();
 
 			// Decrypt
 			byte[] utf8 = dcipher.doFinal(dec);
@@ -65,7 +65,7 @@ public class Des {
 		} catch (javax.crypto.BadPaddingException e) {
 		} catch (IllegalBlockSizeException e) {
 		} catch (UnsupportedEncodingException e) {
-		} catch (java.io.IOException e) {
+		} catch (Exception e) {
 		}
 		return null;
 	}

@@ -27,8 +27,6 @@ import java.util.logging.Logger;
 
 import javax.swing.JFrame;
 
-import com.sun.org.apache.xml.internal.security.algorithms.MessageDigestAlgorithm;
-
 public abstract class Util {
 
 	public static boolean isEmpty(Object s) {
