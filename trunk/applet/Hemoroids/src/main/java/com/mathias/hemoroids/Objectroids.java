@@ -66,7 +66,7 @@ public class Objectroids extends Applet implements Runnable
 		//sounds
 		Audio.loadSounds(this);
     //get size of screen
-    Dimension d = size();
+    Dimension d = new Dimension(950, 550); // size();
 //    Graphics g = getGraphics(); // Find the size of the screen and set the values for sprites.
     width = d.width;
     height = d.height;

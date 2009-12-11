@@ -287,4 +287,12 @@ public class Tetris extends MediaApplet {
 		return new Dimension(WIDTH, HEIGHT);
 	}
 
+	@Override
+	public long delay() {
+    	if (gameOver) {
+			return Long.MAX_VALUE;
+		}
+		return 1000;
+	}
+
 }

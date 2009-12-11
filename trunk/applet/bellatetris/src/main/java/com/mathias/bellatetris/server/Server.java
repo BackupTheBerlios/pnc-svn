@@ -138,7 +138,7 @@ public class Server {
 	}
 	
 	public static String getCheckSum(String name, long score){
-		return Util.md5sum(name+score);
+		return Util.md5(name+score);
 	}
 	
 	/**
