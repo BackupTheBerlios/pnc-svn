@@ -2,6 +2,7 @@ package convertit;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Date;
 
 import com.mathias.drawutils.Util;
 
@@ -55,6 +56,8 @@ public class Console {
 				log(Util.dirName(p1));
 			}else if("filename".startsWith(cmd)){
 				log(Util.fileName(p1));
+			}else if("date".startsWith(cmd)){
+				handleDate(p1);
 			}else {
 				log("Unknown command: "+cmd);
 			}
@@ -175,6 +178,16 @@ public class Console {
 		}
 	}
 
+	private void handleDate(String p1) {
+		if(!Util.isEmpty(p1) && Util.isNumeric(p1)){
+			try{
+				log(""+new Date(Long.parseLong(p1)));
+			}catch(Exception e){
+				log("Could not parse: "+p1);
+			}
+		}
+	}
+
 	private void handleHelp(String cmd){
 		if(cmd == null){
 			log("ConvertIt");
@@ -191,6 +204,7 @@ public class Console {
 			log("    dirname <file>");
 			log("    filename <file>");
 			log("    xor <data>");
+			log("    date <num>");
 //		}else if("text2hex".startsWith(cmd)){
 //			log("text2hex <text>");
 //		}else if("pad".startsWith(cmd)){
